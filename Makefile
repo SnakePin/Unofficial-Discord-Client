@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS=-c -std=c++11 -g -Iinclude/ -Iwebsocketpp-0.8.1/ -D_WEBSOCKETPP_CPP11_STL_
+CFLAGS=-c -std=c++11 -g -Iinclude/
 LDFLAGS=-pthread
 WFLAGS=-Wall -Wextra -Wpedantic
 SOURCES=src/main.cpp src/discord.cpp
