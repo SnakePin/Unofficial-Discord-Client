@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include <asio.hpp>
 
 #include "discord/message.hpp"
 #include "sws/client_wss.hpp"
@@ -30,5 +31,9 @@ namespace Discord {
 		std::string generate_identify_packet();
 		
 		inline void addListener(Listener *listener) { listeners.push_back(listener); }
+	private:
+		void SendHeartbeatAndResetTimer();
+		boost::asio::io_service ioService;
+		boost::asio::deadline_timer* heartbeatTimer = nullptr;
 	};
 }

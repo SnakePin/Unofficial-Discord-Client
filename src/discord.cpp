@@ -37,9 +37,19 @@ std::string Client::generate_identify_packet() {
 	return std::string(buffer.GetString());
 }
 
+void Client::SendHeartbeatAndResetTimer() {
+	if(heartbeatTimer == nullptr) {
+		return;
+	}
+	cout << "Heartbeat!";
+	
+	heartbeatTimer.async_wait(&SendHeartbeatAndResetTimer);
+	ioService.run();
+}
+
 void Client::run() {
 	using namespace std;
-	
+
 	websocket.on_message = [this](shared_ptr<WssClient::Connection> connection, shared_ptr<WssClient::InMessage> in_message) {
 		std::string response = in_message->string(); // string() can only be called once! see sws/client_ws.hpp for why
 		cout << "Client: Message received: \"" << response << "\"" << endl;
@@ -52,6 +62,12 @@ void Client::run() {
 		if(opcode == 10) { // HELLO
 			rapidjson::Value eventData = document["d"].GetObject();
 			int heartbeat_interval = eventData["heartbeat_interval"].GetInt();
+
+			// -5 to counter heartbeat timeouts caused by network delay
+			heartbeatTimer = new boost::asio::deadline_timer(ioService, boost::posix_time::seconds(heartbeat_interval - 5));
+			heartbeatTimer.async_wait(&SendHeartbeatAndResetTimer);
+			ioService.run();
+
 			std::cout << "Received HELLO (opcode 10) packet. Heartbeat interval: " << heartbeat_interval << std::endl;
 			
 			std::string identify_packet = generate_identify_packet();
@@ -70,6 +86,7 @@ void Client::run() {
 		cout << "Client: Opened connection" << endl;
 
 		string out_message("Hello");
+
 		// cout << "Client: Sending message: \"" << out_message << "\"" << endl;
 
 		// connection->send(out_message);
@@ -77,6 +94,9 @@ void Client::run() {
 
 	websocket.on_close = [](shared_ptr<WssClient::Connection> /*connection*/, int status, const string & /*reason*/) {
 		cout << "Client: Closed connection with status code " << status << endl;
+
+		delete heartbeatTimer;
+		heartbeatTimer = nullptr;
 	};
 
 	// See http://www.boost.org/doc/libs/1_55_0/doc/html/boost_asio/reference.html, Error Codes for error code meanings
