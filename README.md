@@ -2,7 +2,7 @@
 
 ## Useful Links
 
- - [https://discordapp.com/developers/docs/topics/gateway](Discord websocket protocol).
+ - [Discord websocket protocol](https://discordapp.com/developers/docs/topics/gateway).
 
 ## Libraries
 
