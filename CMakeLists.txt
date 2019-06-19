@@ -10,6 +10,13 @@ add_subdirectory(cpr)
 include_directories(${CPR_INCLUDE_DIRS})
 target_link_libraries(Unofficial-Discord-Client ${CPR_LIBRARIES})
 
+# FindOpenSSL()
+find_package(OpenSSL REQUIRED)
+message("OpenSSL include dir: ${OPENSSL_INCLUDE_DIR}")
+message("OpenSSL libraries: ${OPENSSL_LIBRARIES}")
+include_directories(${OPENSSL_INCLUDE_DIR})
+target_link_libraries(Unofficial-Discord-Client ${OPENSSL_LIBRARIES})
+
 # Add all cpp/c files
 file(GLOB_RECURSE C_SOURCES "src/*.c")
 file(GLOB_RECURSE CPP_SOURCES "src/*.cpp")
