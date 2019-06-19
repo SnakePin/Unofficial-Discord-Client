@@ -20,13 +20,15 @@ add_executable(Unofficial-Discord-Client ${SOURCES})
 target_include_directories(Unofficial-Discord-Client PUBLIC "${PROJECT_SOURCE_DIR}/include")
 
 # Add CPR
+# Go away tests, go away!
+set(BUILD_CPR_TESTS OFF)
 add_subdirectory(cpr)
-include_directories(${CPR_INCLUDE_DIRS})
+target_include_directories(Unofficial-Discord-Client PUBLIC ${CPR_INCLUDE_DIRS})
 target_link_libraries(Unofficial-Discord-Client ${CPR_LIBRARIES})
 
 # Add OpenSSL
 find_package(OpenSSL REQUIRED)
-include_directories(${OPENSSL_INCLUDE_DIR})
+target_include_directories(Unofficial-Discord-Client PUBLIC ${OPENSSL_INCLUDE_DIR})
 target_link_libraries(Unofficial-Discord-Client ${OPENSSL_LIBRARIES})
 
 ## Add asio
