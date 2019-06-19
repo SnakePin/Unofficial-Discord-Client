@@ -42,6 +42,7 @@ void Client::SendHeartbeatAndResetTimer(const std::error_code& error)
   std::cout << "Called \n";
   if(!error){
 	   std::cout << "finished \n";
+	   heartbeatTimer.expires_from_now(std::chrono::milliseconds(2000));
 	   heartbeatTimer.async_wait(std::bind(&Client::SendHeartbeatAndResetTimer, this));
   }
 }
