@@ -6,29 +6,38 @@ cmake_minimum_required(VERSION 3.5)
 # Set the project name
 project (Unofficial-Discord-Client)
 
+# Add all files
+file(GLOB_RECURSE SOURCES
+  "include/*.h"
+  "include/*.hpp"
+  "src/*.c"
+  "src/*.cpp"
+)
+
+# Add an executable with the above sources
+add_executable(Unofficial-Discord-Client ${SOURCES})
+
+target_include_directories(lib PUBLIC "${ROOT_SOURCE_DIR}/lib/inc")
+
+# Add CPR
 add_subdirectory(cpr)
 include_directories(${CPR_INCLUDE_DIRS})
 target_link_libraries(Unofficial-Discord-Client ${CPR_LIBRARIES})
 
-# FindOpenSSL()
+# Add OpenSSL
 find_package(OpenSSL REQUIRED)
-message("OpenSSL include dir: ${OPENSSL_INCLUDE_DIR}")
-message("OpenSSL libraries: ${OPENSSL_LIBRARIES}")
 include_directories(${OPENSSL_INCLUDE_DIR})
 target_link_libraries(Unofficial-Discord-Client ${OPENSSL_LIBRARIES})
 
-# Add all cpp/c files
-file(GLOB_RECURSE C_SOURCES "src/*.c")
-file(GLOB_RECURSE CPP_SOURCES "src/*.cpp")
+## Add asio
+#find_package(libasio REQUIRED)
+#include_directories(${LIBASIO_INCLUDE_DIR})
+#target_link_libraries(Unofficial-Discord-Client ${LIBASIO_LIBRARIES})
 
-# Normally this is not needed but for IDEs to see headers as part of the project they must be added too
-file(GLOB_RECURSE C_HEADERS "include/*.h")
-file(GLOB_RECURSE CPP_HEADERS "include/*.hpp")
+# Use standalone asio (most useful comment btw)
+target_compile_definitions(Unofficial-Discord-Client PUBLIC USE_STANDALONE_ASIO)
 
-# Add an executable with the above sources
-add_executable(Unofficial-Discord-Client 
-  ${CPP_SOURCES}
-  ${C_SOURCES}
-  ${C_HEADERS}
-  ${CPP_HEADERS}
-)
+## Add libcrypto
+#find_package(libcrypto REQUIRED)
+#include_directories(${LIBCRYPTO_INCLUDE_DIR})
+#target_link_libraries(Unofficial-Discord-Client ${LIBCRYPTO_LIBRARIES})
