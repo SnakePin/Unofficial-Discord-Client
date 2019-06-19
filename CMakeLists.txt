@@ -6,9 +6,9 @@ cmake_minimum_required(VERSION 3.5)
 # Set the project name
 project (Unofficial-Discord-Client)
 
-# Set the directories that should be included in the build command for this target
-# when running g++ these will be included as -I/directory/path/
-target_include_directories(Unofficial-Discord-Client PRIVATE ${PROJECT_SOURCE_DIR}/include)
+add_subdirectory(cpr)
+include_directories(${CPR_INCLUDE_DIRS})
+target_link_libraries(Unofficial-Discord-Client ${CPR_LIBRARIES})
 
 # Add all cpp/c files
 file(GLOB_RECURSE C_SOURCES "src/*.c")
