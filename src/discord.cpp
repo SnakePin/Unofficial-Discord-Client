@@ -41,9 +41,9 @@ void Client::SendHeartbeatAndResetTimer() {
 	if(heartbeatTimer == nullptr) {
 		return;
 	}
-	cout << "Heartbeat!";
+	std::cout << "Heartbeat!";
 	
-	heartbeatTimer.async_wait(&SendHeartbeatAndResetTimer);
+	heartbeatTimer->async_wait(std::bind(&Client::SendHeartbeatAndResetTimer, this));
 	ioService.run();
 }
 
@@ -64,8 +64,8 @@ void Client::run() {
 			int heartbeat_interval = eventData["heartbeat_interval"].GetInt();
 
 			// -5 to counter heartbeat timeouts caused by network delay
-			heartbeatTimer = new boost::asio::deadline_timer(ioService, boost::posix_time::seconds(heartbeat_interval - 5));
-			heartbeatTimer.async_wait(&SendHeartbeatAndResetTimer);
+			heartbeatTimer = new asio::deadline_timer(ioService, boost::posix_time::milliseconds(5000));
+			heartbeatTimer->async_wait(std::bind(&Client::SendHeartbeatAndResetTimer, this));
 			ioService.run();
 
 			std::cout << "Received HELLO (opcode 10) packet. Heartbeat interval: " << heartbeat_interval << std::endl;
@@ -92,7 +92,7 @@ void Client::run() {
 		// connection->send(out_message);
 	};
 
-	websocket.on_close = [](shared_ptr<WssClient::Connection> /*connection*/, int status, const string & /*reason*/) {
+	websocket.on_close = [this](shared_ptr<WssClient::Connection> /*connection*/, int status, const string & /*reason*/) {
 		cout << "Client: Closed connection with status code " << status << endl;
 
 		delete heartbeatTimer;

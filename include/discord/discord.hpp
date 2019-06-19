@@ -33,7 +33,7 @@ namespace Discord {
 		inline void addListener(Listener *listener) { listeners.push_back(listener); }
 	private:
 		void SendHeartbeatAndResetTimer();
-		boost::asio::io_service ioService;
-		boost::asio::deadline_timer* heartbeatTimer = nullptr;
+		asio::io_service ioService;
+		asio::deadline_timer* heartbeatTimer = nullptr;
 	};
 }
