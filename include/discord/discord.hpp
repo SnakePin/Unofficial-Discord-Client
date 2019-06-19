@@ -34,6 +34,6 @@ namespace Discord {
 	private:
 		void SendHeartbeatAndResetTimer();
 		asio::io_service ioService;
-		asio::deadline_timer* heartbeatTimer = nullptr;
+		asio::steady_timer heartbeatTimer = asio::steady_timer(ioService);
 	};
 }

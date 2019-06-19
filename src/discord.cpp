@@ -37,14 +37,13 @@ std::string Client::generate_identify_packet() {
 	return std::string(buffer.GetString());
 }
 
-void Client::SendHeartbeatAndResetTimer() {
-	if(heartbeatTimer == nullptr) {
-		return;
-	}
-	std::cout << "Heartbeat!";
-	
-	heartbeatTimer->async_wait(std::bind(&Client::SendHeartbeatAndResetTimer, this));
-	ioService.run();
+void Client::SendHeartbeatAndResetTimer(const std::error_code& error)
+{
+  std::cout << "Called \n";
+  if(!error){
+	   std::cout << "finished \n";
+	   heartbeatTimer.async_wait(std::bind(&Client::SendHeartbeatAndResetTimer, this));
+  }
 }
 
 void Client::run() {
@@ -63,10 +62,8 @@ void Client::run() {
 			rapidjson::Value eventData = document["d"].GetObject();
 			int heartbeat_interval = eventData["heartbeat_interval"].GetInt();
 
-			// -5 to counter heartbeat timeouts caused by network delay
-			heartbeatTimer = new asio::deadline_timer(ioService, boost::posix_time::milliseconds(5000));
-			heartbeatTimer->async_wait(std::bind(&Client::SendHeartbeatAndResetTimer, this));
-			ioService.run();
+			heartbeatTimer.expires_from_now(std::chrono::milliseconds(2000));
+			heartbeatTimer.async_wait(std::bind(&Client::SendHeartbeatAndResetTimer, this));
 
 			std::cout << "Received HELLO (opcode 10) packet. Heartbeat interval: " << heartbeat_interval << std::endl;
 			
@@ -76,6 +73,7 @@ void Client::run() {
 			
 			// TODO respond to heartbeats (opcode 11)
 			// TODO send heartbeat every heartbeat_interval milliseconds
+			
 		}
 		
 		// cout << "Client: Sending close connection" << endl;
@@ -94,9 +92,7 @@ void Client::run() {
 
 	websocket.on_close = [this](shared_ptr<WssClient::Connection> /*connection*/, int status, const string & /*reason*/) {
 		cout << "Client: Closed connection with status code " << status << endl;
-
-		delete heartbeatTimer;
-		heartbeatTimer = nullptr;
+		heartbeatTimer.cancel();
 	};
 
 	// See http://www.boost.org/doc/libs/1_55_0/doc/html/boost_asio/reference.html, Error Codes for error code meanings
