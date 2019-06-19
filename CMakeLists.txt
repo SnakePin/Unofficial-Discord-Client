@@ -17,7 +17,7 @@ file(GLOB_RECURSE SOURCES
 # Add an executable with the above sources
 add_executable(Unofficial-Discord-Client ${SOURCES})
 
-target_include_directories(lib PUBLIC "${ROOT_SOURCE_DIR}/lib/inc")
+target_include_directories(Unofficial-Discord-Client PUBLIC "${ROOT_SOURCE_DIR}/include")
 
 # Add CPR
 add_subdirectory(cpr)
