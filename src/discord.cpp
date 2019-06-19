@@ -17,8 +17,8 @@ void Client::run() {
 	websocket.on_message = [](shared_ptr<WssClient::Connection> connection, shared_ptr<WssClient::InMessage> in_message) {
 		cout << "Client: Message received: \"" << in_message->string() << "\"" << endl;
 
-		cout << "Client: Sending close connection" << endl;
-		connection->send_close(1000);
+		// cout << "Client: Sending close connection" << endl;
+		// connection->send_close(1000);
 	};
 
 	websocket.on_open = [](shared_ptr<WssClient::Connection> connection) {

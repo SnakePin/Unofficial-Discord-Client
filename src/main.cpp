@@ -1,7 +1,6 @@
 #include <iostream>
 
 #include "discord/discord.hpp"
-#include "discord/message.hpp"
 
 class MyListener : public Discord::Listener {
 public:
