@@ -27,7 +27,7 @@ namespace Discord {
 		
 		void run();
 		
-		
+		std::string generate_identify_packet();
 		
 		inline void addListener(Listener *listener) { listeners.push_back(listener); }
 	};

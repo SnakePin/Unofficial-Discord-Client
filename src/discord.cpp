@@ -3,6 +3,9 @@
 #include "sws/client_wss.hpp"
 
 #include <rapidjson/document.h>
+#include <rapidjson/writer.h>
+#include <rapidjson/pointer.h>
+#include <rapidjson/stringbuffer.h>
 
 #include <memory>
 
@@ -13,10 +16,31 @@ Client::Client(std::string token, bool bot) : token(token), bot(bot),
 	
 }
 
+std::string Client::generate_identify_packet() {
+	rapidjson::Document document;
+	
+	rapidjson::Pointer("/op").Set(document, 2);
+	rapidjson::Pointer("/d/token").Set(document, this->token.c_str());
+	
+	rapidjson::Pointer("/d/properties/$os").Set(document, "Linux");
+	rapidjson::Pointer("/d/properties/$browser").Set(document, "discord.py");
+	rapidjson::Pointer("/d/properties/$device").Set(document, "discord.py");
+	rapidjson::Pointer("/d/properties/$referrer").Set(document, "");
+	rapidjson::Pointer("/d/properties/$referring_domain").Set(document, "");
+	
+	rapidjson::Pointer("/d/presence/status").Set(document, "available");
+	
+	rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+    document.Accept(writer);
+	
+	return std::string(buffer.GetString());
+}
+
 void Client::run() {
 	using namespace std;
 	
-	websocket.on_message = [](shared_ptr<WssClient::Connection> connection, shared_ptr<WssClient::InMessage> in_message) {
+	websocket.on_message = [this](shared_ptr<WssClient::Connection> connection, shared_ptr<WssClient::InMessage> in_message) {
 		std::string response = in_message->string(); // string() can only be called once! see sws/client_ws.hpp for why
 		cout << "Client: Message received: \"" << response << "\"" << endl;
 		
@@ -24,20 +48,22 @@ void Client::run() {
 		rapidjson::Document document;
 		document.Parse(response.c_str());
 		int opcode = document["op"].GetInt();
-		rapidjson::Value eventData = document["d"].GetObject();
-		
 		
 		if(opcode == 10) { // HELLO
+			rapidjson::Value eventData = document["d"].GetObject();
 			int heartbeat_interval = eventData["heartbeat_interval"].GetInt();
 			std::cout << "Received HELLO (opcode 10) packet. Heartbeat interval: " << heartbeat_interval << std::endl;
 			
-			// TODO generate and send an IDENTIFY response
+			std::string identify_packet = generate_identify_packet();
+			
+			connection->send(identify_packet);
+			
 			// TODO respond to heartbeats (opcode 11)
 			// TODO send heartbeat every heartbeat_interval milliseconds
 		}
 		
-		cout << "Client: Sending close connection" << endl;
-		connection->send_close(1000);
+		// cout << "Client: Sending close connection" << endl;
+		// connection->send_close(1000);
 	};
 
 	websocket.on_open = [](shared_ptr<WssClient::Connection> connection) {
