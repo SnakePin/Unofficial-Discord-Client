@@ -35,7 +35,7 @@ public:
 		}
 		else if(command.rfind("sendmsg", 0) == 0) {
 			Discord::Message messageToSend;
-
+			
 			messageToSend.content = command.substr(command.find(' '));
 
 			//This channel ID is channel ID of test discord guild's general channel's ID
@@ -51,7 +51,7 @@ public:
 		while(running) {
 			std::string command;
 			std::cout << ">> ";
-			std::cin >> command;
+			std::getline(std::cin, command);
 
 			processCommand(command);
 		}
