@@ -4,8 +4,10 @@
 #include <vector>
 #include <asio.hpp>
 
-#include "discord/message.hpp"
-#include "sws/client_wss.hpp"
+#include <discord/message.hpp>
+#include <sws/client_wss.hpp>
+
+#include <rapidjson/document.h>
 
 namespace Discord {
 	
@@ -36,6 +38,9 @@ namespace Discord {
 		std::shared_ptr<WssClient::Connection> connection;
 		asio::steady_timer *heartbeatTimer;
 		unsigned int heartbeatSequenceNumber;
+
+		// Gateway Packet Processing
+		void ProcessHello(rapidjson::Document &document);
 
 		void SendHeartbeatAndResetTimer(const asio::error_code& error);
 		std::string GenerateIdentifyPacket();

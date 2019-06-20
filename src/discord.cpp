@@ -54,48 +54,47 @@ void Client::SendHeartbeatAndResetTimer(const asio::error_code& error) {
 	}
 }
 
-void Client::Run() {
-	using namespace std;
+void Client::ProcessHello(rapidjson::Document &document) {
+	rapidjson::Value eventData = document["d"].GetObject();
+	heartbeatInterval = eventData["heartbeat_interval"].GetInt();
 
-	websocket.on_message = [this](shared_ptr<WssClient::Connection> connection, shared_ptr<WssClient::InMessage> in_message) {
+	heartbeatTimer = new asio::steady_timer(*websocket.io_service);
+	heartbeatTimer->expires_from_now(std::chrono::milliseconds(heartbeatInterval - 2000));
+	heartbeatTimer->async_wait(std::bind(&Client::SendHeartbeatAndResetTimer, this, std::placeholders::_1));
+
+	std::cout << "Received HELLO (opcode 10) packet. Heartbeat interval: " << heartbeatInterval << std::endl;
+	
+	std::string identify_packet = GenerateIdentifyPacket();
+	
+	connection->send(identify_packet);
+}
+
+void Client::Run() {
+	websocket.on_message = [this](std::shared_ptr<WssClient::Connection> connection, std::shared_ptr<WssClient::InMessage> in_message) {
 		std::string response = in_message->string(); // string() can only be called once! see sws/client_ws.hpp for why
-		cout << "Client: Message received: \"" << response << "\"" << endl;
-		
+		std::cout << "Client: Message received: \"" << response << "\"" << std::endl;
 	
 		rapidjson::Document document;
 		document.Parse(response.c_str());
 		int opcode = document["op"].GetInt();
 		
 		if(opcode == 10) { // HELLO
-			rapidjson::Value eventData = document["d"].GetObject();
-			heartbeatInterval = eventData["heartbeat_interval"].GetInt();
-
-			heartbeatTimer = new asio::steady_timer(*websocket.io_service);
-			heartbeatTimer->expires_from_now(std::chrono::milliseconds(heartbeatInterval - 2000));
-			heartbeatTimer->async_wait(std::bind(&Client::SendHeartbeatAndResetTimer, this, std::placeholders::_1));
-
-			std::cout << "Received HELLO (opcode 10) packet. Heartbeat interval: " << heartbeatInterval << std::endl;
-			
-			std::string identify_packet = GenerateIdentifyPacket();
-			
-			connection->send(identify_packet);
-			
+			ProcessHello(document);
 		}
-		
 	};
 
-	websocket.on_open = [this](shared_ptr<WssClient::Connection> connection) {
-		cout << "Client: Opened connection to " << connection->remote_endpoint_address() << endl;
+	websocket.on_open = [this](std::shared_ptr<WssClient::Connection> connection) {
+		std::cout << "Client: Opened connection to " << connection->remote_endpoint_address() << std::endl;
 		this->connection = connection;
 	};
 
-	websocket.on_close = [this](shared_ptr<WssClient::Connection> /*connection*/, int status, const string & /*reason*/) {
-		cout << "Client: Closed connection with status code " << status << endl;
+	websocket.on_close = [this](std::shared_ptr<WssClient::Connection> /*connection*/, int status, const std::string & /*reason*/) {
+		std::cout << "Client: Closed connection with status code " << status << std::endl;
 		heartbeatTimer->cancel();
 	};
 
-	websocket.on_error = [](shared_ptr<WssClient::Connection> /*connection*/, const SimpleWeb::error_code &ec) {
-		cout << "Client: Error: " << ec << ", error message: " << ec.message() << endl;
+	websocket.on_error = [](std::shared_ptr<WssClient::Connection> /*connection*/, const SimpleWeb::error_code &ec) {
+		std::cout << "Client: Error: " << ec << ", error message: " << ec.message() << std::endl;
 	};
 	
 	websocket.start();
