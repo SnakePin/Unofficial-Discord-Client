@@ -31,7 +31,7 @@ void Client::HTTP_API_CLASS::SendMessage(std::string channelID, Discord::Message
     }
 
     rapidjson::Document JsonDocument;
-    rapidjson::Pointer("/project").Set(JsonDocument, messageToSend.content.c_str());
+    rapidjson::Pointer("/content").Set(JsonDocument, messageToSend.content.c_str());
     rapidjson::Pointer("/tts").Set(JsonDocument, false);
 
     rapidjson::StringBuffer _stringBuffer;
@@ -41,7 +41,8 @@ void Client::HTTP_API_CLASS::SendMessage(std::string channelID, Discord::Message
     cpr::Response response = cpr::Post(cpr::Url{"https://discordapp.com/api/v6/channels/"+channelID+"/messages"},
                                        cpr::Body{_stringBuffer.GetString()},
                                        cpr::Header{{"Content-Type", "application/json"}},
-                                       cpr::Header{{"Authorization", authHeaderValue}});
+                                       cpr::Header{{"Authorization", authHeaderValue}},
+                                       cpr::VerifySsl{false});
     //response.status_code;                  // 200
     //response.header["content-type"];       // application/json; charset=utf-8
     //response.text;  

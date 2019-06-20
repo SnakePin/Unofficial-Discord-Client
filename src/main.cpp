@@ -35,11 +35,12 @@ public:
 		}
 		else if(command.rfind("sendmsg", 0) == 0) {
 			Discord::Message messageToSend;
-			
+
 			messageToSend.content = command.substr(command.find(' '));
 
 			//This channel ID is channel ID of test discord guild's general channel's ID
 			client->httpAPI.SendMessage("590695217028661250", messageToSend);
+			return;
 		}
 
 		std::cout << "Unknown command: " << command << "\n";
