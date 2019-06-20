@@ -46,9 +46,12 @@ namespace Discord {
 		std::shared_ptr<WssClient::Connection> connection;
 		asio::steady_timer *heartbeatTimer;
 		unsigned int heartbeatSequenceNumber;
+		uint64_t sequenceNumber;
 
 		// Gateway Packet Processing
 		void ProcessHello(rapidjson::Document &document);
+		void ProcessReady(rapidjson::Document &document);
+		void ProcessGuildCreate(rapidjson::Document &document);
 
 		void SendHeartbeatAndResetTimer(const asio::error_code& error);
 		std::string GenerateIdentifyPacket();
