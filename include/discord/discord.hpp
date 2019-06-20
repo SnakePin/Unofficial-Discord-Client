@@ -14,28 +14,31 @@ namespace Discord {
 	class Listener {
 		virtual void on_message_receive(Discord::Message message) = 0;
 	};
+
 	
 	class Client {
 	public:
 		std::vector<Listener*> listeners;
-		int heartbeat_interval;
 		
 		std::string token;
 		bool bot;
-		
+		int heartbeatInterval;
 		WssClient websocket;
 				
 		Client(std::string token, bool bot = true);
 		
-		void run();
+		void Run();
 		
-		std::string generate_identify_packet();
-		
-		inline void addListener(Listener *listener) { listeners.push_back(listener); }
+		inline void AddListener(Listener *listener) { listeners.push_back(listener); }
+
 	private:
-		void SendHeartbeatAndResetTimer(const asio::error_code& error);
-		asio::steady_timer *heartbeatTimer;
-		
+	
 		std::shared_ptr<WssClient::Connection> connection;
+		asio::steady_timer *heartbeatTimer;
+		unsigned int heartbeatSequenceNumber;
+
+		void SendHeartbeatAndResetTimer(const asio::error_code& error);
+		std::string GenerateIdentifyPacket();
+
 	};
 }
