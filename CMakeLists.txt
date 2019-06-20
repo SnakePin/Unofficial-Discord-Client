@@ -6,6 +6,11 @@ cmake_minimum_required(VERSION 3.5)
 # Set the project name
 project (Unofficial-Discord-Client)
 
+# This needs to be here, before any add_executable calls and after project
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/output/lib)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/output/lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/output/bin)
+
 # Add all files
 file(GLOB_RECURSE SOURCES
   "include/*.h"
@@ -43,3 +48,4 @@ target_compile_definitions(Unofficial-Discord-Client PUBLIC USE_STANDALONE_ASIO)
 #find_package(libcrypto REQUIRED)
 #include_directories(${LIBCRYPTO_INCLUDE_DIR})
 #target_link_libraries(Unofficial-Discord-Client ${LIBCRYPTO_LIBRARIES})
+
