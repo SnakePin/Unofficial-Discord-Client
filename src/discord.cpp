@@ -12,7 +12,8 @@
 using namespace Discord;
 
 Client::Client(std::string token, bool bot) : token(token), bot(bot),
-    websocket("gateway.discord.gg/?v=6&encoding=json", false) {
+    websocket("gateway.discord.gg/?v=6&encoding=json", false),
+    heartbeatTimer(nullptr) {
 	
 }
 
@@ -37,13 +38,13 @@ std::string Client::generate_identify_packet() {
 	return std::string(buffer.GetString());
 }
 
-void Client::SendHeartbeatAndResetTimer(const std::error_code& error)
+void Client::SendHeartbeatAndResetTimer(const asio::error_code& error)
 {
   std::cout << "Called \n";
   if(!error){
 	   std::cout << "finished \n";
-	   heartbeatTimer.expires_from_now(std::chrono::milliseconds(2000));
-	   heartbeatTimer.async_wait(std::bind(&Client::SendHeartbeatAndResetTimer, this));
+	   heartbeatTimer->expires_from_now(std::chrono::milliseconds(2000));
+	   heartbeatTimer->async_wait(std::bind(&Client::SendHeartbeatAndResetTimer, this, std::placeholders::_1));
   }
 }
 
@@ -63,14 +64,15 @@ void Client::run() {
 			rapidjson::Value eventData = document["d"].GetObject();
 			int heartbeat_interval = eventData["heartbeat_interval"].GetInt();
 
-			heartbeatTimer.expires_from_now(std::chrono::milliseconds(2000));
-			heartbeatTimer.async_wait(std::bind(&Client::SendHeartbeatAndResetTimer, this));
+			heartbeatTimer = new asio::steady_timer(*websocket.io_service);
+			heartbeatTimer->expires_from_now(std::chrono::milliseconds(2000));
+			heartbeatTimer->async_wait(std::bind(&Client::SendHeartbeatAndResetTimer, this, std::placeholders::_1));
 
 			std::cout << "Received HELLO (opcode 10) packet. Heartbeat interval: " << heartbeat_interval << std::endl;
 			
 			std::string identify_packet = generate_identify_packet();
 			
-			connection->send(identify_packet);
+			// connection->send(identify_packet);
 			
 			// TODO respond to heartbeats (opcode 11)
 			// TODO send heartbeat every heartbeat_interval milliseconds
@@ -93,7 +95,7 @@ void Client::run() {
 
 	websocket.on_close = [this](shared_ptr<WssClient::Connection> /*connection*/, int status, const string & /*reason*/) {
 		cout << "Client: Closed connection with status code " << status << endl;
-		heartbeatTimer.cancel();
+		heartbeatTimer->cancel();
 	};
 
 	// See http://www.boost.org/doc/libs/1_55_0/doc/html/boost_asio/reference.html, Error Codes for error code meanings

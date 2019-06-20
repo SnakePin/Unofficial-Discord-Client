@@ -32,8 +32,7 @@ namespace Discord {
 		
 		inline void addListener(Listener *listener) { listeners.push_back(listener); }
 	private:
-		void SendHeartbeatAndResetTimer(const std::error_code& error);
-		asio::io_service ioService;
-		asio::steady_timer heartbeatTimer = asio::steady_timer(ioService);
+		void SendHeartbeatAndResetTimer(const asio::error_code& error);
+		asio::steady_timer *heartbeatTimer;
 	};
 }
