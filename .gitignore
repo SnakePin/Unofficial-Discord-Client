@@ -11,3 +11,5 @@ CTestTestfile.cmake
 _deps
 src/*.o
 build/*
+output/*
+.vscode/*
