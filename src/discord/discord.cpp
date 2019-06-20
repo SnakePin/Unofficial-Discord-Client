@@ -20,7 +20,10 @@ Client::Client(std::string token, AuthTokenType tokenType)
     
 	heartbeatTimer(nullptr),
 	heartbeatSequenceNumber(0),
-	sequenceNumber(0) {
+	sequenceNumber(0),
+	// When we pass *this to HTTP_API_CLASS's constructor it will call the Client::HTTP_API_CLASS::HTTP_API_CLASS(const Client& clientObj)
+	// This means HTTP_API_CLASS will have reference to the outer class to allow it to access things like token
+	httpAPI(*this) {
 	
 }
 

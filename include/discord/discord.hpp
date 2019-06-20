@@ -32,16 +32,18 @@ namespace Discord {
 		
 		inline void AddListener(Listener *listener) { listeners.push_back(listener); }
 
-		class HTTP_API
+		class HTTP_API_CLASS
 		{
 		public:
-			HTTP_API(const Client& clientObj);
-			HTTP_API(const AuthToken _token);
+			HTTP_API_CLASS(const Client& clientObj);
+			HTTP_API_CLASS(const AuthToken _token);
 
-		private:
+			// TODO: Use "Discord::Channel channel" instead of "std::string channelID" here when Discord::Channel is implemented.
+			void SendMessage(std::string channelID, Discord::Message messageToSend);
+
 			const AuthToken token;
 		};
-
+		HTTP_API_CLASS httpAPI;
 	private:
 	
 		std::shared_ptr<WssClient::Connection> connection;

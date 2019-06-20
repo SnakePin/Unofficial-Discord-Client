@@ -8,7 +8,7 @@ class MyListener : public Discord::Listener {
 public:
 
 	void on_message_receive(Discord::Message message) {
-		std::cout << "Received message: " << message.getContent() << std::endl;
+		std::cout << "Received message: " << message.content << std::endl;
 	}
 	
 };
@@ -32,6 +32,14 @@ public:
 			std::cout << "Websocket stopped.\n";
 			running = false;
 			return;
+		}
+		else if(command.rfind("sendmsg", 0) == 0) {
+			Discord::Message messageToSend;
+
+			messageToSend.content = command.substr(command.find(' '));
+
+			//This channel ID is channel ID of test discord guild's general channel's ID
+			client->httpAPI.SendMessage("590695217028661250", messageToSend);
 		}
 
 		std::cout << "Unknown command: " << command << "\n";
