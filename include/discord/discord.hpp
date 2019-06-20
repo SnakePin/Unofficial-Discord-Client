@@ -18,6 +18,7 @@ namespace Discord {
 	class Client {
 	public:
 		std::vector<Listener*> listeners;
+		int heartbeat_interval;
 		
 		std::string token;
 		bool bot;
@@ -34,5 +35,7 @@ namespace Discord {
 	private:
 		void SendHeartbeatAndResetTimer(const asio::error_code& error);
 		asio::steady_timer *heartbeatTimer;
+		
+		std::shared_ptr<WssClient::Connection> connection;
 	};
 }

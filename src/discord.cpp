@@ -15,6 +15,7 @@ Client::Client(std::string token, bool bot) : token(token), bot(bot),
     websocket("gateway.discord.gg/?v=6&encoding=json", false),
     heartbeatTimer(nullptr) {
 	
+	heartbeat_interval = 40000;
 }
 
 std::string Client::generate_identify_packet() {
@@ -40,11 +41,16 @@ std::string Client::generate_identify_packet() {
 
 void Client::SendHeartbeatAndResetTimer(const asio::error_code& error)
 {
+	static int d = 0;
   std::cout << "Called \n";
   if(!error){
-	   std::cout << "finished \n";
-	   heartbeatTimer->expires_from_now(std::chrono::milliseconds(2000));
+	   std::string heartbeat_packet = "{\"op\":1,\"d\":" + std::to_string(d++) + "}";
+			
+		connection->send(heartbeat_packet);
+		std::cout << "sending: " << heartbeat_packet << "\n";
+	   heartbeatTimer->expires_from_now(std::chrono::milliseconds(heartbeat_interval - 2000));
 	   heartbeatTimer->async_wait(std::bind(&Client::SendHeartbeatAndResetTimer, this, std::placeholders::_1));
+	   std::cout << "finished \n";
   }
 }
 
@@ -62,17 +68,17 @@ void Client::run() {
 		
 		if(opcode == 10) { // HELLO
 			rapidjson::Value eventData = document["d"].GetObject();
-			int heartbeat_interval = eventData["heartbeat_interval"].GetInt();
+			heartbeat_interval = eventData["heartbeat_interval"].GetInt();
 
 			heartbeatTimer = new asio::steady_timer(*websocket.io_service);
-			heartbeatTimer->expires_from_now(std::chrono::milliseconds(2000));
+			heartbeatTimer->expires_from_now(std::chrono::milliseconds(heartbeat_interval - 2000));
 			heartbeatTimer->async_wait(std::bind(&Client::SendHeartbeatAndResetTimer, this, std::placeholders::_1));
 
 			std::cout << "Received HELLO (opcode 10) packet. Heartbeat interval: " << heartbeat_interval << std::endl;
 			
 			std::string identify_packet = generate_identify_packet();
 			
-			// connection->send(identify_packet);
+			connection->send(identify_packet);
 			
 			// TODO respond to heartbeats (opcode 11)
 			// TODO send heartbeat every heartbeat_interval milliseconds
@@ -83,10 +89,12 @@ void Client::run() {
 		// connection->send_close(1000);
 	};
 
-	websocket.on_open = [](shared_ptr<WssClient::Connection> connection) {
+	websocket.on_open = [this](shared_ptr<WssClient::Connection> connection) {
 		cout << "Client: Opened connection" << endl;
 
 		string out_message("Hello");
+		
+		this->connection = connection;
 
 		// cout << "Client: Sending message: \"" << out_message << "\"" << endl;
 
