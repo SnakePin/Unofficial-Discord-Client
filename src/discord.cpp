@@ -8,6 +8,7 @@
 #include <rapidjson/stringbuffer.h>
 
 #include <memory>
+#include <algorithm>
 
 using namespace Discord;
 
@@ -17,7 +18,8 @@ Client::Client(std::string token, bool bot)
     websocket("gateway.discord.gg/?v=6&encoding=json", false),
     
 	heartbeatTimer(nullptr),
-	heartbeatSequenceNumber(0) {
+	heartbeatSequenceNumber(0),
+	sequenceNumber(0) {
 	
 }
 
@@ -69,6 +71,14 @@ void Client::ProcessHello(rapidjson::Document &document) {
 	connection->send(identify_packet);
 }
 
+void Client::ProcessReady(rapidjson::Document &document) {
+
+}
+
+void Client::ProcessGuildCreate(rapidjson::Document &document) {
+
+}
+
 void Client::Run() {
 	websocket.on_message = [this](std::shared_ptr<WssClient::Connection> connection, std::shared_ptr<WssClient::InMessage> in_message) {
 		std::string response = in_message->string(); // string() can only be called once! see sws/client_ws.hpp for why
@@ -80,6 +90,14 @@ void Client::Run() {
 		
 		if(opcode == 10) { // HELLO
 			ProcessHello(document);
+		}else if(opcode == 0) { // DISPATCH
+			std::string eventName = document["t"].GetString();
+
+			sequenceNumber = std::max(sequenceNumber, document["s"].GetUint64());
+
+			if(eventName == "GUILD_CREATE") {
+				ProcessGuildCreate(document);
+			}
 		}
 	};
 
