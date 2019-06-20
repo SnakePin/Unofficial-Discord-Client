@@ -1,4 +1,5 @@
 #include "discord/discord.hpp"
+#include <discord/token.hpp>
 
 #include "sws/client_wss.hpp"
 
@@ -11,8 +12,8 @@
 
 using namespace Discord;
 
-Client::Client(std::string token, bool bot)
-    : token(token), bot(bot),
+Client::Client(std::string token, AuthTokenType tokenType)
+    : token(token, tokenType),
 	heartbeatInterval(40000),
     websocket("gateway.discord.gg/?v=6&encoding=json", false),
     
@@ -25,7 +26,7 @@ std::string Client::GenerateIdentifyPacket() {
 	rapidjson::Document document;
 	
 	rapidjson::Pointer("/op").Set(document, 2);
-	rapidjson::Pointer("/d/token").Set(document, this->token.c_str());
+	rapidjson::Pointer("/d/token").Set(document, this->token.token.c_str());
 	
 	rapidjson::Pointer("/d/properties/$os").Set(document, "Linux");
 	rapidjson::Pointer("/d/properties/$browser").Set(document, "discord.py");
