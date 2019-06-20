@@ -3,6 +3,8 @@
 #include <discord/snowflake.hpp>
 #include <discord/emoji.hpp>
 #include <discord/role.hpp>
+#include <discord/channel.hpp>
+#include <discord/Member.hpp>
 
 #include <vector>
 #include <string>
@@ -53,8 +55,8 @@ namespace Discord {
 
 		// voicestates[]
 
-		// members[]
-		// channels[]
+		std::vector<Member> members;
+		std::vector<Channel> channels;
 
 		int32_t maxPresences;
 		int32_t maxMembers;
