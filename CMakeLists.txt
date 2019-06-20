@@ -3,6 +3,18 @@
 # $ cmake --version
 cmake_minimum_required(VERSION 3.5)
 
+# Change this to appropriate configuration (Release or Debug)
+set(CMAKE_BUILD_TYPE Debug)
+
+# If build type is not specified then fall back to Release config
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
+
+set(CMAKE_CXX_FLAGS "-Wall -Wextra")
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+
 # Set the project name
 project (Unofficial-Discord-Client)
 
