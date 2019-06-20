@@ -36,9 +36,10 @@ namespace Discord {
 		{
 		public:
 			HTTP_API(const Client& clientObj);
-			
+			HTTP_API(const AuthToken _token);
+
 		private:
-			const AuthToken& tokenRef;
+			const AuthToken token;
 		};
 
 	private:
