@@ -2,6 +2,12 @@
 
 #include <discord/snowflake.hpp>
 
+#include <vector>
+#include <string>
+
+#include <rapidjson/document.h>
+#include <rapidjson/pointer.h>
+
 namespace Discord {
 
 	struct Role {
@@ -17,6 +23,7 @@ namespace Discord {
 		int32_t permissions;
 		bool managed;
 		bool mentionable;
-	};
 
+		static Role LoadFrom(rapidjson::Document &doc, std::string pointer);
+	};
 }

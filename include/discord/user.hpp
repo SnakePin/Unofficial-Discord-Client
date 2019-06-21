@@ -2,6 +2,8 @@
 
 #include <discord/snowflake.hpp>
 
+#include <rapidjson/document.h>
+
 namespace Discord {
 
 	struct User {
@@ -17,6 +19,8 @@ namespace Discord {
 		std::string locale;
 		uint32_t flags;
 		int32_t premiumType;
+
+		static User LoadFrom(rapidjson::Document &doc, std::string pointer);
 	};
 
 }

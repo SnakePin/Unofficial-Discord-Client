@@ -2,6 +2,8 @@
 
 #include <discord/snowflake.hpp>
 
+#include <rapidjson/document.h>
+
 namespace Discord {
 	
 	struct Channel {
@@ -30,6 +32,8 @@ namespace Discord {
 		// User[] recipients
 
 		std::string lastPinTimestamp;
+
+		static Channel LoadFrom(rapidjson::Document &doc, std::string pointer);
 	};
 
 }

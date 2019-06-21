@@ -7,11 +7,16 @@
 namespace Discord {
 
 	struct Snowflake {
-		const std::string original;
+		std::string original;
 		uint64_t value;
 
 		Snowflake() {
 
+		}
+
+		void operator=(const Snowflake &other) {
+			original = other.original;
+			value = other.value;
 		}
 
 		Snowflake(std::string s) : original(s), value(0) {

@@ -3,6 +3,8 @@
 #include <discord/snowflake.hpp>
 #include <discord/user.hpp>
 
+#include <rapidjson/document.h>
+
 #include <vector>
 
 namespace Discord {
@@ -18,6 +20,8 @@ namespace Discord {
 
 		bool deaf;
 		bool mute;
+
+		static Member LoadFrom(rapidjson::Document &doc, std::string pointer);
 	};
 
 }
