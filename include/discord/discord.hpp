@@ -15,15 +15,8 @@ namespace Discord {
 	
 	using WssClient = SimpleWeb::SocketClient<SimpleWeb::WSS>;
 	
-	class Listener {
-		virtual void on_message_receive(Discord::Message message) = 0;
-	};
-	
 	class Client {
 	public:
-		std::vector<Listener*> listeners;
-		std::vector<Guild> guilds;
-
 		AuthToken token;
 		int heartbeatInterval;
 		WssClient websocket;
@@ -32,7 +25,7 @@ namespace Discord {
 		
 		void Run();
 		
-		inline void AddListener(Listener *listener) { listeners.push_back(listener); }
+		virtual void OnGuildCreate(Guild guild) = 0;
 
 		class HTTP_API_CLASS
 		{

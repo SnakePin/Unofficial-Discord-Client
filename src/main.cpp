@@ -5,23 +5,29 @@
 #include <discord/guild.hpp>
 
 
-class MyListener : public Discord::Listener {
+
+class MyClient : public Discord::Client {
 public:
 
-	void on_message_receive(Discord::Message message) {
-		std::cout << "Received message: " << message.content << std::endl;
+	std::vector<Discord::Guild> guilds;
+
+	MyClient(std::string token, Discord::AuthTokenType tokenType) : Client(token, tokenType) {
+
 	}
-	
+
+	void OnGuildCreate(Discord::Guild g) {
+		guilds.push_back(g);
+	}
 };
 
 class ConsoleTest {
 private:
 
-	std::shared_ptr<Discord::Client> client;
+	std::shared_ptr<MyClient> client;
 	bool running;
 
 public:
-	ConsoleTest(std::shared_ptr<Discord::Client> client)
+	ConsoleTest(std::shared_ptr<MyClient> client)
 	    : client(client), running(false) {
 
 	}
@@ -73,10 +79,7 @@ public:
 
 int main(int argc, char **argv) {
 	// $ ./Unofficial-Discord-Client [discord token]
-	std::shared_ptr<Discord::Client> client = std::make_shared<Discord::Client>( (argc == 2)? argv[1] : "token", Discord::AuthTokenType::BOT);
-	MyListener listener;
-	
-	client->AddListener(&listener);
+	std::shared_ptr<MyClient> client = std::make_shared<MyClient>( (argc == 2)? argv[1] : "token", Discord::AuthTokenType::BOT);
 	
 	ConsoleTest console(client);
 

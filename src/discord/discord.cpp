@@ -80,7 +80,7 @@ void Client::ProcessReady(rapidjson::Document &document) {
 }
 
 void Client::ProcessGuildCreate(rapidjson::Document &document) {
-	guilds.push_back(Guild::LoadFrom(document, "/d"));
+	OnGuildCreate(Guild::LoadFrom(document, "/d"));
 }
 
 void Client::Run() {
