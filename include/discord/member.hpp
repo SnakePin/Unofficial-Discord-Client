@@ -9,7 +9,7 @@
 
 namespace Discord {
 
-	struct Member {
+	struct Member : public ISnowflake {
 		// https://discordapp.com/developers/docs/resources/guild#guild-member-object
 		
 		User user;

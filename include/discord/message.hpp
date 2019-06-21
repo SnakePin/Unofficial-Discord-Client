@@ -29,9 +29,8 @@ application?	message application object	sent with Rich Presence-related chat emb
 
 namespace Discord {
 	
-	struct Message {
+	struct Message : public ISnowflake {
 		// https://discordapp.com/developers/docs/resources/channel#message-object
-		Snowflake id;
 		Snowflake channelID;
 		Snowflake guildID;
 		Snowflake nonce;
