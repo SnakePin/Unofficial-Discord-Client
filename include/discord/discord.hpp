@@ -5,6 +5,7 @@
 #include <asio.hpp>
 
 #include <discord/message.hpp>
+#include <discord/guild.hpp>
 #include <discord/token.hpp>
 #include <sws/client_wss.hpp>
 
@@ -21,11 +22,12 @@ namespace Discord {
 	class Client {
 	public:
 		std::vector<Listener*> listeners;
-		
+		std::vector<Guild> guilds;
+
 		AuthToken token;
 		int heartbeatInterval;
 		WssClient websocket;
-				
+
 		Client(std::string token, AuthTokenType tokenType);
 		
 		void Run();
