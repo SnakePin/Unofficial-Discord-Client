@@ -1,7 +1,8 @@
 #include <iostream>
 #include <thread>
 
-#include "discord/discord.hpp"
+#include <discord/discord.hpp>
+#include <discord/guild.hpp>
 
 
 class MyListener : public Discord::Listener {
@@ -40,6 +41,17 @@ public:
 
 			//This channel ID is channel ID of test discord guild's general channel's ID
 			client->httpAPI.SendMessage("590695217028661250", messageToSend);
+			return;
+		}
+		else if(command == "guilds") {
+			// Loop through all the guilds and print their names
+
+			std::cout << "Found " << client->guilds.size() << " guilds:\n    ";
+			for(Discord::Guild &guild : client->guilds) {
+				std::cout << "\"" << guild.name << "\" ";
+			}
+			std::cout << "\n";
+			
 			return;
 		}
 
