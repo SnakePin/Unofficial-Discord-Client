@@ -38,7 +38,7 @@ int main() {
     std::cout << "Guild Member Count: " << g.memberCount << "\n";
     std::cout << "Guild ID: " << g.id.value << "\n";
     time_t guildCreateTime = g.id.UnixEpoch()/1000;
-    std::cout << "Guild Epoch & ctime: " << g.id.UnixEpoch()/1000 << " " << ctime(&guildCreateTime) << "\n\n";
+    std::cout << "Guild Epoch & ctime: " << g.id.UnixEpoch()/1000 << " " << ctime(&guildCreateTime) << "\n";
 
     std::cout << "Roles:\n";
     for(const Role &role : g.roles) {
@@ -46,14 +46,20 @@ int main() {
         std::cout << "\tRole name: " << role.name << "\n\n";
     }
 
-    std::cout << "\nMembers:\n";
+    std::cout << "Members:\n";
 
     for(const Member &mem : g.members) {
         std::cout << "\tID: " << mem.user.id.value << "\n";
         std::cout << "\tJoined at: " << mem.joinedAt << "\n";
         std::cout << "\tUsername: " << mem.user.username << "\n\n";
     }
-    std::cout << "\n";
+
+    std::cout << "Channels:\n";
+    std::string channelTypes[] = {"Text", "1", "Voice", "3", "Category"};
+    for(const Channel &chan : g.channels) {
+        std::cout << "\tType: " << channelTypes[chan.type] << "\n";
+        std::cout << "\tName: " << chan.name << "\n\n";
+    }
 
 	return 0;
 }
