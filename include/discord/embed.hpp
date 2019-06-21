@@ -4,7 +4,7 @@
 
 namespace Discord {
 	
-	struct Embed : public ISnowflake {
+	struct Embed {
 		// https://discordapp.com/developers/docs/resources/channel#embed-object
 
 		// TODO -- STUB!

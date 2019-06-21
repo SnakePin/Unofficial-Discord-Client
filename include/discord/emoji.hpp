@@ -6,9 +6,10 @@
 
 namespace Discord {
 
-	struct Emoji : public ISnowflake {
+	struct Emoji {
 		// https://discordapp.com/developers/docs/resources/emoji#emoji-object
 		
+		Snowflake id;
 		std::string name;
 
 		// roles[]

@@ -10,9 +10,10 @@
 
 namespace Discord {
 
-	struct Role : public ISnowflake {
+	struct Role {
 		// https://discordapp.com/developers/docs/resources/role#role-object
 		
+		Snowflake id;
 		std::string name;
 
 		uint32_t color;

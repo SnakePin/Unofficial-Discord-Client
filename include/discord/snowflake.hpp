@@ -31,8 +31,4 @@ namespace Discord {
 		}
 	};
 
-	class ISnowflake {
-		public:
-			Snowflake id;
-	};
 }

@@ -6,9 +6,10 @@
 
 namespace Discord {
 	
-	struct Channel : public ISnowflake {
+	struct Channel {
 		// https://discordapp.com/developers/docs/resources/channel#channel-object
 
+		Snowflake id;
 		int32_t type;
 		std::string name;
 		std::string topic;

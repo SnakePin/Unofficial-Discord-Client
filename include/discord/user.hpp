@@ -6,9 +6,10 @@
 
 namespace Discord {
 
-	struct User : public ISnowflake {
+	struct User {
 		// https://discordapp.com/developers/docs/resources/user#user-object
 		
+		Snowflake id;
 		std::string username;
 		std::string discriminator;
 		std::string avatarHash;

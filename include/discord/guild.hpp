@@ -13,9 +13,10 @@
 
 namespace Discord {
 
-	struct Guild : public ISnowflake {
+	struct Guild {
 		// https://discordapp.com/developers/docs/resources/guild#guild-object
 
+		Snowflake id;
 		std::string name;
 		std::string splashHash;
 		std::string iconHash;
