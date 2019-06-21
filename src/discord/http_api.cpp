@@ -16,7 +16,7 @@ Client::HTTP_API_CLASS::HTTP_API_CLASS(const AuthToken _token)
 	
 }
 
-void Client::HTTP_API_CLASS::SendMessage(std::string channelID, Discord::Message messageToSend)
+void Client::HTTP_API_CLASS::SendMessage(std::string channelID, Discord::MessagePacket messageToSend)
 {
     std::string authHeaderValue;
 
@@ -32,7 +32,7 @@ void Client::HTTP_API_CLASS::SendMessage(std::string channelID, Discord::Message
 
     rapidjson::Document JsonDocument;
     rapidjson::Pointer("/content").Set(JsonDocument, messageToSend.content.c_str());
-    rapidjson::Pointer("/tts").Set(JsonDocument, false);
+    rapidjson::Pointer("/tts").Set(JsonDocument, messageToSend.tts);
 
     rapidjson::StringBuffer _stringBuffer;
 	rapidjson::Writer<rapidjson::StringBuffer> writer(_stringBuffer);

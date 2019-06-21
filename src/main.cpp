@@ -17,6 +17,11 @@ public:
 
 	void OnGuildCreate(Discord::Guild g) {
 		guilds.push_back(g);
+		for(Discord::Channel &chan : g.channels)
+			if(chan.type == 0){
+				Discord::MessagePacket messageToSend{ .content = std::string("Hello to channel #" + g.name), .tts = false };
+				httpAPI.SendMessage(std::to_string(chan.id.value), messageToSend);
+			}
 	}
 };
 
@@ -41,9 +46,9 @@ public:
 			return;
 		}
 		else if(command.rfind("sendmsg", 0) == 0) {
-			Discord::Message messageToSend;
+			Discord::MessagePacket messageToSend{ .content = command.substr(command.find(' ')), .tts = false };
 
-			messageToSend.content = command.substr(command.find(' '));
+			// messageToSend.content = command.substr(command.find(' '));
 
 			//This channel ID is channel ID of test discord guild's general channel's ID
 			client->httpAPI.SendMessage("590695217028661250", messageToSend);

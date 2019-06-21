@@ -34,7 +34,7 @@ namespace Discord {
 			HTTP_API_CLASS(const AuthToken _token);
 
 			// TODO: Use "Discord::Channel channel" instead of "std::string channelID" here when Discord::Channel is implemented.
-			void SendMessage(std::string channelID, Discord::Message messageToSend);
+			void SendMessage(std::string channelID, Discord::MessagePacket messageToSend);
 
 			const AuthToken token;
 		};
