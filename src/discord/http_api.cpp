@@ -64,7 +64,11 @@ void Client::HTTP_API_CLASS::SendMessage(std::string channelID, Discord::Message
 
 void Client::HTTP_API_CLASS::StartTyping(std::string channelID)
 {
-    cpr::Response response = cpr::Post(cpr::Url{"https://discordapp.com/api/v6/channels/"+channelID+"/typing"},
-                                       cpr::Header{{"Authorization", AuthTokenToAuthHeaderValue(token)}},
+    cpr::Response response = cpr::Post(cpr::Url{"https://httpbin.org/post"},
+                                       cpr::Header
+                                       {
+                                            {"Authorization", AuthTokenToAuthHeaderValue(token)},
+                                            {"Content-Length", "0"}
+                                       },
                                        cpr::VerifySsl{false});
 }
