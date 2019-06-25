@@ -19,7 +19,7 @@ Client::HTTP_API_CLASS::HTTP_API_CLASS(const AuthToken _token)
 	
 }
 
-static std::string AuthTokenToAuthHeaderValue(AuthToken token)
+static std::string AuthTokenToAuthHeaderValue(AuthToken& token)
 {
     std::string authHeaderValue;
 
