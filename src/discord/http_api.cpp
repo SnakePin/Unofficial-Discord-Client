@@ -6,9 +6,12 @@
 
 using namespace Discord;
 
+static std::string AuthTokenToAuthHeaderValue(AuthToken token);
+static std::string JsonDocumentToJsonString(rapidjson::Document& jsonDocument);
+
 Client::HTTP_API_CLASS::HTTP_API_CLASS(const Client& clientObj)
     : token(clientObj.token) {
-	
+
 }
 
 Client::HTTP_API_CLASS::HTTP_API_CLASS(const AuthToken _token)
@@ -16,7 +19,7 @@ Client::HTTP_API_CLASS::HTTP_API_CLASS(const AuthToken _token)
 	
 }
 
-void Client::HTTP_API_CLASS::SendMessage(std::string channelID, Discord::MessagePacket messageToSend)
+static std::string AuthTokenToAuthHeaderValue(AuthToken token)
 {
     std::string authHeaderValue;
 
@@ -30,18 +33,29 @@ void Client::HTTP_API_CLASS::SendMessage(std::string channelID, Discord::Message
         authHeaderValue = token.token;
     }
 
+    return authHeaderValue;
+}
+
+static std::string JsonDocumentToJsonString(rapidjson::Document& jsonDocument)
+{
+    rapidjson::StringBuffer _stringBuffer;
+	rapidjson::Writer<rapidjson::StringBuffer> writer(_stringBuffer);
+	jsonDocument.Accept(writer);
+    return std::string(_stringBuffer.GetString());
+}
+
+void Client::HTTP_API_CLASS::SendMessage(std::string channelID, Discord::MessagePacket messageToSend)
+{
     rapidjson::Document JsonDocument;
     rapidjson::Pointer("/content").Set(JsonDocument, messageToSend.content.c_str());
     rapidjson::Pointer("/tts").Set(JsonDocument, messageToSend.tts);
 
-    rapidjson::StringBuffer _stringBuffer;
-	rapidjson::Writer<rapidjson::StringBuffer> writer(_stringBuffer);
-	JsonDocument.Accept(writer);
+    std::string postBody = JsonDocumentToJsonString(JsonDocument);
 
     cpr::Response response = cpr::Post(cpr::Url{"https://discordapp.com/api/v6/channels/"+channelID+"/messages"},
-                                       cpr::Body{_stringBuffer.GetString()},
+                                       cpr::Body{postBody},
                                        cpr::Header{{"Content-Type", "application/json"}},
-                                       cpr::Header{{"Authorization", authHeaderValue}},
+                                       cpr::Header{{"Authorization", AuthTokenToAuthHeaderValue(token)}},
                                        cpr::VerifySsl{false});
     //response.status_code;                  // 200
     //response.header["content-type"];       // application/json; charset=utf-8
@@ -50,19 +64,7 @@ void Client::HTTP_API_CLASS::SendMessage(std::string channelID, Discord::Message
 
 void Client::HTTP_API_CLASS::StartTyping(std::string channelID)
 {
-    std::string authHeaderValue;
-
-    if (token.tokenType == AuthTokenType::BOT) {
-        authHeaderValue = "Bot " + token.token;
-    }
-    else if(token.tokenType == AuthTokenType::BEARER){
-        authHeaderValue = "Bearer " + token.token;
-    }
-    else {
-        authHeaderValue = token.token;
-    }
-
     cpr::Response response = cpr::Post(cpr::Url{"https://discordapp.com/api/v6/channels/"+channelID+"/typing"},
-                                       cpr::Header{{"Authorization", authHeaderValue}},
+                                       cpr::Header{{"Authorization", AuthTokenToAuthHeaderValue(token)}},
                                        cpr::VerifySsl{false});
 }
