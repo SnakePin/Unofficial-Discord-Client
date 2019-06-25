@@ -14,6 +14,8 @@ namespace Discord {
 		Snowflake nonce;
 		int32_t type;
 
+		User author;
+
 		std::string content;
 		std::string timestamp;
 		std::string editedTimestamp;
@@ -33,6 +35,8 @@ namespace Discord {
 		// Two *Rich Presence* fields were not implemented
 		// MessageActivityObject activity;
 		// MessageApplicationObject application;
+
+		static Message LoadFrom(rapidjson::Document &doc, std::string pointer);
 	};
 
 	struct MessagePacket {
