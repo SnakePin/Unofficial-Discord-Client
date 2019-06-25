@@ -47,3 +47,22 @@ void Client::HTTP_API_CLASS::SendMessage(std::string channelID, Discord::Message
     //response.header["content-type"];       // application/json; charset=utf-8
     //response.text;  
 }
+
+void Client::HTTP_API_CLASS::StartTyping(std::string channelID)
+{
+    std::string authHeaderValue;
+
+    if (token.tokenType == AuthTokenType::BOT) {
+        authHeaderValue = "Bot " + token.token;
+    }
+    else if(token.tokenType == AuthTokenType::BEARER){
+        authHeaderValue = "Bearer " + token.token;
+    }
+    else {
+        authHeaderValue = token.token;
+    }
+
+    cpr::Response response = cpr::Post(cpr::Url{"https://discordapp.com/api/v6/channels/"+channelID+"/typing"},
+                                       cpr::Header{{"Authorization", authHeaderValue}},
+                                       cpr::VerifySsl{false});
+}
