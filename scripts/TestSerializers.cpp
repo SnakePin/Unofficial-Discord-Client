@@ -8,6 +8,7 @@
 #include <discord/guild.hpp>
 #include <discord/member.hpp>
 #include <discord/role.hpp>
+#include <discord/message.hpp>
 
 #include <iostream>
 #include <fstream>
@@ -20,7 +21,7 @@
 
 static char * ReadAllBytes(const char * filename, int * read);
 
-int main() {
+void testGuildCreate() {
 	using namespace Discord;
 
 	int read;
@@ -60,7 +61,29 @@ int main() {
         std::cout << "\tType: " << channelTypes[chan.type] << "\n";
         std::cout << "\tName: " << chan.name << "\n\n";
     }
+}
 
+void testMessageCreate() {
+	using namespace Discord;
+
+	int read;
+	char *json = ReadAllBytes("MessageCreatePacket.json", &read);
+	rapidjson::Document doc;
+	doc.Parse(json);
+    delete[] json;
+
+	Message m = Message::LoadFrom(doc, "/d");
+
+    std::cout << "Message: " << m.content << "\n";
+	std::cout << "Author: " << m.author.username << "\n";
+    std::cout << "Message ID: " << m.id.value << "\n";
+    time_t msgCreateTime = m.id.UnixEpoch()/1000;
+    std::cout << "Message Epoch & ctime: " << m.id.UnixEpoch()/1000 << " " << ctime(&msgCreateTime) << "\n";
+}
+
+int main() {
+	testGuildCreate();
+	testMessageCreate();
 	return 0;
 }
 
