@@ -6,7 +6,7 @@
 
 using namespace Discord;
 
-static std::string AuthTokenToAuthHeaderValue(AuthToken& token);
+static std::string AuthTokenToAuthHeaderValue(const AuthToken& token);
 static std::string JsonDocumentToJsonString(rapidjson::Document& jsonDocument);
 
 Client::HTTP_API_CLASS::HTTP_API_CLASS(const Client& clientObj)
@@ -19,7 +19,7 @@ Client::HTTP_API_CLASS::HTTP_API_CLASS(const AuthToken _token)
 	
 }
 
-static std::string AuthTokenToAuthHeaderValue(AuthToken& token)
+static std::string AuthTokenToAuthHeaderValue(const AuthToken& token)
 {
     std::string authHeaderValue;
 
