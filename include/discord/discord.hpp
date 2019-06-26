@@ -36,6 +36,8 @@ namespace Discord {
 		virtual void OnHelloPacket();
 		virtual void OnReadyPacket(ReadyPacket packet) = 0;
 		virtual void OnGuildCreate(Guild guild) = 0;
+		virtual void OnMessageCreate(Message m) = 0;
+		virtual void OnTypingStart(TypingStartPacket p) = 0;
 
 		class HTTP_API_CLASS
 		{
@@ -59,6 +61,7 @@ namespace Discord {
 		void ProcessHello(rapidjson::Document &document);
 		void ProcessReady(rapidjson::Document &document);
 		void ProcessGuildCreate(rapidjson::Document &document);
+		void ProcessMessageCreate(rapidjson::Document &document);
 
 		void SendHeartbeatAndResetTimer(const asio::error_code& error);
 		std::string GenerateIdentifyPacket();

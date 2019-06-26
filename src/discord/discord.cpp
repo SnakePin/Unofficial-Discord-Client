@@ -111,6 +111,10 @@ void Client::ProcessGuildCreate(rapidjson::Document &document) {
 	OnGuildCreate(Guild::LoadFrom(document, "/d"));
 }
 
+void Client::ProcessMessageCreate(rapidjson::Document &document) {
+	OnMessageCreate(Message::LoadFrom(document, "/d"));
+}
+
 void Client::Run() {
 	websocket.on_message = [this](std::shared_ptr<WssClient::Connection> connection, std::shared_ptr<WssClient::InMessage> in_message) {
 		std::string response = in_message->string(); // string() can only be called once! see sws/client_ws.hpp for why
@@ -131,7 +135,13 @@ void Client::Run() {
 
 			}else if(eventName == "READY") {
 				ProcessReady(document);
-				
+			
+			}else if(eventName == "MESSAGE_CREATE") {
+				ProcessMessageCreate(document);
+
+			}else if(eventName == "TYPING_START") {
+				OnTypingStart(TypingStartPacket::LoadFrom(document, "/d"));
+
 			}else {
 				std::cout << "Client: Message received: \"" << response << "\"" << std::endl;
 

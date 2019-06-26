@@ -2,6 +2,7 @@
 #include <thread>
 
 #include <discord/discord.hpp>
+#include <discord/message.hpp>
 #include <discord/guild.hpp>
 #include <discord/packets.hpp>
 
@@ -76,6 +77,16 @@ public:
 		}
 
 		UpdateSessionJson();
+	}
+
+	void OnTypingStart(Discord::TypingStartPacket packet) {
+		if(packet.member)
+			std::cout << packet.member.value().user.username.value() << " is typing..." << std::endl;
+	}
+
+	void OnMessageCreate(Discord::Message m) {
+		if(m.author && m.content)
+			std::cout << "<" << m.author.value().username.value() << "> " << m.content.value() << std::endl;
 	}
 };
 
