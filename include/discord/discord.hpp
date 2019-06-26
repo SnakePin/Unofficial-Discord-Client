@@ -38,6 +38,8 @@ namespace Discord {
 		virtual void OnGuildCreate(Guild guild) = 0;
 		virtual void OnMessageCreate(Message m) = 0;
 		virtual void OnTypingStart(TypingStartPacket p) = 0;
+		virtual void OnMessageReactionAdd(MessageReactionPacket p) = 0;
+		virtual void OnMessageReactionRemove(MessageReactionPacket p) = 0;
 
 		class HTTP_API_CLASS
 		{

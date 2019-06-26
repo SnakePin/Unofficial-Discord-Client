@@ -1,6 +1,7 @@
 #pragma once
 
 #include <discord/user.hpp>
+#include <discord/emoji.hpp>
 #include <discord/guild.hpp>
 
 #include <vector>
@@ -30,6 +31,19 @@ namespace Discord {
 		uint64_t timestamp;
 		
 		static TypingStartPacket LoadFrom(rapidjson::Document &doc, std::string pointer);
+	};
+
+	// Used for MESSAGE_REACTION_ADD and MESSAGE_REACTION_REMOVE events.
+	// Not used for MESSAGE_REACTION_REMOVE_ALL.
+	// https://discordapp.com/developers/docs/topics/gateway#message-reaction-add
+	struct MessageReactionPacket {
+		Snowflake userID;
+		Snowflake channelID;
+		Snowflake messageID;
+		std::optional<Snowflake> guildID;
+		Emoji emoji;
+
+		static MessageReactionPacket LoadFrom(rapidjson::Document &doc, std::string pointer);
 	};
 
 }

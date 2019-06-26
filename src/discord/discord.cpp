@@ -146,6 +146,12 @@ void Client::Run() {
 			}else if(eventName == "MESSAGE_CREATE") {
 				ProcessMessageCreate(document);
 
+			}else if(eventName == "MESSAGE_REACTION_ADD") {
+				OnMessageReactionAdd(MessageReactionPacket::LoadFrom(document, "/d"));
+
+			}else if(eventName == "MESSAGE_REACTION_REMOVE") {
+				OnMessageReactionRemove(MessageReactionPacket::LoadFrom(document, "/d"));
+
 			}else if(eventName == "TYPING_START") {
 				OnTypingStart(TypingStartPacket::LoadFrom(document, "/d"));
 

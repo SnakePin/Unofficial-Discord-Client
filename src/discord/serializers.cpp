@@ -448,3 +448,26 @@ Discord::TypingStartPacket Discord::TypingStartPacket::LoadFrom(rapidjson::Docum
 
 	return g;
 }
+
+Discord::MessageReactionPacket Discord::MessageReactionPacket::LoadFrom(rapidjson::Document &doc, std::string pointer) {
+	using namespace Discord;
+	MessageReactionPacket g;
+	rapidjson::Value *ptr = nullptr;
+
+	if( (ptr = rapidjson::Pointer((pointer + "/user_id").c_str()).Get(doc)) && ptr->IsString())
+		g.userID = Snowflake(ptr->GetString());
+
+	if( (ptr = rapidjson::Pointer((pointer + "/guild_id").c_str()).Get(doc)) && ptr->IsString())
+		g.guildID = Snowflake(ptr->GetString());
+
+	if( (ptr = rapidjson::Pointer((pointer + "/channel_id").c_str()).Get(doc)) && ptr->IsString())
+		g.channelID = Snowflake(ptr->GetString());
+	
+	if( (ptr = rapidjson::Pointer((pointer + "/message_id").c_str()).Get(doc)) && ptr->IsString())
+		g.messageID = Snowflake(ptr->GetString());
+
+	if( (ptr = rapidjson::Pointer((pointer + "/emoji").c_str()).Get(doc)) && ptr->IsObject())
+		g.emoji = Emoji::LoadFrom(doc, pointer + "/emoji");
+
+	return g;
+}
