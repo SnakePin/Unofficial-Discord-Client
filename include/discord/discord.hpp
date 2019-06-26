@@ -21,6 +21,7 @@ namespace Discord {
 	class Client {
 	public:
 		AuthToken token;
+		std::string sessionID;
 		int heartbeatInterval;
 		WssClient websocket;
 

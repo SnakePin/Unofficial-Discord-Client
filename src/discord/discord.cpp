@@ -16,6 +16,7 @@ using namespace Discord;
 
 Client::Client(std::string token, AuthTokenType tokenType)
     : token(token, tokenType),
+	sessionID(""),
 	heartbeatInterval(40000),
     websocket("gateway.discord.gg/?v=6&encoding=json", false),
     
@@ -101,7 +102,9 @@ void Client::OnHelloPacket() {
 }
 
 void Client::ProcessReady(rapidjson::Document &document) {
-	OnReadyPacket(ReadyPacket::LoadFrom(document, "/d"));
+	ReadyPacket packet = ReadyPacket::LoadFrom(document, "/d");
+	sessionID = packet.sessionID;
+	OnReadyPacket(packet);
 }
 
 void Client::ProcessGuildCreate(rapidjson::Document &document) {
