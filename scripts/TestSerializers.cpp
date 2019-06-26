@@ -101,10 +101,31 @@ void testTypingStart() {
     std::cout << "Packet ctime: " << ctime(&msgCreateTime) << "\n";
 }
 
+void testReactionAdd() {
+	using namespace Discord;
+
+	int read;
+	char *json = ReadAllBytes("MessageReactionAddPacket.json", &read);
+	rapidjson::Document doc;
+	doc.Parse(json);
+    delete[] json;
+
+	MessageReactionPacket p = MessageReactionPacket::LoadFrom(doc, "/d");
+	Emoji &emote = p.emoji;
+
+    std::cout << "User: " << p.userID.value << "\n";
+	std::cout << "Channel: " << p.channelID.value << "\n";
+	std::cout << "Guild: " << p.guildID.value_or( Snowflake() ).value << "\n";
+	std::cout << "Message: " << p.messageID.value << "\n";
+	std::cout << "Emoji: " << emote.name << " (size " << emote.name.size() << ")" << std::endl;
+	std::cout << "Emoji ID: " << emote.id.value << std::endl;
+}
+
 int main() {
 	testGuildCreate();
 	testMessageCreate();
 	testTypingStart();
+	testReactionAdd();
 	return 0;
 }
 
