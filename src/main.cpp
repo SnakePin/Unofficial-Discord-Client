@@ -29,7 +29,7 @@ public:
 
 		for(Discord::Channel &chan : g.channels) {
 			if(chan.type.value() == 0){
-				Discord::MessagePacket messageToSend{ .content = std::string("Hello to channel #" + chan.name.value()), .tts = false };
+				Discord::MessagePacket messageToSend{ .content = "Hello to channel <#" + std::to_string(chan.id.value) + ">", .tts = false };
 				asio::post(*pool,
 					[=] {httpAPI.SendMessage(std::to_string(chan.id.value), messageToSend);}
 				);
