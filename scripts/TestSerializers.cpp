@@ -32,11 +32,11 @@ void testGuildCreate() {
 
 	Guild g = Guild::LoadFrom(doc, "/d");
 
-	std::cout << "Guild name: " << g.name << "\n";
-	std::cout << "Guild region: " << g.region << "\n";
-    std::cout << "Guild description: " << g.description << "\n";
-    std::cout << "Joined Guild at: " << g.joinedAt << "\n";
-    std::cout << "Guild Member Count: " << g.memberCount << "\n";
+	std::cout << "Guild name: " << g.name.value() << "\n";
+	std::cout << "Guild region: " << g.region.value() << "\n";
+    std::cout << "Guild description: " << g.description.value_or("fuck") << "\n";
+    std::cout << "Joined Guild at: " << g.joinedAt.value() << "\n";
+    std::cout << "Guild Member Count: " << g.memberCount.value() << "\n";
     std::cout << "Guild ID: " << g.id.value << "\n";
     time_t guildCreateTime = g.id.UnixEpoch()/1000;
     std::cout << "Guild Epoch & ctime: " << g.id.UnixEpoch()/1000 << " " << ctime(&guildCreateTime) << "\n";
@@ -44,22 +44,22 @@ void testGuildCreate() {
     std::cout << "Roles:\n";
     for(const Role &role : g.roles) {
         std::cout << "\tRole ID: " << role.id.value << "\n";
-        std::cout << "\tRole name: " << role.name << "\n\n";
+        std::cout << "\tRole name: " << role.name.value() << "\n\n";
     }
 
     std::cout << "Members:\n";
 
     for(const Member &mem : g.members) {
         std::cout << "\tID: " << mem.user.id.value << "\n";
-        std::cout << "\tJoined at: " << mem.joinedAt << "\n";
-        std::cout << "\tUsername: " << mem.user.username << "\n\n";
+        std::cout << "\tJoined at: " << mem.joinedAt.value() << "\n";
+        std::cout << "\tUsername: " << mem.user.username.value() << "\n\n";
     }
 
     std::cout << "Channels:\n";
     std::string channelTypes[] = {"Text", "1", "Voice", "3", "Category"};
     for(const Channel &chan : g.channels) {
-        std::cout << "\tType: " << channelTypes[chan.type] << "\n";
-        std::cout << "\tName: " << chan.name << "\n\n";
+        std::cout << "\tType: " << channelTypes[chan.type.value()] << "\n";
+        std::cout << "\tName: " << chan.name.value() << "\n\n";
     }
 }
 
@@ -74,8 +74,8 @@ void testMessageCreate() {
 
 	Message m = Message::LoadFrom(doc, "/d");
 
-    std::cout << "Message: " << m.content << "\n";
-	std::cout << "Author: " << m.author.username << "\n";
+    std::cout << "Message: " << m.content.value() << "\n";
+	std::cout << "Author: " << m.author.value().username.value() << "\n";
     std::cout << "Message ID: " << m.id.value << "\n";
     time_t msgCreateTime = m.id.UnixEpoch()/1000;
     std::cout << "Message Epoch & ctime: " << m.id.UnixEpoch()/1000 << " " << ctime(&msgCreateTime) << "\n";
