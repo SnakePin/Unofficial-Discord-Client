@@ -24,13 +24,15 @@ namespace Discord {
 		int heartbeatInterval;
 		WssClient websocket;
 
+		uint64_t sequenceNumber;
+
 		Client(std::string token, AuthTokenType tokenType);
 		
 		void SendIdentify();
 		void SendResume(std::string sessionID, uint32_t sequenceNumber);
 		void Run();
 
-		void OnHelloPacket();
+		virtual void OnHelloPacket();
 		virtual void OnReadyPacket(ReadyPacket packet) = 0;
 		virtual void OnGuildCreate(Guild guild) = 0;
 
@@ -51,7 +53,6 @@ namespace Discord {
 		std::shared_ptr<WssClient::Connection> connection;
 		asio::steady_timer *heartbeatTimer;
 		unsigned int heartbeatSequenceNumber;
-		uint64_t sequenceNumber;
 
 		// Gateway Packet Processing
 		void ProcessHello(rapidjson::Document &document);

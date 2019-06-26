@@ -8,6 +8,11 @@
 #include <asio.hpp>
 #include <asio/thread_pool.hpp>
 
+#include <rapidjson/document.h>
+#include <rapidjson/writer.h>
+#include <rapidjson/pointer.h>
+#include <rapidjson/filewritestream.h>
+
 class MyClient : public Discord::Client {
 public:
 
@@ -20,8 +25,35 @@ public:
 
 	}
 
+	void OnHelloPacket() {
+		std::cout << "Sending identify..." << std::endl;
+		SendIdentify();
+	}
+
 	void OnReadyPacket(Discord::ReadyPacket packet) {
 		std::cout << "Received ready packet: " << packet.version << " " << packet.sessionID << " " << packet.user.username.value_or("") << std::endl;
+		std::cout << "Writing session data to session.json..." << std::endl;
+
+		rapidjson::Document document;
+		std::time_t the_time = std::time(nullptr);
+
+		rapidjson::Pointer("/session_id").Set(document, packet.sessionID.c_str());
+		rapidjson::Pointer("/seq").Set(document, this->sequenceNumber);
+		rapidjson::Pointer("/session_time").Set(document, the_time);
+
+		#if defined(_WIN32)
+		FILE* fp = fopen("session.json", "w");
+		#else
+		FILE* fp = fopen("session.json", "wb");
+		#endif
+
+		char writeBuffer[65536];
+		rapidjson::FileWriteStream os(fp, writeBuffer, sizeof(writeBuffer));
+
+		rapidjson::Writer<rapidjson::FileWriteStream> writer(os);
+		document.Accept(writer);
+		
+		fclose(fp);
 	}
 
 	void OnGuildCreate(Discord::Guild g) {
