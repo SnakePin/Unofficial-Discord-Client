@@ -86,7 +86,15 @@ public:
 	}
 
 	void OnMessageCreate(Discord::Message m) {
-		std::cout << "<" << m.author.username << "> " << m.content << std::endl;
+		std::cout << m.id.value << " <" << m.author.username << "> " << m.content << std::endl;
+	}
+
+	void OnMessageReactionAdd(Discord::MessageReactionPacket p) {
+		std::cout << p.messageID.value << " User " << p.userID.value << " added reaction " << p.emoji.name << std::endl;
+	}
+
+	void OnMessageReactionRemove(Discord::MessageReactionPacket p) {
+		std::cout << p.messageID.value << " User " << p.userID.value << " removed reaction " << p.emoji.name << std::endl;
 	}
 
 	void LoadAndSendResume() {
