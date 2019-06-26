@@ -7,6 +7,7 @@
 #include <discord/message.hpp>
 #include <discord/guild.hpp>
 #include <discord/token.hpp>
+#include <discord/snowflake.hpp>
 #include <sws/client_wss.hpp>
 
 #include <rapidjson/document.h>
@@ -33,9 +34,8 @@ namespace Discord {
 			HTTP_API_CLASS(const Client& clientObj);
 			HTTP_API_CLASS(const AuthToken _token);
 
-			// TODO: Use "Discord::Channel channel" instead of "std::string channelID" here when Discord::Channel is implemented.
-			void StartTyping(std::string channelID);
-			void SendMessage(std::string channelID, Discord::MessagePacket messageToSend);
+			void StartTyping(const Snowflake &channelID);
+			void SendMessage(const Snowflake &channelID, Discord::MessagePacket messageToSend);
 
 			const AuthToken token;
 		};

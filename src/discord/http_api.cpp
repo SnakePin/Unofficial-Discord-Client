@@ -44,7 +44,7 @@ static std::string JsonDocumentToJsonString(rapidjson::Document& jsonDocument)
     return std::string(_stringBuffer.GetString());
 }
 
-void Client::HTTP_API_CLASS::SendMessage(std::string channelID, Discord::MessagePacket messageToSend)
+void Client::HTTP_API_CLASS::SendMessage(const Discord::Snowflake &channelID, Discord::MessagePacket messageToSend)
 {
     rapidjson::Document JsonDocument;
     rapidjson::Pointer("/content").Set(JsonDocument, messageToSend.content.c_str());
@@ -52,7 +52,7 @@ void Client::HTTP_API_CLASS::SendMessage(std::string channelID, Discord::Message
 
     std::string postBody = JsonDocumentToJsonString(JsonDocument);
 
-    cpr::Response response = cpr::Post(cpr::Url{"https://discordapp.com/api/v6/channels/"+channelID+"/messages"},
+    cpr::Response response = cpr::Post(cpr::Url{"https://discordapp.com/api/v6/channels/"+std::to_string(channelID.value)+"/messages"},
                                        cpr::Body{postBody},
                                        cpr::Header
 										{
@@ -65,9 +65,9 @@ void Client::HTTP_API_CLASS::SendMessage(std::string channelID, Discord::Message
     //response.text;  
 }
 
-void Client::HTTP_API_CLASS::StartTyping(std::string channelID)
+void Client::HTTP_API_CLASS::StartTyping(const Discord::Snowflake &channelID)
 {
-    cpr::Response response = cpr::Post(cpr::Url{"https://httpbin.org/post"},
+    cpr::Response response = cpr::Post(cpr::Url{"https://discordapp.com/api/v6/channels/"+std::to_string(channelID.value)+"/typing"},
                                        cpr::Header
                                        {
                                             {"Authorization", AuthTokenToAuthHeaderValue(token)},

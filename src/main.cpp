@@ -56,7 +56,7 @@ public:
 			//This channel ID is channel ID of test discord guild's general channel's ID
 			asio::post(*client->pool, 
 				[=] {
-					client->httpAPI.SendMessage("590695217028661250", messageToSend);
+					client->httpAPI.SendMessage(Discord::Snowflake(590695217028661250), messageToSend);
 				}
 			);
 		}
@@ -66,9 +66,9 @@ public:
 
 			asio::post(*client->pool,
 				[=] {
-					client->httpAPI.StartTyping("590695217028661250");
+					client->httpAPI.StartTyping(Discord::Snowflake(590695217028661250));
 					std::this_thread::sleep_for(std::chrono::seconds(5));
-					client->httpAPI.SendMessage("590695217028661250", messageToSend);
+					client->httpAPI.SendMessage(Discord::Snowflake(590695217028661250), messageToSend);
 				}
 			);
 		}
