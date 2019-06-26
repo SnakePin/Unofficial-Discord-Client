@@ -53,15 +53,18 @@ std::string Client::GenerateIdentifyPacket() {
 std::string Client::GenerateResumePacket(std::string sessionID, uint32_t sequenceNumber) {
 	rapidjson::Document document;
 	
-	rapidjson::Pointer("/session_id").Set(document, sessionID.c_str());
-	rapidjson::Pointer("/token").Set(document, this->token.token.c_str());
-	rapidjson::Pointer("/seq").Set(document, sequenceNumber);
+	rapidjson::Pointer("/op").Set(document, 6); // RESUME
+	rapidjson::Pointer("/d/session_id").Set(document, sessionID.c_str());
+	rapidjson::Pointer("/d/token").Set(document, this->token.token.c_str());
+	rapidjson::Pointer("/d/seq").Set(document, sequenceNumber);
 	
 	rapidjson::StringBuffer buffer;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
     document.Accept(writer);
 	
-	return std::string(buffer.GetString());
+	std::string packet(buffer.GetString());
+	std::cout << "Resume: " << packet << std::endl;
+	return packet;
 }
 
 void Client::SendHeartbeatAndResetTimer(const asio::error_code& error) {
@@ -81,6 +84,7 @@ void Client::SendIdentify() {
 }
 
 void Client::SendResume(std::string sessionID, uint32_t sequenceNumber) {
+	this->sessionID = sessionID;
 	connection->send(GenerateResumePacket(sessionID, sequenceNumber));
 }
 
