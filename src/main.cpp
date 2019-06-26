@@ -22,8 +22,8 @@ public:
 	void OnGuildCreate(Discord::Guild g) {
 		guilds.push_back(g);
 		for(Discord::Channel &chan : g.channels)
-			if(chan.type == 0){
-				Discord::MessagePacket messageToSend{ .content = std::string("Hello to channel #" + g.name), .tts = false };
+			if(chan.type.value() == 0){
+				Discord::MessagePacket messageToSend{ .content = std::string("Hello to channel #" + chan.name.value()), .tts = false };
 				asio::post(*pool,
 					[=] {httpAPI.SendMessage(std::to_string(chan.id.value), messageToSend);}
 				);
@@ -77,7 +77,7 @@ public:
 
 			std::cout << "Found " << client->guilds.size() << " guilds:\n    ";
 			for(Discord::Guild &guild : client->guilds) {
-				std::cout << "\"" << guild.name << "\" ";
+				std::cout << "\"" << guild.name.value() << "\" ";
 			}
 			std::cout << "\n";
 			
