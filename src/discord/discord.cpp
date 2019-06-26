@@ -49,6 +49,20 @@ std::string Client::GenerateIdentifyPacket() {
 	return std::string(buffer.GetString());
 }
 
+std::string Client::GenerateResumePacket(std::string sessionID, uint32_t sequenceNumber) {
+	rapidjson::Document document;
+	
+	rapidjson::Pointer("/session_id").Set(document, sessionID.c_str());
+	rapidjson::Pointer("/token").Set(document, this->token.token.c_str());
+	rapidjson::Pointer("/seq").Set(document, sequenceNumber);
+	
+	rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+    document.Accept(writer);
+	
+	return std::string(buffer.GetString());
+}
+
 void Client::SendHeartbeatAndResetTimer(const asio::error_code& error) {
 	if (!error) {
 		std::string packet = "{\"op\":1,\"d\":" + std::to_string(heartbeatSequenceNumber++) + "}";
@@ -61,6 +75,14 @@ void Client::SendHeartbeatAndResetTimer(const asio::error_code& error) {
 	}
 }
 
+void Client::SendIdentify() {
+	connection->send(GenerateIdentifyPacket());
+}
+
+void Client::SendResume(std::string sessionID, uint32_t sequenceNumber) {
+	connection->send(GenerateResumePacket(sessionID, sequenceNumber));
+}
+
 void Client::ProcessHello(rapidjson::Document &document) {
 	rapidjson::Value eventData = document["d"].GetObject();
 	heartbeatInterval = eventData["heartbeat_interval"].GetInt();
@@ -71,9 +93,11 @@ void Client::ProcessHello(rapidjson::Document &document) {
 
 	std::cout << "Received HELLO (opcode 10) packet. Heartbeat interval: " << heartbeatInterval << std::endl;
 	
-	std::string identify_packet = GenerateIdentifyPacket();
-	
-	connection->send(identify_packet);
+	OnHelloPacket();
+}
+
+void Client::OnHelloPacket() {
+	SendIdentify();
 }
 
 void Client::ProcessReady(rapidjson::Document &document) {

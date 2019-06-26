@@ -27,7 +27,8 @@ namespace Discord {
 		Client(std::string token, AuthTokenType tokenType);
 		
 		void Run();
-		
+
+		void OnHelloPacket();
 		virtual void OnReadyPacket(ReadyPacket packet) = 0;
 		virtual void OnGuildCreate(Guild guild) = 0;
 
@@ -55,8 +56,11 @@ namespace Discord {
 		void ProcessReady(rapidjson::Document &document);
 		void ProcessGuildCreate(rapidjson::Document &document);
 
+		void SendIdentify();
+		void SendResume(std::string sessionID, uint32_t sequenceNumber);
 		void SendHeartbeatAndResetTimer(const asio::error_code& error);
 		std::string GenerateIdentifyPacket();
+		std::string GenerateResumePacket(std::string sessionID, uint32_t sequenceNumber);
 
 	};
 }
