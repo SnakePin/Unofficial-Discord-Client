@@ -20,4 +20,16 @@ namespace Discord {
 		static ReadyPacket LoadFrom(rapidjson::Document &doc, std::string pointer);
 	};
 
+	struct TypingStartPacket {
+		Snowflake userID;
+		std::optional<Snowflake> guildID;
+		Snowflake channelID;
+
+		std::optional<Member> member;
+
+		uint64_t timestamp;
+		
+		static TypingStartPacket LoadFrom(rapidjson::Document &doc, std::string pointer);
+	};
+
 }
