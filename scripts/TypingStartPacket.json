@@ -1,0 +1,23 @@
+{
+  "t": "TYPING_START",
+  "s": 7,
+  "op": 0,
+  "d": {
+    "user_id": "181227668241383425",
+    "timestamp": 1561550561,
+    "member": {
+      "user": {
+        "username": "saucecode",
+        "id": "181227668241383425",
+        "discriminator": "1710",
+        "avatar": "83b6ac6ac2e9f818ddb4ef362fcdfa28"
+      },
+      "roles": [],
+      "mute": false,
+      "joined_at": "2019-06-19T00:11:54.336000+00:00",
+      "deaf": false
+    },
+    "channel_id": "590695217028661250",
+    "guild_id": "590695217028661248"
+  }
+}

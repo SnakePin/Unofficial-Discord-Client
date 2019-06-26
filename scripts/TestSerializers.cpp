@@ -1,6 +1,6 @@
 /*
     Compile as:
-        $ g++ -I../include TestSerializers.cpp ../src/discord/serializers.cpp
+        $ g++ -std=c++17 -I../include TestSerializers.cpp ../src/discord/serializers.cpp
     
     See GuildCreatePacket.json in this folder to see what it's parsing.
  */
@@ -9,6 +9,8 @@
 #include <discord/member.hpp>
 #include <discord/role.hpp>
 #include <discord/message.hpp>
+
+#include <discord/packets.hpp>
 
 #include <iostream>
 #include <fstream>
@@ -81,9 +83,28 @@ void testMessageCreate() {
     std::cout << "Message Epoch & ctime: " << m.id.UnixEpoch()/1000 << " " << ctime(&msgCreateTime) << "\n";
 }
 
+void testTypingStart() {
+	using namespace Discord;
+
+	int read;
+	char *json = ReadAllBytes("TypingStartPacket.json", &read);
+	rapidjson::Document doc;
+	doc.Parse(json);
+    delete[] json;
+
+	TypingStartPacket p = TypingStartPacket::LoadFrom(doc, "/d");
+
+    std::cout << "User: " << p.userID.value << "\n";
+	std::cout << "Channel: " << p.channelID.value << "\n";
+	std::cout << "Channel: " << p.guildID.value().value << "\n";
+    time_t msgCreateTime = p.timestamp;
+    std::cout << "Packet ctime: " << ctime(&msgCreateTime) << "\n";
+}
+
 int main() {
 	testGuildCreate();
 	testMessageCreate();
+	testTypingStart();
 	return 0;
 }
 
