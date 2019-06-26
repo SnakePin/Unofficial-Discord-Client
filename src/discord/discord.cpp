@@ -62,9 +62,7 @@ std::string Client::GenerateResumePacket(std::string sessionID, uint32_t sequenc
     rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
     document.Accept(writer);
 	
-	std::string packet(buffer.GetString());
-	std::cout << "Resume: " << packet << std::endl;
-	return packet;
+	return std::string(buffer.GetString());
 }
 
 void Client::SendHeartbeatAndResetTimer(const asio::error_code& error) {
@@ -129,6 +127,11 @@ void Client::Run() {
 		
 		if(opcode == 10) { // HELLO
 			ProcessHello(document);
+
+		}else if(opcode == 9) { // Error: resume failed.
+			std::cout << "Resume failed.\n";
+			std::cout << response << std::endl;
+
 		}else if(opcode == 0) { // DISPATCH
 			std::string eventName = document["t"].GetString();
 
@@ -145,6 +148,9 @@ void Client::Run() {
 
 			}else if(eventName == "TYPING_START") {
 				OnTypingStart(TypingStartPacket::LoadFrom(document, "/d"));
+
+			}else if(eventName == "RESUMED"){
+				std::cout << "Session resumed!" << std::endl;
 
 			}else {
 				std::cout << "Client: Message received: \"" << response << "\"" << std::endl;

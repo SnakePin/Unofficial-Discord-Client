@@ -12,7 +12,7 @@ namespace Discord {
 		// https://discordapp.com/developers/docs/resources/emoji#emoji-object
 		
 		Snowflake id;
-		std::optional<std::string> name;
+		std::string name;
 
 		// roles[]
 		// User creator;

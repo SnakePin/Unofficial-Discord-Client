@@ -16,11 +16,11 @@ namespace Discord {
 		User user;
 		std::optional<std::string>  nickname;
 		std::vector<Snowflake> roles;
-		std::optional<std::string>  joinedAt;
-		std::optional<std::string>  premiumSince;
+		std::string  joinedAt;
+		std::string  premiumSince;
 
-		std::optional<bool> deaf;
-		std::optional<bool> mute;
+		bool deaf;
+		bool mute;
 
 		static Member LoadFrom(rapidjson::Document &doc, std::string pointer);
 	};

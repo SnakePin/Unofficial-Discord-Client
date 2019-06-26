@@ -15,15 +15,15 @@ namespace Discord {
 		// https://discordapp.com/developers/docs/resources/role#role-object
 		
 		Snowflake id;
-		std::optional<std::string> name;
+		std::string name;
 
-		std::optional<int32_t> color;
+		int32_t color;
 
-		std::optional<bool> hoist;
-		std::optional<int32_t> position;
-		std::optional<int32_t> permissions;
-		std::optional<bool> managed;
-		std::optional<bool> mentionable;
+		bool hoist;
+		int32_t position;
+		int32_t permissions;
+		bool managed;
+		bool mentionable;
 
 		static Role LoadFrom(rapidjson::Document &doc, std::string pointer);
 	};

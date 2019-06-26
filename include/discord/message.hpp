@@ -15,18 +15,18 @@ namespace Discord {
 	struct Message {
 		// https://discordapp.com/developers/docs/resources/channel#message-object
 		Snowflake id;
-		std::optional<Snowflake> channelID;
+		Snowflake channelID;
 		std::optional<Snowflake> guildID;
-		std::optional<Snowflake> nonce;
-		std::optional<int32_t> type;
+		Snowflake nonce;
+		int32_t type;
 
-		std::optional<User> author;
+		User author;
 
-		std::optional<std::string> content;
-		std::optional<std::string> timestamp;
-		std::optional<std::string> editedTimestamp;
-		std::optional<bool> tts;
-		std::optional<bool> mentionEveryone;
+		std::string content;
+		std::string timestamp;
+		std::string editedTimestamp;
+		bool tts;
+		bool mentionEveryone;
 
 		// User mentions[]
 		std::vector<Snowflake> mentionedroleIDs;
@@ -35,7 +35,7 @@ namespace Discord {
 		std::vector<Embed> embeds;
 		std::vector<Reaction> reactions;
 
-		std::optional<bool> pinned;
+		bool pinned;
 		std::optional<Snowflake> webhookID;
 
 		// Two *Rich Presence* fields were not implemented

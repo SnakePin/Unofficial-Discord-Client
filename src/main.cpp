@@ -59,7 +59,7 @@ public:
 	}
 
 	void OnReadyPacket(Discord::ReadyPacket packet) {
-		std::cout << "Received ready packet: " << packet.version << " " << packet.sessionID << " " << packet.user.username.value_or("") << std::endl;
+		std::cout << "Received ready packet: " << packet.version << " " << packet.sessionID << " " << packet.user.username << std::endl;
 		std::cout << "Writing session data to session.json..." << std::endl;
 
 		UpdateSessionJson();
@@ -69,7 +69,7 @@ public:
 		guilds.push_back(g);
 
 		for(Discord::Channel &chan : g.channels) {
-			if(chan.type.value() == 0){
+			if(chan.type == 0){
 				Discord::MessagePacket messageToSend{ .content = "Hello to channel <#" + std::to_string(chan.id.value) + ">", .tts = false };
 				asio::post(*pool,
 					[=] {httpAPI.SendMessage(std::to_string(chan.id.value), messageToSend);}
@@ -82,12 +82,11 @@ public:
 
 	void OnTypingStart(Discord::TypingStartPacket packet) {
 		if(packet.member)
-			std::cout << packet.member.value().user.username.value() << " is typing..." << std::endl;
+			std::cout << packet.member.value().user.username << " is typing..." << std::endl;
 	}
 
 	void OnMessageCreate(Discord::Message m) {
-		if(m.author && m.content)
-			std::cout << "<" << m.author.value().username.value() << "> " << m.content.value() << std::endl;
+		std::cout << "<" << m.author.username << "> " << m.content << std::endl;
 	}
 
 	void LoadAndSendResume() {
@@ -173,7 +172,7 @@ public:
 
 			std::cout << "Found " << client->guilds.size() << " guilds:\n    ";
 			for(Discord::Guild &guild : client->guilds) {
-				std::cout << "\"" << guild.name.value() << "\" ";
+				std::cout << "\"" << guild.name << "\" ";
 			}
 			std::cout << "\n";
 			

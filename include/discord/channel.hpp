@@ -12,7 +12,7 @@ namespace Discord {
 		// https://discordapp.com/developers/docs/resources/channel#channel-object
 
 		Snowflake id;
-		std::optional<int32_t> type;
+		int32_t type;
 		std::optional<std::string> name;
 		std::optional<std::string> topic;
 		std::optional<bool> nsfw;

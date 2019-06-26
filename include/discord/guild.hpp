@@ -19,37 +19,37 @@ namespace Discord {
 		// https://discordapp.com/developers/docs/resources/guild#guild-object
 
 		Snowflake id;
-		std::optional<std::string> name;
-		std::optional<std::string> splashHash;
-		std::optional<std::string> iconHash;
+		std::string name;
+		std::string splashHash;
+		std::string iconHash;
 
-		std::optional<Snowflake> ownerID;
+		Snowflake ownerID;
 		std::optional<uint32_t> permissions;
 		
-		std::optional<std::string> region;
+		std::string region;
 
-		std::optional<Snowflake> afkChannelID;
-		std::optional<int32_t> afkTimeout;
+		Snowflake afkChannelID;
+		int32_t afkTimeout;
 		
 		std::optional<bool> embedable;
 		std::optional<Snowflake> embedChannelID;
 
-		std::optional<uint8_t> verificationLevel;
-		std::optional<uint8_t> defaultMessageNotificationsLevel;
-		std::optional<uint8_t> explicitContentFilterLevel;
-		std::optional<uint8_t> mfaLevel;
+		uint8_t verificationLevel;
+		uint8_t defaultMessageNotificationsLevel;
+		uint8_t explicitContentFilterLevel;
+		uint8_t mfaLevel;
 
 		std::vector<Role> roles;
 		std::vector<Emoji> emoji;
 
 		std::vector<std::string> features;
 
-		std::optional<Snowflake> applicationID;
+		Snowflake applicationID;
 		
 		std::optional<bool> widgetEnabled;
 		std::optional<Snowflake> widgetChannelID;
 
-		std::optional<Snowflake> systemChannelID;
+		Snowflake systemChannelID;
 
 		std::optional<std::string> joinedAt;
 
@@ -62,12 +62,12 @@ namespace Discord {
 		std::vector<Member> members;
 		std::vector<Channel> channels;
 
-		std::optional<int32_t> maxPresences;
-		std::optional<int32_t> maxMembers;
-		std::optional<int32_t> premiumTier;
+		int32_t maxPresences;
+		int32_t maxMembers;
+		int32_t premiumTier;
 
-		std::optional<std::string> description;
-		std::optional<std::string> bannerHash;
+		std::string description;
+		std::string bannerHash;
 
 		static Guild LoadFrom(rapidjson::Document &doc, std::string pointer);
 
