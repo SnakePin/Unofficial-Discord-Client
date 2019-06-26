@@ -13,6 +13,7 @@
 #include <rapidjson/writer.h>
 #include <rapidjson/pointer.h>
 #include <rapidjson/filewritestream.h>
+#include <rapidjson/filereadstream.h>
 
 class MyClient : public Discord::Client {
 public:
@@ -53,8 +54,8 @@ public:
 	}
 
 	void OnHelloPacket() {
-		std::cout << "Sending identify..." << std::endl;
-		SendIdentify();
+		// explicitly do nothing!
+		// this stops super->OnHelloPacket from running (and calling the SendIdentify method)
 	}
 
 	void OnReadyPacket(Discord::ReadyPacket packet) {
@@ -88,6 +89,32 @@ public:
 		if(m.author && m.content)
 			std::cout << "<" << m.author.value().username.value() << "> " << m.content.value() << std::endl;
 	}
+
+	void LoadAndSendResume() {
+		#if defined(_WIN32)
+		FILE* fp = fopen("session.json", "r");
+		#else
+		FILE* fp = fopen("session.json", "rb"); // non-Windows use "r"
+		#endif
+
+		char readBuffer[65536];
+		rapidjson::FileReadStream is(fp, readBuffer, sizeof(readBuffer));
+		rapidjson::Document document;
+		document.ParseStream(is);
+		fclose(fp);
+
+		std::time_t sessionTime = document["session_time"].GetInt();
+		std::time_t currentTime = std::time(nullptr);
+
+		if(currentTime - sessionTime < 10*60) {
+			std::string sessionID = document["session_id"].GetString();
+			int32_t sequence = document["seq"].GetInt();
+			std::cout << "Resuming session with seq: " << sequence << std::endl;
+			this->SendResume(sessionID, sequence);
+		}else {
+			std::cout << "The session has (possibly) expired. No resume was sent." << std::endl;
+		}
+	}
 };
 
 class ConsoleTest {
@@ -104,10 +131,20 @@ public:
 
 	void processCommand(std::string command) {
 		if(command == "quit") {
+			client->UpdateSessionJson(); // writes the latest sequence number to the session.json file
+
 			std::cout << "Stopping the websocket...\n";
 			client->websocket.stop();
 			std::cout << "Websocket stopped.\n";
 			running = false;
+		}
+		else if(command == "identify") {
+			std::cout << "Sending identify..." << std::endl;
+			client->SendIdentify();
+		}
+		else if(command == "resume") {
+			std::cout << "Sending resume..." << std::endl;
+			client->LoadAndSendResume();
 		}
 		else if(command.rfind("sendmsg", 0) == 0) {
 			Discord::MessagePacket messageToSend{ .content = command.substr(command.find(' ')), .tts = false };
