@@ -1,5 +1,6 @@
-#include "discord/discord.hpp"
+#include <discord/discord.hpp>
 #include <discord/token.hpp>
+#include <discord/packets.hpp>
 
 #include "sws/client_wss.hpp"
 
@@ -76,7 +77,7 @@ void Client::ProcessHello(rapidjson::Document &document) {
 }
 
 void Client::ProcessReady(rapidjson::Document &document) {
-
+	OnReadyPacket(ReadyPacket::LoadFrom(document, "/d"));
 }
 
 void Client::ProcessGuildCreate(rapidjson::Document &document) {
@@ -86,7 +87,6 @@ void Client::ProcessGuildCreate(rapidjson::Document &document) {
 void Client::Run() {
 	websocket.on_message = [this](std::shared_ptr<WssClient::Connection> connection, std::shared_ptr<WssClient::InMessage> in_message) {
 		std::string response = in_message->string(); // string() can only be called once! see sws/client_ws.hpp for why
-		std::cout << "Client: Message received: \"" << response << "\"" << std::endl;
 	
 		rapidjson::Document document;
 		document.Parse(response.c_str());
@@ -101,7 +101,18 @@ void Client::Run() {
 
 			if(eventName == "GUILD_CREATE") {
 				ProcessGuildCreate(document);
+
+			}else if(eventName == "READY") {
+				ProcessReady(document);
+				
+			}else {
+				std::cout << "Client: Message received: \"" << response << "\"" << std::endl;
+
 			}
+
+		}else {
+			std::cout << "Client: Message received: \"" << response << "\"" << std::endl;
+
 		}
 	};
 

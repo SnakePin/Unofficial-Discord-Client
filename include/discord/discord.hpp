@@ -8,6 +8,8 @@
 #include <discord/guild.hpp>
 #include <discord/token.hpp>
 #include <discord/snowflake.hpp>
+#include <discord/packets.hpp>
+
 #include <sws/client_wss.hpp>
 
 #include <rapidjson/document.h>
@@ -26,6 +28,7 @@ namespace Discord {
 		
 		void Run();
 		
+		virtual void OnReadyPacket(ReadyPacket packet) = 0;
 		virtual void OnGuildCreate(Guild guild) = 0;
 
 		class HTTP_API_CLASS
