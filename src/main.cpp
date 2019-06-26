@@ -3,6 +3,7 @@
 
 #include <discord/discord.hpp>
 #include <discord/guild.hpp>
+#include <discord/packets.hpp>
 
 #include <asio.hpp>
 #include <asio/thread_pool.hpp>
@@ -19,15 +20,21 @@ public:
 
 	}
 
+	void OnReadyPacket(Discord::ReadyPacket packet) {
+		std::cout << "Received ready packet: " << packet.version << " " << packet.sessionID << " " << packet.user.username.value_or("") << std::endl;
+	}
+
 	void OnGuildCreate(Discord::Guild g) {
 		guilds.push_back(g);
-		for(Discord::Channel &chan : g.channels)
+
+		for(Discord::Channel &chan : g.channels) {
 			if(chan.type.value() == 0){
 				Discord::MessagePacket messageToSend{ .content = std::string("Hello to channel #" + chan.name.value()), .tts = false };
 				asio::post(*pool,
 					[=] {httpAPI.SendMessage(std::to_string(chan.id.value), messageToSend);}
 				);
 			}
+		}
 	}
 };
 
