@@ -54,8 +54,10 @@ void Client::HTTP_API_CLASS::SendMessage(std::string channelID, Discord::Message
 
     cpr::Response response = cpr::Post(cpr::Url{"https://discordapp.com/api/v6/channels/"+channelID+"/messages"},
                                        cpr::Body{postBody},
-                                       cpr::Header{{"Content-Type", "application/json"}},
-                                       cpr::Header{{"Authorization", AuthTokenToAuthHeaderValue(token)}},
+                                       cpr::Header{
+										   {"Authorization", AuthTokenToAuthHeaderValue(token)},
+										   {"Content-Type", "application/json"}
+										},
                                        cpr::VerifySsl{false});
     //response.status_code;                  // 200
     //response.header["content-type"];       // application/json; charset=utf-8
