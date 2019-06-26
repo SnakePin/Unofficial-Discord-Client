@@ -4,34 +4,36 @@
 
 #include <rapidjson/document.h>
 
+#include <optional>
+
 namespace Discord {
 	
 	struct Channel {
 		// https://discordapp.com/developers/docs/resources/channel#channel-object
 
 		Snowflake id;
-		int32_t type;
-		std::string name;
-		std::string topic;
-		bool nsfw;
-		std::string iconHash;
+		std::optional<int32_t> type;
+		std::optional<std::string> name;
+		std::optional<std::string> topic;
+		std::optional<bool> nsfw;
+		std::optional<std::string> iconHash;
 		
-		Snowflake guildID;
-		Snowflake ownerID;
-		Snowflake applicationID;
-		Snowflake parentCategoryID;
-		Snowflake lastMessageID;
+		std::optional<Snowflake> guildID;
+		std::optional<Snowflake> ownerID;
+		std::optional<Snowflake> applicationID;
+		std::optional<Snowflake> parentCategoryID;
+		std::optional<Snowflake> lastMessageID;
 		
-		int32_t position;
-		uint32_t permissionOverwrites;
+		std::optional<int32_t> position;
+		std::optional<uint32_t> permissionOverwrites;
 
-		int32_t bitrate;
-		int32_t userLimit;
-		int32_t rateLimitPerUser;
+		std::optional<int32_t> bitrate;
+		std::optional<int32_t> userLimit;
+		std::optional<int32_t> rateLimitPerUser;
 
 		// User[] recipients
 
-		std::string lastPinTimestamp;
+		std::optional<std::string> lastPinTimestamp;
 
 		static Channel LoadFrom(rapidjson::Document &doc, std::string pointer);
 	};

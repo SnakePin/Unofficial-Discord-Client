@@ -10,15 +10,15 @@ namespace Discord {
 		// https://discordapp.com/developers/docs/resources/user#user-object
 		
 		Snowflake id;
-		std::string username;
-		std::string discriminator;
-		std::string avatarHash;
+		std::optional<std::string> username;
+		std::optional<std::string> discriminator;
+		std::optional<std::string> avatarHash;
 		
-		bool bot;
-		bool mfaEnabled;
-		std::string locale;
-		uint32_t flags;
-		int32_t premiumType;
+		std::optional<bool> bot;
+		std::optional<bool> mfaEnabled;
+		std::optional<std::string> locale;
+		std::optional<uint32_t> flags;
+		std::optional<int32_t> premiumType;
 
 		static User LoadFrom(rapidjson::Document &doc, std::string pointer);
 	};

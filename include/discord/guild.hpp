@@ -9,6 +9,8 @@
 #include <vector>
 #include <string>
 
+#include <optional>
+
 #include <rapidjson/document.h>
 
 namespace Discord {
@@ -17,55 +19,55 @@ namespace Discord {
 		// https://discordapp.com/developers/docs/resources/guild#guild-object
 
 		Snowflake id;
-		std::string name;
-		std::string splashHash;
-		std::string iconHash;
+		std::optional<std::string> name;
+		std::optional<std::string> splashHash;
+		std::optional<std::string> iconHash;
 
-		Snowflake ownerID;
-		uint32_t permissions;
+		std::optional<Snowflake> ownerID;
+		std::optional<uint32_t> permissions;
 		
-		std::string region;
+		std::optional<std::string> region;
 
-		Snowflake afkChannelID;
-		int32_t afkTimeout;
+		std::optional<Snowflake> afkChannelID;
+		std::optional<int32_t> afkTimeout;
 		
-		bool embedable;
-		Snowflake embedChannelID;
+		std::optional<bool> embedable;
+		std::optional<Snowflake> embedChannelID;
 
-		uint8_t verificationLevel;
-		uint8_t defaultMessageNotificationsLevel;
-		uint8_t explicitContentFilterLevel;
-		uint8_t mfaLevel;
+		std::optional<uint8_t> verificationLevel;
+		std::optional<uint8_t> defaultMessageNotificationsLevel;
+		std::optional<uint8_t> explicitContentFilterLevel;
+		std::optional<uint8_t> mfaLevel;
 
 		std::vector<Role> roles;
 		std::vector<Emoji> emoji;
 
 		std::vector<std::string> features;
 
-		Snowflake applicationID;
+		std::optional<Snowflake> applicationID;
 		
-		bool widgetEnabled;
-		Snowflake widgetChannelID;
+		std::optional<bool> widgetEnabled;
+		std::optional<Snowflake> widgetChannelID;
 
-		Snowflake systemChannelID;
+		std::optional<Snowflake> systemChannelID;
 
-		std::string joinedAt;
+		std::optional<std::string> joinedAt;
 
-		bool large;
-		bool unavailable;
-		int32_t memberCount;
+		std::optional<bool> large;
+		std::optional<bool> unavailable;
+		std::optional<int32_t> memberCount;
 
 		// voicestates[]
 
 		std::vector<Member> members;
 		std::vector<Channel> channels;
 
-		int32_t maxPresences;
-		int32_t maxMembers;
-		int32_t premiumTier;
+		std::optional<int32_t> maxPresences;
+		std::optional<int32_t> maxMembers;
+		std::optional<int32_t> premiumTier;
 
-		std::string description;
-		std::string bannerHash;
+		std::optional<std::string> description;
+		std::optional<std::string> bannerHash;
 
 		static Guild LoadFrom(rapidjson::Document &doc, std::string pointer);
 

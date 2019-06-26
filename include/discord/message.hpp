@@ -8,23 +8,25 @@
 
 #include <rapidjson/document.h>
 
+#include <optional>
+
 namespace Discord {
 	
 	struct Message {
 		// https://discordapp.com/developers/docs/resources/channel#message-object
 		Snowflake id;
-		Snowflake channelID;
-		Snowflake guildID;
-		Snowflake nonce;
-		int32_t type;
+		std::optional<Snowflake> channelID;
+		std::optional<Snowflake> guildID;
+		std::optional<Snowflake> nonce;
+		std::optional<int32_t> type;
 
-		User author;
+		std::optional<User> author;
 
-		std::string content;
-		std::string timestamp;
-		std::string editedTimestamp;
-		bool tts;
-		bool mentionEveryone;
+		std::optional<std::string> content;
+		std::optional<std::string> timestamp;
+		std::optional<std::string> editedTimestamp;
+		std::optional<bool> tts;
+		std::optional<bool> mentionEveryone;
 
 		// User mentions[]
 		std::vector<Snowflake> mentionedroleIDs;
@@ -33,8 +35,8 @@ namespace Discord {
 		std::vector<Embed> embeds;
 		std::vector<Reaction> reactions;
 
-		bool pinned;
-		Snowflake webhookID;
+		std::optional<bool> pinned;
+		std::optional<Snowflake> webhookID;
 
 		// Two *Rich Presence* fields were not implemented
 		// MessageActivityObject activity;

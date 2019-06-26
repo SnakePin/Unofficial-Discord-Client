@@ -6,6 +6,7 @@
 #include <rapidjson/document.h>
 
 #include <vector>
+#include <optional>
 
 namespace Discord {
 
@@ -13,13 +14,13 @@ namespace Discord {
 		// https://discordapp.com/developers/docs/resources/guild#guild-member-object
 		
 		User user;
-		std::string nickname;
+		std::optional<std::string>  nickname;
 		std::vector<Snowflake> roles;
-		std::string joinedAt;
-		std::string premiumSince;
+		std::optional<std::string>  joinedAt;
+		std::optional<std::string>  premiumSince;
 
-		bool deaf;
-		bool mute;
+		std::optional<bool> deaf;
+		std::optional<bool> mute;
 
 		static Member LoadFrom(rapidjson::Document &doc, std::string pointer);
 	};
