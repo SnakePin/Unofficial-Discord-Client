@@ -18,28 +18,23 @@ public:
 
 	std::shared_ptr<asio::thread_pool> pool; // user created threadpool for making HTTP requests
 	std::vector<Discord::Guild> guilds;
+	std::time_t lastSessionUpdateTime;
 
 	MyClient(std::string token, Discord::AuthTokenType tokenType)
 	    : Client(token, tokenType),
-		pool(std::make_shared<asio::thread_pool>(4)) /* Thread pool contains 4 threads. */ {
+		pool(std::make_shared<asio::thread_pool>(4)), /* Thread pool contains 4 threads. */
+		lastSessionUpdateTime(0) {
 
 	}
 
-	void OnHelloPacket() {
-		std::cout << "Sending identify..." << std::endl;
-		SendIdentify();
-	}
-
-	void OnReadyPacket(Discord::ReadyPacket packet) {
-		std::cout << "Received ready packet: " << packet.version << " " << packet.sessionID << " " << packet.user.username.value_or("") << std::endl;
-		std::cout << "Writing session data to session.json..." << std::endl;
-
+	// Writes the session ID, sequence number, and update time to session.json.
+	void UpdateSessionJson() {
 		rapidjson::Document document;
-		std::time_t the_time = std::time(nullptr);
+		lastSessionUpdateTime = std::time(nullptr);
 
-		rapidjson::Pointer("/session_id").Set(document, packet.sessionID.c_str());
+		rapidjson::Pointer("/session_id").Set(document, sessionID.c_str());
 		rapidjson::Pointer("/seq").Set(document, this->sequenceNumber);
-		rapidjson::Pointer("/session_time").Set(document, the_time);
+		rapidjson::Pointer("/session_time").Set(document, lastSessionUpdateTime);
 
 		#if defined(_WIN32)
 		FILE* fp = fopen("session.json", "w");
@@ -52,8 +47,20 @@ public:
 
 		rapidjson::Writer<rapidjson::FileWriteStream> writer(os);
 		document.Accept(writer);
-		
+
 		fclose(fp);
+	}
+
+	void OnHelloPacket() {
+		std::cout << "Sending identify..." << std::endl;
+		SendIdentify();
+	}
+
+	void OnReadyPacket(Discord::ReadyPacket packet) {
+		std::cout << "Received ready packet: " << packet.version << " " << packet.sessionID << " " << packet.user.username.value_or("") << std::endl;
+		std::cout << "Writing session data to session.json..." << std::endl;
+
+		UpdateSessionJson();
 	}
 
 	void OnGuildCreate(Discord::Guild g) {
@@ -67,6 +74,8 @@ public:
 				);
 			}
 		}
+
+		UpdateSessionJson();
 	}
 };
 
