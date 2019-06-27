@@ -27,12 +27,21 @@ namespace Discord {
 
 		uint64_t sequenceNumber;
 
+
 		Client(std::string token, AuthTokenType tokenType);
 		
+		// Generate and send an IDENTIFY packet
 		void SendIdentify();
+
+		// Generate and send a RESUME packet
 		void SendResume(std::string sessionID, uint32_t sequenceNumber);
+
+		// Start the websocket and event loop.
+		// This will block until the event loop is stopped (websocket.stop()).
 		void Run();
 
+		// Websocket Gateway Events
+		// OnHelloPacket's default behavior is to call SendIdentify().
 		virtual void OnHelloPacket();
 		virtual void OnReadyPacket(ReadyPacket packet) = 0;
 		virtual void OnGuildCreate(Guild guild) = 0;
@@ -48,25 +57,36 @@ namespace Discord {
 			HTTP_API_CLASS(const AuthToken _token);
 
 			void StartTyping(const Snowflake &channelID);
-			void SendMessage(const Snowflake &channelID, Discord::MessagePacket messageToSend);
+			void SendMessage(const Snowflake &channelID, MessagePacket messageToSend);
 
 			const AuthToken token;
 		};
 		HTTP_API_CLASS httpAPI;
 	private:
 	
+		// Gets set every time the websocket opens a new connection.
 		std::shared_ptr<WssClient::Connection> connection;
+
+		// Used with SendHeartbeatAndResetTimer.
 		asio::steady_timer *heartbeatTimer;
 		unsigned int heartbeatSequenceNumber;
 
+
 		// Gateway Packet Processing
+		// These functions call the gateway event methods above.
 		void ProcessHello(rapidjson::Document &document);
 		void ProcessReady(rapidjson::Document &document);
 		void ProcessGuildCreate(rapidjson::Document &document);
 		void ProcessMessageCreate(rapidjson::Document &document);
 
 		void SendHeartbeatAndResetTimer(const asio::error_code& error);
+
+		// Generates an IDENTIFY packet.
+		// https://discordapp.com/developers/docs/topics/gateway#identify
 		std::string GenerateIdentifyPacket();
+
+		// Generates a RESUME packet using the specified sessionID and sequenceNumber.
+		// https://discordapp.com/developers/docs/topics/gateway#resume
 		std::string GenerateResumePacket(std::string sessionID, uint32_t sequenceNumber);
 
 	};

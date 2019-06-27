@@ -97,6 +97,8 @@ public:
 		std::cout << p.messageID.value << " User " << p.userID.value << " removed reaction " << p.emoji.name << std::endl;
 	}
 
+	// Reads the session_id and sequence number from session.json and sends a RESUME packet with the read information.
+	// This will do nothing if the session ID is too old.
 	void LoadAndSendResume() {
 		#if defined(_WIN32)
 		FILE* fp = fopen("session.json", "r");
@@ -144,14 +146,17 @@ public:
 			client->websocket.stop();
 			std::cout << "Websocket stopped.\n";
 			running = false;
+
 		}
 		else if(command == "identify") {
 			std::cout << "Sending identify..." << std::endl;
 			client->SendIdentify();
+
 		}
 		else if(command == "resume") {
 			std::cout << "Sending resume..." << std::endl;
 			client->LoadAndSendResume();
+
 		}
 		else if(command.rfind("sendmsg", 0) == 0) {
 			Discord::MessagePacket messageToSend{ .content = command.substr(command.find(' ')), .tts = false };
@@ -162,6 +167,7 @@ public:
 					client->httpAPI.SendMessage(Discord::Snowflake(590695217028661250), messageToSend);
 				}
 			);
+			
 		}
 		else if(command.rfind("delaymsg", 0) == 0) {
 			// Sends a 'typing' signal, then the message after a 5 second delay.
@@ -174,6 +180,7 @@ public:
 					client->httpAPI.SendMessage(Discord::Snowflake(590695217028661250), messageToSend);
 				}
 			);
+
 		}
 		else if(command == "guilds") {
 			// Loop through all the guilds and print their names

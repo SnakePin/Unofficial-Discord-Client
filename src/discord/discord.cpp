@@ -19,10 +19,10 @@ Client::Client(std::string token, AuthTokenType tokenType)
 	sessionID(""),
 	heartbeatInterval(40000),
     websocket("gateway.discord.gg/?v=6&encoding=json", false),
+	sequenceNumber(0),
     
 	heartbeatTimer(nullptr),
 	heartbeatSequenceNumber(0),
-	sequenceNumber(0),
 	// When we pass *this to HTTP_API_CLASS's constructor it will call the Client::HTTP_API_CLASS::HTTP_API_CLASS(const Client& clientObj)
 	// This means HTTP_API_CLASS will have reference to the outer class to allow it to access things like token
 	httpAPI(*this) {
@@ -118,6 +118,8 @@ void Client::ProcessMessageCreate(rapidjson::Document &document) {
 }
 
 void Client::Run() {
+	// Start constructing the websocket events:
+	// on_message, on_open, on_close, on_error
 	websocket.on_message = [this](std::shared_ptr<WssClient::Connection> connection, std::shared_ptr<WssClient::InMessage> in_message) {
 		std::string response = in_message->string(); // string() can only be called once! see sws/client_ws.hpp for why
 	
