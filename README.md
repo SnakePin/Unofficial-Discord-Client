@@ -14,10 +14,13 @@ Requires C++17.
 
 ### Represented Discord Objects
 
-`Guild, Channel, User, Member, Role, Reaction, Emoji, Embed(stub), Snowflake`
+`Guild, Channel, User, Member, Message, Role, Reaction, Emoji, Embed(stub), Snowflake`
 
 Snowflakes will always be stored internally as `uint64_t`.  
 `std::optional` is used to represent fields in these structs whose presence cannot be guaranteed.
+
+For represented discord packets, see `discord/packets.hpp` in the include folder. Certain packets are just Discord objects (such as `Message` struct) and do not have a separate packet struct associated with them.
+
 
 ## Useful Links
 
