@@ -22,7 +22,6 @@ Client::Client(std::string token, AuthTokenType tokenType)
 	sequenceNumber(0),
     
 	heartbeatTimer(nullptr),
-	heartbeatSequenceNumber(0),
 	// When we pass *this to HTTP_API_CLASS's constructor it will call the Client::HTTP_API_CLASS::HTTP_API_CLASS(const Client& clientObj)
 	// This means HTTP_API_CLASS will have reference to the outer class to allow it to access things like token
 	httpAPI(*this) {
@@ -67,7 +66,7 @@ std::string Client::GenerateResumePacket(std::string sessionID, uint32_t sequenc
 
 void Client::SendHeartbeatAndResetTimer(const asio::error_code& error) {
 	if (!error) {
-		std::string packet = "{\"op\":1,\"d\":" + std::to_string(heartbeatSequenceNumber++) + "}";
+		std::string packet = "{\"op\":1,\"d\":" + std::to_string(sequenceNumber) + "}";
 
 		connection->send(packet);
 		std::cout << "Client: Sending: " << packet << "\n";
@@ -137,7 +136,8 @@ void Client::Run() {
 		}else if(opcode == 0) { // DISPATCH
 			std::string eventName = document["t"].GetString();
 
-			sequenceNumber = std::max(sequenceNumber, document["s"].GetUint64());
+			if(document["s"].IsUint64())
+				sequenceNumber = std::max(sequenceNumber, document["s"].GetUint64());
 
 			if(eventName == "GUILD_CREATE") {
 				ProcessGuildCreate(document);

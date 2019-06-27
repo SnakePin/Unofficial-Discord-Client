@@ -69,7 +69,6 @@ namespace Discord {
 
 		// Used with SendHeartbeatAndResetTimer.
 		asio::steady_timer *heartbeatTimer;
-		unsigned int heartbeatSequenceNumber;
 
 
 		// Gateway Packet Processing
