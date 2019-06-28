@@ -216,3 +216,41 @@ void Client::Run() {
 	
 	websocket.start();
 }
+
+void Client::OpenGuildChannel(const Snowflake &guild, const Snowflake &channel) {
+	/*
+	{
+		"op": 14,
+		"d": {
+			"guild_id": "590695217028661248",
+			"typing": true,
+			"activities": true,
+			"channels": {
+				"590695217028661250": [
+					[
+						0,
+						99
+					]
+				]
+			}
+		}
+	}
+	 */
+
+	rapidjson::Document document;
+	rapidjson::Document::AllocatorType& allocator = document.GetAllocator();
+	rapidjson::Pointer("/op").Set(document, 14); // GUILD_SWITCH
+	rapidjson::Pointer("/d/guild_id").Set(document, rapidjson::Value(std::to_string(guild.value).c_str()));
+	rapidjson::Pointer("/d/typing").Set(document, true);
+	rapidjson::Pointer("/d/activities").Set(document, true);
+
+	document["d"].AddMember("channels", rapidjson::Value(rapidjson::kObjectType), allocator);
+	document["d"].GetObject()["channels"].AddMember(std::to_string(channel.value).c_str(), rapidjson::Value(rapidjson::kArrayType), allocator);
+	document["d"]["channels"].PushBack(0, allocator).PushBack(99, allocator);
+
+	rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+    document.Accept(writer);
+
+	connection->send(buffer.GetString());
+}

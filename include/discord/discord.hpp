@@ -89,5 +89,10 @@ namespace Discord {
 		// https://discordapp.com/developers/docs/topics/gateway#resume
 		std::string GenerateResumePacket(std::string sessionID, uint32_t sequenceNumber);
 
+
+	public:
+		// Switches view to a Guild/Channel
+		void OpenGuildChannel(const Snowflake &guild, const Snowflake &channel);
+
 	};
 }

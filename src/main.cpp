@@ -5,6 +5,7 @@
 #include <discord/message.hpp>
 #include <discord/guild.hpp>
 #include <discord/packets.hpp>
+#include <discord/snowflake.hpp>
 
 #include <asio.hpp>
 #include <asio/thread_pool.hpp>
@@ -208,6 +209,9 @@ public:
 			}
 			std::cout << "\n";
 			
+		}
+		else if(command == "switch") {
+			client->OpenGuildChannel(Discord::Snowflake(590695217028661248), Discord::Snowflake(590695217028661250));
 		}
 		else{
 			std::cout << "Unknown command: " << command << "\n";
