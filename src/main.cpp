@@ -196,6 +196,19 @@ public:
 			std::cout << "\n";
 			
 		}
+		else if(command == "members") {
+			// Loop through all the guilds and print their names
+
+			for(Discord::Guild &guild : client->guilds) {
+				std::cout << guild.name << " has " << guild.members.size() << " members." << std::endl;
+				for(Discord::Member &m : guild.members) {
+					std::cout << "    " << m.user.username << std::endl;
+				}
+				std::cout << "\n";
+			}
+			std::cout << "\n";
+			
+		}
 		else{
 			std::cout << "Unknown command: " << command << "\n";
 		}
