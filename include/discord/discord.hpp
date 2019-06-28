@@ -90,9 +90,20 @@ namespace Discord {
 		std::string GenerateResumePacket(std::string sessionID, uint32_t sequenceNumber);
 
 
+		std::string GenerateGuildChannelViewPacket(const Snowflake &guild, const Snowflake &channel);
+		std::string GeneratePrivateChannelPacket(const Snowflake &channel);
+
 	public:
-		// Switches view to a Guild/Channel
-		void OpenGuildChannel(const Snowflake &guild, const Snowflake &channel);
+	
+		// Sends an OP 14 signal.
+		// This tells Discord what channel we are 'looking' at.
+		// OP 14 (see scripts/outbound_packets/op14.json for what this looks like)
+		void OpenGuildChannelView(const Snowflake &guild, const Snowflake &channel);
+
+		// Sends an OP 13 signal.
+		// See OpenGuildChannelView (OP 14). Does the same, but for DM channels.
+		// OP 13 (see scripts/outbound_packets/op13.json for what this looks like)
+		void OpenPrivateChannelView(const Snowflake &channel);
 
 	};
 }

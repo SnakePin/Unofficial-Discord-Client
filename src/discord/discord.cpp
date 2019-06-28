@@ -218,25 +218,8 @@ void Client::Run() {
 	websocket.start();
 }
 
-void Client::OpenGuildChannel(const Snowflake &guild, const Snowflake &channel) {
-	/*
-	{
-		"op": 14,
-		"d": {
-			"guild_id": "590695217028661248",
-			"typing": true,
-			"activities": true,
-			"channels": {
-				"590695217028661250": [
-					[
-						0,
-						99
-					]
-				]
-			}
-		}
-	}
-	 */
+std::string Client::GenerateGuildChannelViewPacket(const Snowflake &guild, const Snowflake &channel) {
+	// Produce a packet that looks like scripts/outbound_packets/op14.json
 
 	std::string gid = std::to_string(guild.value);
 	std::string cid = std::to_string(channel.value);
@@ -263,7 +246,13 @@ void Client::OpenGuildChannel(const Snowflake &guild, const Snowflake &channel) 
     rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
     document.Accept(writer);
 
-	asio::post(*websocket.io_service, [&] {
-		connection->send(buffer.GetString());
+	return std::string(buffer.GetString());
+}
+
+void Client::OpenGuildChannelView(const Snowflake &guild, const Snowflake &channel) {
+	std::string packet = GenerateGuildChannelViewPacket(guild, channel);
+
+	asio::post(*websocket.io_service, [=] {
+		connection->send(packet);
 	});
 }

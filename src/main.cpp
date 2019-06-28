@@ -211,7 +211,7 @@ public:
 			
 		}
 		else if(command == "switch") {
-			client->OpenGuildChannel(Discord::Snowflake(590695217028661248), Discord::Snowflake(590695217028661250));
+			client->OpenGuildChannelView(Discord::Snowflake(590695217028661248), Discord::Snowflake(590695217028661250));
 		}
 		else{
 			std::cout << "Unknown command: " << command << "\n";
