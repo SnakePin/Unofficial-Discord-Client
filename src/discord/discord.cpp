@@ -23,10 +23,11 @@ Client::Client(std::string token, AuthTokenType tokenType)
     websocket("gateway.discord.gg/?v=6&encoding=json", false),
 	sequenceNumber(0),
     
-	heartbeatTimer(nullptr),
 	// When we pass *this to HTTP_API_CLASS's constructor it will call the Client::HTTP_API_CLASS::HTTP_API_CLASS(const Client& clientObj)
 	// This means HTTP_API_CLASS will have reference to the outer class to allow it to access things like token
-	httpAPI(*this) {
+	httpAPI(*this),
+	
+	heartbeatTimer(nullptr) {
 	
 	if(tokenType == AuthTokenType::USER) {
 		std::cout << "** Client created in User mode **" << std::endl;
@@ -148,7 +149,7 @@ void Client::ProcessMessageCreate(rapidjson::Document &document) {
 void Client::Run() {
 	// Start constructing the websocket events:
 	// on_message, on_open, on_close, on_error
-	websocket.on_message = [this](std::shared_ptr<WssClient::Connection> connection, std::shared_ptr<WssClient::InMessage> in_message) {
+	websocket.on_message = [this](std::shared_ptr<WssClient::Connection> /* connection */, std::shared_ptr<WssClient::InMessage> in_message) {
 		std::string response = in_message->string(); // string() can only be called once! see sws/client_ws.hpp for why
 	
 		rapidjson::Document document;
@@ -237,20 +238,32 @@ void Client::OpenGuildChannel(const Snowflake &guild, const Snowflake &channel) 
 	}
 	 */
 
+	std::string gid = std::to_string(guild.value);
+	std::string cid = std::to_string(channel.value);
+
 	rapidjson::Document document;
 	rapidjson::Document::AllocatorType& allocator = document.GetAllocator();
 	rapidjson::Pointer("/op").Set(document, 14); // GUILD_SWITCH
-	rapidjson::Pointer("/d/guild_id").Set(document, rapidjson::Value(std::to_string(guild.value).c_str()));
+	rapidjson::Pointer("/d/guild_id").Set(document, gid.c_str());
 	rapidjson::Pointer("/d/typing").Set(document, true);
 	rapidjson::Pointer("/d/activities").Set(document, true);
 
-	document["d"].AddMember("channels", rapidjson::Value(rapidjson::kObjectType), allocator);
-	document["d"].GetObject()["channels"].AddMember(std::to_string(channel.value).c_str(), rapidjson::Value(rapidjson::kArrayType), allocator);
-	document["d"]["channels"].PushBack(0, allocator).PushBack(99, allocator);
+	rapidjson::Value inn(rapidjson::kArrayType);
+	inn.PushBack(0, allocator);
+	inn.PushBack(99, allocator);
+	rapidjson::Value arr(rapidjson::kArrayType);
+	arr.PushBack(inn, allocator);
+
+	rapidjson::Value obj(rapidjson::kObjectType);
+	obj.AddMember(rapidjson::Value(cid.c_str(), allocator), arr, allocator);
+
+	rapidjson::Pointer("/d/channels").Set(document, obj);
 
 	rapidjson::StringBuffer buffer;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
     document.Accept(writer);
 
-	connection->send(buffer.GetString());
+	asio::post(*websocket.io_service, [&] {
+		connection->send(buffer.GetString());
+	});
 }
