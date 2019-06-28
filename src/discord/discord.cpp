@@ -8,6 +8,8 @@
 #include <rapidjson/writer.h>
 #include <rapidjson/pointer.h>
 #include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
+#include <rapidjson/filewritestream.h>
 
 #include <memory>
 #include <algorithm>
@@ -26,6 +28,10 @@ Client::Client(std::string token, AuthTokenType tokenType)
 	// This means HTTP_API_CLASS will have reference to the outer class to allow it to access things like token
 	httpAPI(*this) {
 	
+	if(tokenType == AuthTokenType::USER) {
+		std::cout << "** Client created in User mode **" << std::endl;
+	}
+
 }
 
 std::string Client::GenerateIdentifyPacket() {
@@ -33,14 +39,27 @@ std::string Client::GenerateIdentifyPacket() {
 	
 	rapidjson::Pointer("/op").Set(document, 2);
 	rapidjson::Pointer("/d/token").Set(document, this->token.token.c_str());
+	rapidjson::Pointer("/d/compress").Set(document, false);
 	
-	rapidjson::Pointer("/d/properties/$os").Set(document, "Linux");
-	rapidjson::Pointer("/d/properties/$browser").Set(document, "discord.py");
-	rapidjson::Pointer("/d/properties/$device").Set(document, "discord.py");
-	rapidjson::Pointer("/d/properties/$referrer").Set(document, "");
-	rapidjson::Pointer("/d/properties/$referring_domain").Set(document, "");
+	rapidjson::Pointer("/d/properties/os").Set(document, "Linux");
+	rapidjson::Pointer("/d/properties/browser").Set(document, "Chrome");
+	rapidjson::Pointer("/d/properties/device").Set(document, "");
+	rapidjson::Pointer("/d/properties/browser_user_agent").Set(document, httpAPI.userAgent.c_str());
+	rapidjson::Pointer("/d/properties/browser_version").Set(document, "");
+	rapidjson::Pointer("/d/properties/os_version").Set(document, "");
+	rapidjson::Pointer("/d/properties/referrer").Set(document, "");
+	rapidjson::Pointer("/d/properties/referring_domain").Set(document, "");
+	rapidjson::Pointer("/d/properties/referrer_current").Set(document, "");
+	rapidjson::Pointer("/d/properties/referring_domain_current").Set(document, "");
+
+	rapidjson::Pointer("/d/properties/release_channel").Set(document, "stable");
+	rapidjson::Pointer("/d/properties/client_build_number").Set(document, 40393);
+	rapidjson::Pointer("/d/properties/client_event_source").Set(document, rapidjson::Value(rapidjson::kNullType));
 	
-	rapidjson::Pointer("/d/presence/status").Set(document, "available");
+	rapidjson::Pointer("/d/presence/status").Set(document, "online");
+	rapidjson::Pointer("/d/presence/since").Set(document, 0);
+	rapidjson::Pointer("/d/presence/activities").Set(document, rapidjson::Value(rapidjson::kArrayType)); // TODO implement activities
+	rapidjson::Pointer("/d/presence/afk").Set(document, false);
 	
 	rapidjson::StringBuffer buffer;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
@@ -103,6 +122,16 @@ void Client::OnHelloPacket() {
 }
 
 void Client::ProcessReady(rapidjson::Document &document) {
+	FILE* fp = fopen("ready.json", "wb");
+
+	char writeBuffer[65536];
+	rapidjson::FileWriteStream os(fp, writeBuffer, sizeof(writeBuffer));
+
+	rapidjson::Writer<rapidjson::FileWriteStream> writer(os);
+	document.Accept(writer);
+
+	fclose(fp);
+	
 	ReadyPacket packet = ReadyPacket::LoadFrom(document, "/d");
 	sessionID = packet.sessionID;
 	OnReadyPacket(packet);
