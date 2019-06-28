@@ -3,6 +3,7 @@
 #include <discord/user.hpp>
 #include <discord/emoji.hpp>
 #include <discord/guild.hpp>
+#include <discord/channel.hpp>
 
 #include <vector>
 #include <optional>
@@ -13,10 +14,9 @@ namespace Discord {
 		int32_t version;
 		User user;
 
+		std::vector<Channel> privateChannels;
 		std::vector<Guild> guilds;
 		std::string sessionID;
-
-		std::optional<std::vector<int32_t>> shard;
 
 		static ReadyPacket LoadFrom(rapidjson::Document &doc, std::string pointer);
 	};

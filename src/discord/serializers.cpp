@@ -221,6 +221,14 @@ Discord::Channel Discord::Channel::LoadFrom(rapidjson::Document &doc, std::strin
 	if( (ptr = rapidjson::Pointer((pointer + "/last_pin_timestamp").c_str()).Get(doc)) && ptr->IsString())
 		g.lastPinTimestamp = ptr->GetString();
 
+	if( (ptr = rapidjson::Pointer((pointer + "/recipients").c_str()).Get(doc)) && ptr->IsArray()) {
+		int i=0;
+		for(auto& element : ptr->GetArray()) {
+			if(!g.recipients) g.recipients = std::vector<User>();
+			g.recipients.value().push_back(User::LoadFrom(doc, pointer + "/recipients/" + std::to_string(i++)));
+		}
+	}
+
 	return g;
 }
 
@@ -406,6 +414,12 @@ Discord::ReadyPacket Discord::ReadyPacket::LoadFrom(rapidjson::Document &doc, st
 	if( (ptr = rapidjson::Pointer((pointer + "/user").c_str()).Get(doc)) && ptr->IsObject())
 		g.user = User::LoadFrom(doc, pointer + "/user");
 
+	if( (ptr = rapidjson::Pointer((pointer + "/private_channels").c_str()).Get(doc)) && ptr->IsArray()) {
+		int i=0;
+		for(auto& element : ptr->GetArray())
+			g.privateChannels.push_back(Channel::LoadFrom(doc, pointer + "/private_channels/" + std::to_string(i++)));
+	}
+
 	if( (ptr = rapidjson::Pointer((pointer + "/guilds").c_str()).Get(doc)) && ptr->IsArray()) {
 		int i=0;
 		for(auto& element : ptr->GetArray())
@@ -415,13 +429,6 @@ Discord::ReadyPacket Discord::ReadyPacket::LoadFrom(rapidjson::Document &doc, st
 	if( (ptr = rapidjson::Pointer((pointer + "/session_id").c_str()).Get(doc)) && ptr->IsString())
 		g.sessionID = ptr->GetString();
 	
-	if( (ptr = rapidjson::Pointer((pointer + "/shard").c_str()).Get(doc)) && ptr->IsArray()) {
-		int i=0;
-		for(auto& element : ptr->GetArray())
-			if(g.shard)
-				g.shard.value().push_back(element.GetInt());
-	}
-
 	return g;
 }
 

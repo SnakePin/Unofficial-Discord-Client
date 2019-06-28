@@ -1,6 +1,7 @@
 #pragma once
 
 #include <discord/snowflake.hpp>
+#include <discord/user.hpp>
 
 #include <rapidjson/document.h>
 
@@ -31,7 +32,7 @@ namespace Discord {
 		std::optional<int32_t> userLimit;
 		std::optional<int32_t> rateLimitPerUser;
 
-		// User[] recipients
+		std::optional<std::vector<User>> recipients;
 
 		std::optional<std::string> lastPinTimestamp;
 
