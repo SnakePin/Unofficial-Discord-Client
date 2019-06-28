@@ -53,6 +53,7 @@ namespace Discord {
 		class HTTP_API_CLASS
 		{
 		public:
+			std::string userAgent;
 			HTTP_API_CLASS(const Client& clientObj);
 			HTTP_API_CLASS(const AuthToken _token);
 

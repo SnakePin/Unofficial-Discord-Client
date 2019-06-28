@@ -10,12 +10,13 @@ static std::string AuthTokenToAuthHeaderValue(const AuthToken& token);
 static std::string JsonDocumentToJsonString(rapidjson::Document& jsonDocument);
 
 Client::HTTP_API_CLASS::HTTP_API_CLASS(const Client& clientObj)
-    : token(clientObj.token) {
+    : HTTP_API_CLASS(clientObj.token) {
 
 }
 
 Client::HTTP_API_CLASS::HTTP_API_CLASS(const AuthToken _token)
-    : token(_token) {
+    : token(_token),
+	userAgent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Ubuntu Chromium/75.0.3770.90 Chrome/75.0.3770.90 Safari/537.36") {
 	
 }
 
@@ -57,7 +58,8 @@ void Client::HTTP_API_CLASS::SendMessage(const Discord::Snowflake &channelID, Di
                                        cpr::Header
 										{
 										   {"Authorization", AuthTokenToAuthHeaderValue(token)},
-										   {"Content-Type", "application/json"}
+										   {"Content-Type", "application/json"},
+										   {"User-Agent", userAgent}
 										},
                                        cpr::VerifySsl{false});
     //response.status_code;                  // 200
@@ -71,7 +73,8 @@ void Client::HTTP_API_CLASS::StartTyping(const Discord::Snowflake &channelID)
                                        cpr::Header
                                        {
                                             {"Authorization", AuthTokenToAuthHeaderValue(token)},
-                                            {"Content-Length", "0"}
+                                            {"Content-Length", "0"},
+											{"User-Agent", userAgent}
                                        },
                                        cpr::VerifySsl{false});
 }
