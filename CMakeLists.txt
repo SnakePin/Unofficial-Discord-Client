@@ -8,11 +8,23 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
 
+
+if (WIN32 AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+  set(CMAKE_CXX_FLAGS "/Wall /Wextra")
+  set(CMAKE_CXX_FLAGS_DEBUG "/DEBUG:FULL")
+  set(CMAKE_CXX_FLAGS_RELEASE "/O3")
+elseif(WIN32 AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+  set(CMAKE_CXX_FLAGS "/Wall /Wextra")
+  set(CMAKE_CXX_FLAGS_DEBUG "/debug:full")
+  set(CMAKE_CXX_FLAGS_RELEASE "/O3")
+else()
+  set(CMAKE_CXX_FLAGS "-Wall -Wextra")
+  set(CMAKE_CXX_FLAGS_DEBUG "-g")
+  set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+endif()
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_FLAGS "-Wall -Wextra")
-set(CMAKE_CXX_FLAGS_DEBUG "-g")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
 # Set the project name
 project (Unofficial-Discord-Client)
