@@ -15,6 +15,7 @@
 #include <iostream>
 #include <fstream>
 #include <ctime>
+#include <variant>
 
 #include <rapidjson/document.h>
 #include <rapidjson/pointer.h>
@@ -121,11 +122,45 @@ void testReactionAdd() {
 	std::cout << "Emoji ID: " << emote.id.value << std::endl;
 }
 
+void testGuildMemberListUpdate() {
+	using namespace Discord;
+
+	int read;
+	char *json = ReadAllBytes("GuildMemberListUpdatePacket.json", &read);
+	rapidjson::Document doc;
+	doc.Parse(json);
+    delete[] json;
+
+	GuildMemberListUpdatePacket packet = GuildMemberListUpdatePacket::LoadFrom(doc, "/d");
+	std::cout << "GuildMemberListUpdatePacket\nGuild ID: " << packet.guildID.value << std::endl;
+	std::cout << "We have these groups: ";
+	for(const GuildMemberListGroup &group : packet.groups) std::cout << group.id << "(" << group.count << "), ";
+	std::cout << std::endl;
+
+	std::cout << "We have these operations:" << std::endl;
+	for(const GuildMemberListUpdateOperation& operation : packet.operations) {
+		std::cout << "    " << "OP: " << operation.op << std::endl;
+		std::cout << "    " << "Range: " << operation.range.first << " - " << operation.range.second << std::endl;
+
+		for(const std::variant<GuildMemberListGroup, Member>& item : operation.items) {
+			if(std::holds_alternative<GuildMemberListGroup>(item)) {
+				GuildMemberListGroup group = std::get<GuildMemberListGroup>(item);
+				std::cout << "        " << group.id << " - " << group.count << std::endl;
+
+			}else if(std::holds_alternative<Member>(item)) {
+				Member member = std::get<Member>(item);
+				std::cout << "        " << "  Member: " << member.user.username << std::endl;
+			}
+		}
+	}
+}
+
 int main() {
-	testGuildCreate();
-	testMessageCreate();
-	testTypingStart();
-	testReactionAdd();
+	// testGuildCreate();
+	// testMessageCreate();
+	// testTypingStart();
+	// testReactionAdd();
+	testGuildMemberListUpdate();
 	return 0;
 }
 

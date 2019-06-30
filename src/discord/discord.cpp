@@ -187,6 +187,9 @@ void Client::Run() {
 			}else if(eventName == "TYPING_START") {
 				OnTypingStart(TypingStartPacket::LoadFrom(document, "/d"));
 
+			}else if(eventName == "GUILD_MEMBER_LIST_UPDATE") {
+				OnGuildMemberListUpdate(GuildMemberListUpdatePacket::LoadFrom(document, "/d"));
+
 			}else if(eventName == "RESUMED"){
 				std::cout << "Session resumed!" << std::endl;
 

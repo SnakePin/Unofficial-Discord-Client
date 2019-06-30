@@ -45,6 +45,7 @@ namespace Discord {
 		virtual void OnHelloPacket();
 		virtual void OnReadyPacket(ReadyPacket packet) = 0;
 		virtual void OnGuildCreate(Guild guild) = 0;
+		virtual void OnGuildMemberListUpdate(GuildMemberListUpdatePacket packet) = 0;
 		virtual void OnMessageCreate(Message m) = 0;
 		virtual void OnTypingStart(TypingStartPacket p) = 0;
 		virtual void OnMessageReactionAdd(MessageReactionPacket p) = 0;
@@ -53,7 +54,6 @@ namespace Discord {
 		class HTTP_API_CLASS
 		{
 		public:
-			std::string userAgent;
 			HTTP_API_CLASS(const Client& clientObj);
 			HTTP_API_CLASS(const AuthToken _token);
 
@@ -61,6 +61,7 @@ namespace Discord {
 			void SendMessage(const Snowflake &channelID, MessagePacket messageToSend);
 
 			const AuthToken token;
+			const std::string userAgent;
 		};
 		HTTP_API_CLASS httpAPI;
 	private:
@@ -94,7 +95,7 @@ namespace Discord {
 		std::string GeneratePrivateChannelPacket(const Snowflake &channel);
 
 	public:
-	
+
 		// Sends an OP 14 signal.
 		// This tells Discord what channel we are 'looking' at.
 		// OP 14 (see scripts/outbound_packets/op14.json for what this looks like)

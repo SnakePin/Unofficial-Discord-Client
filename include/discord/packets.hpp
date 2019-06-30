@@ -7,8 +7,96 @@
 
 #include <vector>
 #include <optional>
+#include <variant>
 
 namespace Discord {
+
+	struct GuildMemberListGroup {
+		std::string id; // NOT a Snowflake
+		int32_t count;
+
+		static GuildMemberListGroup LoadFrom(rapidjson::Document &doc, std::string pointer) {
+			GuildMemberListGroup g;
+			rapidjson::Value *ptr = nullptr;
+
+			if( (ptr = rapidjson::Pointer((pointer + "/id").c_str()).Get(doc)) && ptr->IsString())
+				g.id = ptr->GetString();
+
+			if( (ptr = rapidjson::Pointer((pointer + "/count").c_str()).Get(doc)) && ptr->IsInt())
+				g.count = ptr->GetInt();
+
+			return g;
+		}
+	};
+
+	struct GuildMemberListUpdateOperation {
+		std::pair<int32_t, int32_t> range;
+		std::string op;
+		std::vector< std::variant<GuildMemberListGroup, Member> > items;
+
+		static GuildMemberListUpdateOperation LoadFrom(rapidjson::Document &doc, std::string pointer) {
+			GuildMemberListUpdateOperation g;
+			rapidjson::Value *ptr = nullptr;
+
+			if( (ptr = rapidjson::Pointer((pointer + "/op").c_str()).Get(doc)) && ptr->IsString())
+				g.op = ptr->GetString();
+			
+			if( (ptr = rapidjson::Pointer((pointer + "/range").c_str()).Get(doc)) && ptr->IsArray())
+				g.range = std::make_pair<int32_t, int32_t>(
+					rapidjson::Pointer((pointer + "/range/0").c_str()).Get(doc)->GetInt(),
+					rapidjson::Pointer((pointer + "/range/1").c_str()).Get(doc)->GetInt()
+				);
+
+			if( (ptr = rapidjson::Pointer((pointer + "/items").c_str()).Get(doc)) && ptr->IsArray()) {
+				int i = 0;
+				for(rapidjson::Value& item : ptr->GetArray()) {
+					if(item.IsObject()) {
+						if(item.HasMember("member")) {
+							g.items.push_back( Member::LoadFrom(doc, pointer + "/items/" + std::to_string(i) + "/member") );
+						}else if(item.HasMember("group")) {
+							g.items.push_back( GuildMemberListGroup::LoadFrom(doc, pointer + "/items/" + std::to_string(i) + "/group") );
+						}
+
+					}
+					i++;
+				}
+			}
+
+			return g;
+		}
+	};
+
+	struct GuildMemberListUpdatePacket {
+		std::vector<GuildMemberListUpdateOperation> operations;
+
+		std::string id; // NOT a Snowflake
+		Snowflake guildID;
+		std::vector<GuildMemberListGroup> groups;
+
+		static GuildMemberListUpdatePacket LoadFrom(rapidjson::Document &doc, std::string pointer) {
+			GuildMemberListUpdatePacket g;
+			rapidjson::Value *ptr = nullptr;
+
+			if( (ptr = rapidjson::Pointer((pointer + "/id").c_str()).Get(doc)) && ptr->IsString())
+				g.id = ptr->GetString();
+			
+			if( (ptr = rapidjson::Pointer((pointer + "/guild_id").c_str()).Get(doc)) && ptr->IsString())
+				g.guildID = Snowflake(ptr->GetString());
+
+			if( (ptr = rapidjson::Pointer((pointer + "/ops").c_str()).Get(doc)) && ptr->IsArray()) {
+				int i=0;
+				for(auto& element : ptr->GetArray())
+					g.operations.push_back(GuildMemberListUpdateOperation::LoadFrom(doc, pointer + "/ops/" + std::to_string(i++)));
+			}
+
+			if( (ptr = rapidjson::Pointer((pointer + "/groups").c_str()).Get(doc)) && ptr->IsArray()) {
+				for(uint32_t i=0; i<ptr->GetArray().Size(); i++)
+					g.groups.push_back(GuildMemberListGroup::LoadFrom(doc, pointer + "/groups/" + std::to_string(i)));
+			}
+
+			return g;
+		}
+	};
 
 	struct ReadyPacket {
 		int32_t version;

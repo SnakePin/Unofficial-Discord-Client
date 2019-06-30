@@ -1,0 +1,145 @@
+{
+    "t": "GUILD_MEMBER_LIST_UPDATE",
+    "s": 5,
+    "op": 0,
+    "d": {
+        "ops": [
+            {
+                "range": [
+                    0,
+                    99
+                ],
+                "op": "SYNC",
+                "items": [
+                    {
+                        "group": {
+                            "id": "online",
+                            "count": 3
+                        }
+                    },
+                    {
+                        "member": {
+                            "user": {
+                                "username": "m.alice",
+                                "id": "315794511966240769",
+                                "discriminator": "2920",
+                                "avatar": "0ce3ea546f0d18614ab4568d3fbaf2be"
+                            },
+                            "roles": [],
+                            "presence": {
+                                "user": {
+                                    "id": "315794511966240769"
+                                },
+                                "status": "online",
+                                "game": null,
+                                "client_status": {
+                                    "web": "online"
+                                },
+                                "activities": []
+                            },
+                            "premium_since": null,
+                            "nick": "malice",
+                            "mute": false,
+                            "joined_at": "2019-06-27T09:57:04.344927+00:00",
+                            "deaf": false
+                        }
+                    },
+                    {
+                        "member": {
+                            "user": {
+                                "username": "saucecode",
+                                "id": "181227668241383425",
+                                "discriminator": "1710",
+                                "avatar": "83b6ac6ac2e9f818ddb4ef362fcdfa28"
+                            },
+                            "roles": [],
+                            "presence": {
+                                "user": {
+                                    "id": "181227668241383425"
+                                },
+                                "status": "online",
+                                "game": null,
+                                "client_status": {
+                                    "desktop": "online"
+                                },
+                                "activities": []
+                            },
+                            "mute": false,
+                            "joined_at": "2019-06-19T00:11:54.336000+00:00",
+                            "deaf": false
+                        }
+                    },
+                    {
+                        "member": {
+                            "user": {
+                                "username": "SnakePin",
+                                "id": "557006338459172874",
+                                "discriminator": "4452",
+                                "avatar": "9440903dfe7d8630498a92bba2139b8c"
+                            },
+                            "roles": [],
+                            "presence": {
+                                "user": {
+                                    "id": "557006338459172874"
+                                },
+                                "status": "online",
+                                "game": null,
+                                "client_status": {
+                                    "desktop": "online"
+                                },
+                                "activities": []
+                            },
+                            "mute": false,
+                            "joined_at": "2019-06-19T14:23:19.089000+00:00",
+                            "deaf": false
+                        }
+                    },
+                    {
+                        "group": {
+                            "id": "offline",
+                            "count": 1
+                        }
+                    },
+                    {
+                        "member": {
+                            "user": {
+                                "username": "HCl",
+                                "id": "304949342836490252",
+                                "discriminator": "8045",
+                                "bot": true,
+                                "avatar": "7cc42b5d1935fd2dd8c75f0f16f7cce9"
+                            },
+                            "roles": [
+                                "590696302271266819"
+                            ],
+                            "presence": {
+                                "user": {
+                                    "id": "304949342836490252"
+                                },
+                                "status": "offline",
+                                "sessions": {},
+                                "client_status": {},
+                                "activities": []
+                            },
+                            "mute": false,
+                            "joined_at": "2019-06-19T00:14:11.044000+00:00",
+                            "deaf": false
+                        }
+                    }
+                ]
+            }
+        ],
+        "id": "everyone",
+        "guild_id": "590695217028661248",
+        "groups": [
+            {
+                "id": "online",
+                "count": 3
+            },
+            {
+                "id": "offline",
+                "count": 1
+            }
+        ]
+    }
+}
