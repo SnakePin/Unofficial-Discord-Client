@@ -1,5 +1,7 @@
 #include <iostream>
 #include <thread>
+#include <regex>
+#include <variant>
 
 #include <discord/discord.hpp>
 #include <discord/message.hpp>
@@ -21,6 +23,7 @@ public:
 
 	std::shared_ptr<asio::thread_pool> pool; // user created threadpool for making HTTP requests
 	std::vector<Discord::Guild> guilds;
+	std::vector<Discord::Channel> privateChannels;
 	std::time_t lastSessionUpdateTime;
 
 	MyClient(std::string token, Discord::AuthTokenType tokenType)
@@ -63,9 +66,13 @@ public:
 		std::cout << "Received ready packet: " << packet.version << " " << packet.sessionID << " " << packet.user.username << std::endl;
 		std::cout << "Writing session data to session.json..." << std::endl;
 
-		for(Discord::Guild &g : packet.guilds) {
-			guilds.push_back(g);
-		}
+		// Only add Guilds whose IDs we don't have.
+		std::vector<Discord::Snowflake> existing(guilds.size());
+		std::transform(guilds.begin(), guilds.end(), existing.begin(), [](const Discord::Guild& g){ return g.id; });
+
+		std::copy_if(packet.guilds.begin(), packet.guilds.end(), std::back_inserter(guilds), [&](const Discord::Guild& g){
+			return std::find(existing.begin(), existing.end(), g.id) == existing.end();
+		});
 
 		UpdateSessionJson();
 	}
@@ -83,6 +90,31 @@ public:
 		}
 
 		UpdateSessionJson();
+	}
+
+	void OnGuildMemberListUpdate(Discord::GuildMemberListUpdatePacket packet) {
+		using namespace Discord;
+		std::cout << "Received: GuildMemberListUpdatePacket\nGuild ID: " << packet.guildID.value << std::endl;
+		std::cout << "Groups: ";
+		for(const GuildMemberListGroup &group : packet.groups) std::cout << group.id << "(" << group.count << "), ";
+		std::cout << std::endl;
+
+		std::cout << "We have these operations:" << std::endl;
+		for(const GuildMemberListUpdateOperation& operation : packet.operations) {
+			std::cout << "    " << "OP: " << operation.op << std::endl;
+			std::cout << "    " << "Range: " << operation.range.first << " - " << operation.range.second << std::endl;
+
+			for(const std::variant<GuildMemberListGroup, Member>& item : operation.items) {
+				if(std::holds_alternative<GuildMemberListGroup>(item)) {
+					GuildMemberListGroup group = std::get<GuildMemberListGroup>(item);
+					std::cout << "        " << group.id << " - " << group.count << std::endl;
+
+				}else if(std::holds_alternative<Member>(item)) {
+					Member member = std::get<Member>(item);
+					std::cout << "        " << "  Member: " << member.user.username << std::endl;
+				}
+			}
+		}
 	}
 
 	void OnTypingStart(Discord::TypingStartPacket packet) {
@@ -211,7 +243,9 @@ public:
 			
 		}
 		else if(command == "switch") {
+			// Switch view to the guild/channel "otherwise die" "#general"
 			client->OpenGuildChannelView(Discord::Snowflake(590695217028661248), Discord::Snowflake(590695217028661250));
+
 		}
 		else{
 			std::cout << "Unknown command: " << command << "\n";
