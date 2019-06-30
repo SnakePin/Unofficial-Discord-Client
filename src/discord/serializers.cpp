@@ -81,7 +81,6 @@ Discord::Guild Discord::Guild::LoadFrom(rapidjson::Document &doc, std::string po
 	}
 
 	if( (ptr = rapidjson::Pointer((pointer + "/features").c_str()).Get(doc)) && ptr->IsArray()) {
-		int i=0;
 		for(auto& element : ptr->GetArray())
 			if(element.IsString())
 				g.features.push_back(element.GetString());
@@ -238,7 +237,7 @@ Discord::Member Discord::Member::LoadFrom(rapidjson::Document &doc, std::string 
 	Member g;
 	rapidjson::Value *ptr = nullptr;
 
-	if( (ptr = rapidjson::Pointer((pointer + "/nickname").c_str()).Get(doc)) && ptr->IsString())
+	if( (ptr = rapidjson::Pointer((pointer + "/nick").c_str()).Get(doc)) && ptr->IsString())
 		g.nickname = ptr->GetString();
 
 	// This is an array of std::string (Snowflakes), NOT Discord::Role
