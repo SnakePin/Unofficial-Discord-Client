@@ -259,3 +259,30 @@ void Client::OpenGuildChannelView(const Snowflake &guild, const Snowflake &chann
 		connection->send(packet);
 	});
 }
+
+void Client::OpenPrivateChannelView(const Snowflake &channel) {
+	// TODO this isn't working - reason is yet to be determined
+	return;
+
+	// Yes, this packet really is that short.
+	/*  {
+            "op": 13,
+            "d": {
+                "channel_id": "593804939407392793"
+            }
+        }
+	*/
+	rapidjson::Document document;
+	rapidjson::Pointer("/op").Set(document, 13);
+	rapidjson::Pointer("/d/channel_id").Set(document, std::to_string(channel.value).c_str());
+
+	rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+    document.Accept(writer);
+
+	std::string packet = buffer.GetString();
+
+	asio::post(*websocket.io_service, [=] {
+		connection->send(packet);
+	});
+}

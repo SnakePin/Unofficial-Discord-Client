@@ -92,7 +92,6 @@ namespace Discord {
 
 
 		std::string GenerateGuildChannelViewPacket(const Snowflake &guild, const Snowflake &channel);
-		std::string GeneratePrivateChannelPacket(const Snowflake &channel);
 
 	public:
 
