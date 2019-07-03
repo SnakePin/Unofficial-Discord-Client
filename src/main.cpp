@@ -66,13 +66,27 @@ public:
 		std::cout << "Received ready packet: " << packet.version << " " << packet.sessionID << " " << packet.user.username << std::endl;
 		std::cout << "Writing session data to session.json..." << std::endl;
 
-		// Only add Guilds whose IDs we don't have.
-		std::vector<Discord::Snowflake> existing(guilds.size());
-		std::transform(guilds.begin(), guilds.end(), existing.begin(), [](const Discord::Guild& g){ return g.id; });
+		// TODO shorten this
 
-		std::copy_if(packet.guilds.begin(), packet.guilds.end(), std::back_inserter(guilds), [&](const Discord::Guild& g){
-			return std::find(existing.begin(), existing.end(), g.id) == existing.end();
-		});
+		// Only add Guilds whose IDs we don't have.
+		{
+			std::vector<Discord::Snowflake> existing(guilds.size());
+			std::transform(guilds.begin(), guilds.end(), existing.begin(), [](const Discord::Guild& g){ return g.id; });
+
+			std::copy_if(packet.guilds.begin(), packet.guilds.end(), std::back_inserter(guilds), [&](const Discord::Guild& g){
+				return std::find(existing.begin(), existing.end(), g.id) == existing.end();
+			});
+		}
+
+		// Ditto, private channels
+		{
+			std::vector<Discord::Snowflake> existing(privateChannels.size());
+			std::transform(privateChannels.begin(), privateChannels.end(), existing.begin(), [](const Discord::Channel& c){ return c.id; });
+
+			std::copy_if(packet.privateChannels.begin(), packet.privateChannels.end(), std::back_inserter(privateChannels), [&](const Discord::Channel& c){
+				return std::find(existing.begin(), existing.end(), c.id) == existing.end();
+			});
+		}
 
 		UpdateSessionJson();
 	}
@@ -224,9 +238,19 @@ public:
 
 			std::cout << "Found " << client->guilds.size() << " guilds:\n    ";
 			for(Discord::Guild &guild : client->guilds) {
-				std::cout << "\"" << guild.name << "\" ";
+				std::cout << guild.name << " | " << guild.id.value << std::endl;
+				for(Discord::Channel &channel : guild.channels) {
+					std::cout << "    Type " << channel.type << " | " << channel.name.value_or("(Channel name?)") << " | " << channel.id.value << std::endl;
+				}
+				std::cout << std::endl;
+				std::cout << std::endl;
 			}
-			std::cout << "\n";
+
+			std::cout << "Found " << client->privateChannels.size() << " private channels:\n";
+			for(Discord::Channel &chan : client->privateChannels) {
+				std::cout << "Type: " << chan.type << " | " << chan.name.value_or("(Noname)") << " | " << chan.id.value << std::endl;
+				std::cout << std::endl;
+			}
 			
 		}
 		else if(command == "members") {
@@ -242,12 +266,44 @@ public:
 			std::cout << "\n";
 			
 		}
-		else if(command == "switch") {
-			// Switch view to the guild/channel "otherwise die" "#general"
-			client->OpenGuildChannelView(Discord::Snowflake(590695217028661248), Discord::Snowflake(590695217028661250));
+		else if(command.rfind("switch", 0) == 0) {
+
+			static std::regex singleArgument("^switch \\d+$");
+			static std::regex doubleArgument("^switch \\d+ \\d+$");
+
+			// Single argument indicates switching to a private message channel
+			if(std::regex_match(command, singleArgument)) {
+				std::smatch match;
+				std::regex_search(command, match, std::regex("\\d+"));
+				Discord::Snowflake channelID(match.str());
+
+				std::cout << "Switching to private channel: " << channelID.value << " (OP13) ..." << std::endl;
+				// TODO this is non functional (!??!!)
+				// client->OpenPrivateChannelView(channelID);
+
+			}
+			// Two argument indicates switching to a GUILD and CHANNEL
+			else if(std::regex_match(command, doubleArgument)) {
+				std::smatch match;
+				
+				std::regex_search(command, match, std::regex("\\d+"));
+				Discord::Snowflake guildID(match.str());
+				command = match.suffix().str();
+
+				std::regex_search(command, match, std::regex("\\d+"));
+				Discord::Snowflake channelID(match.str());
+
+				std::cout << "Switching to Guild/Channel: " << guildID.value << "/" << channelID.value << " (OP14) ..." << std::endl;
+				client->OpenGuildChannelView(guildID, channelID);
+
+			}
+			else {
+				goto UNKNOWN_COMMAND; // haHaa!
+			}
 
 		}
 		else{
+			UNKNOWN_COMMAND:
 			std::cout << "Unknown command: " << command << "\n";
 		}
 	}
