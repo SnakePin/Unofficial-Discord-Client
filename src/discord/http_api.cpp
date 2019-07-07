@@ -1,8 +1,12 @@
 #include <discord/discord.hpp>
+
 #include <rapidjson/pointer.h>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
+
 #include <cpr/cpr.h>
+
+#include <tinyformat.h>
 
 using namespace Discord;
 
@@ -77,4 +81,33 @@ void Client::HTTP_API_CLASS::StartTyping(const Discord::Snowflake &channelID)
 											{"User-Agent", userAgent}
                                        },
                                        cpr::VerifySsl{false});
+}
+
+bool Client::HTTP_API_CLASS::GetMessagesInto(const Snowflake &channelID, std::vector<Message>& messages, int count) {
+	cpr::Response response = cpr::Get(
+		cpr::Url{tfm::format("https://discordapp.com/api/v6/channels/%s/messages?limit=%d", channelID.value, count)},
+		cpr::Header
+		{
+			{"Authorization", AuthTokenToAuthHeaderValue(token)},
+			{"User-Agent", userAgent}
+		},
+		cpr::VerifySsl{false}
+	);
+
+	if(response.status_code == 200) {
+		rapidjson::Document document;
+		document.Parse(response.text.c_str());
+
+		if(!document.IsArray()) return false;
+
+		for(int i=0; i<document.GetArray().Size(); i++) {
+			messages.push_back(
+				Message::LoadFrom(document, tfm::format("/%d", i))
+			);
+		}
+
+		return true;
+	}
+
+	return false;
 }

@@ -60,6 +60,12 @@ namespace Discord {
 			void StartTyping(const Snowflake &channelID);
 			void SendMessage(const Snowflake &channelID, MessagePacket messageToSend);
 
+
+			// Requests the (default: 50) most recent messages from a given channel, and
+			// pushes them into the vector. Returns true if the request was successful.
+			// Success does not necessarily mean that any new messages were received, however.
+			bool GetMessagesInto(const Snowflake &channelID, std::vector<Message>& messages, int count = 50);
+
 			const AuthToken token;
 			const std::string userAgent;
 		};
