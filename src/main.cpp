@@ -18,6 +18,8 @@
 #include <rapidjson/filewritestream.h>
 #include <rapidjson/filereadstream.h>
 
+#include <tinyformat.h>
+
 class MyClient : public Discord::Client {
 public:
 
@@ -219,6 +221,25 @@ public:
 				}
 			);
 			
+		}
+		else if(command.rfind("messages", 0) == 0) {
+			Discord::Snowflake channelID(command.substr(command.find(' ')));
+
+			asio::post(*client->pool, 
+				[=] {
+					std::vector<Discord::Message> newMessages;
+					std::cout << "Requesting 50 messages from channel " << channelID.value << "...\n";
+
+					client->httpAPI.GetMessagesInto(channelID, newMessages);
+
+					std::cout << "Got " << newMessages.size() << " new messages.\n";
+					for(const auto& message : newMessages) {
+						tfm::printf("<%s> %s\n", message.author.username, message.content);
+					}
+					std::cout << "--------------------------\n";
+				}
+			);
+
 		}
 		else if(command.rfind("delaymsg", 0) == 0) {
 			// Sends a 'typing' signal, then the message after a 5 second delay.
