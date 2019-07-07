@@ -38,6 +38,7 @@ For represented discord packets, see `discord/packets.hpp` in the include folder
  - [Simple-Websocket-Server](https://gitlab.com/eidheim/Simple-WebSocket-Server) for handling the gateway websocket client.
  - [RapidJSON](https://github.com/Tencent/rapidjson/)
  - [Asio](https://think-async.com/Asio/) required by *Simple-Websocket-Server*.
+ - [tinyformat](https://github.com/c42f/tinyformat) Useful single-line string construction functions.
 
 ### Required System Libraries
 
