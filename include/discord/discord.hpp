@@ -60,11 +60,16 @@ namespace Discord {
 			void StartTyping(const Snowflake &channelID);
 			void SendMessage(const Snowflake &channelID, MessagePacket messageToSend);
 
-
 			// Requests the (default: 50) most recent messages from a given channel, and
 			// pushes them into the vector. Returns true if the request was successful.
 			// Success does not necessarily mean that any new messages were received, however.
 			bool GetMessagesInto(const Snowflake &channelID, std::vector<Message>& messages, int count = 50);
+
+			// TODO replace with an enum
+			// TODO implement
+			// Sends a PATCH to https://discordapp.com/api/v6/users/@me/settings
+			// whose body is the JSON object {"status":"idle"} or similar.
+			void UpdatePresenceStatusSetting(std::string status);
 
 			const AuthToken token;
 			const std::string userAgent;
@@ -110,6 +115,12 @@ namespace Discord {
 		// See OpenGuildChannelView (OP 14). Does the same, but for DM channels.
 		// OP 13 (see scripts/outbound_packets/op13.json for what this looks like)
 		void OpenPrivateChannelView(const Snowflake &channel);
+
+		// Sends an OP 3 signal.
+		// Distinct from HTTP API's UpdatePresenceStatusSetting, because it only temporarily
+		// sets the status to this. Used when the Client program has detected no activity
+		// for 10 minutes, and decides that the user is now idle.
+		void UpdatePresence(std::string status);
 
 	};
 }

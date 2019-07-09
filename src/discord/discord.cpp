@@ -8,7 +8,6 @@
 #include <rapidjson/writer.h>
 #include <rapidjson/pointer.h>
 #include <rapidjson/stringbuffer.h>
-#include <rapidjson/writer.h>
 #include <rapidjson/filewritestream.h>
 
 #include <memory>
@@ -275,6 +274,25 @@ void Client::OpenPrivateChannelView(const Snowflake &channel) {
 	rapidjson::Document document;
 	rapidjson::Pointer("/op").Set(document, 13);
 	rapidjson::Pointer("/d/channel_id").Set(document, std::to_string(channel.value).c_str());
+
+	rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+    document.Accept(writer);
+
+	std::string packet = buffer.GetString();
+
+	asio::post(*websocket.io_service, [=] {
+		connection->send(packet);
+	});
+}
+
+void Client::UpdatePresence(std::string status) {
+	rapidjson::Document document;
+	rapidjson::Pointer("/op").Set(document, 3);
+	rapidjson::Pointer("/d/status").Set(document, status.c_str());
+	rapidjson::Pointer("/d/since").Set(document, 0);
+	rapidjson::Pointer("/d/afk").Set(document, false);
+	rapidjson::Pointer("/d/activities").Set(document, rapidjson::Value(rapidjson::kArrayType));
 
 	rapidjson::StringBuffer buffer;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
