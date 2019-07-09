@@ -427,6 +427,9 @@ Discord::ReadyPacket Discord::ReadyPacket::LoadFrom(rapidjson::Document &doc, st
 
 	if( (ptr = rapidjson::Pointer((pointer + "/session_id").c_str()).Get(doc)) && ptr->IsString())
 		g.sessionID = ptr->GetString();
+
+	if( (ptr = rapidjson::Pointer((pointer + "/analytics_token").c_str()).Get(doc)) && ptr->IsString())
+		g.analyticsToken = ptr->GetString();
 	
 	return g;
 }

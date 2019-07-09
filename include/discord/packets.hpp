@@ -105,6 +105,8 @@ namespace Discord {
 		std::vector<Channel> privateChannels;
 		std::vector<Guild> guilds;
 		std::string sessionID;
+		// Used for sending Discord's "science" requests.
+		std::string analyticsToken; // note for future: This is one of the many things which do not exist for Bot accounts.
 
 		static ReadyPacket LoadFrom(rapidjson::Document &doc, std::string pointer);
 	};
