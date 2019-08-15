@@ -330,6 +330,15 @@ public:
 			}
 
 		}
+		else if(command.rfind("setstatus", 0) == 0) {
+				std::string status = command.substr(command.find(' '));
+				if(status == "online" || status == "idle" || status == "dnd") {
+						client->UpdatePresence(status);
+				} else {
+						std::cout << "This is not a valid status\n";
+						return;
+				}
+		}
 		else{
 			UNKNOWN_COMMAND:
 			std::cout << "Unknown command: " << command << "\n";
