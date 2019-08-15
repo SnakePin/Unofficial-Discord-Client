@@ -74,7 +74,10 @@ public:
 
 		for(Discord::Channel &chan : g.channels) {
 			if(chan.type == 0){
-				Discord::MessagePacket messageToSend{ .content = "Hello to channel <#" + std::to_string(chan.id.value) + ">", .tts = false };
+				Discord::MessagePacket messageToSend;
+				messageToSend.content = "Hello to channel <#" + std::to_string(chan.id.value) + ">";
+				messageToSend.tts = false;
+
 				asio::post(*pool,
 					[=] {httpAPI.SendMessage(std::to_string(chan.id.value), messageToSend);}
 				);
@@ -163,7 +166,9 @@ public:
 
 		}
 		else if(command.rfind("sendmsg", 0) == 0) {
-			Discord::MessagePacket messageToSend{ .content = command.substr(command.find(' ')), .tts = false };
+			Discord::MessagePacket messageToSend;
+			messageToSend.content = command.substr(command.find(' '));
+			messageToSend.tts = false;
 
 			//This channel ID is channel ID of test discord guild's general channel's ID
 			asio::post(*client->pool, 
@@ -175,11 +180,13 @@ public:
 		}
 		else if(command.rfind("delaymsg", 0) == 0) {
 			// Sends a 'typing' signal, then the message after a 5 second delay.
-			Discord::MessagePacket messageToSend{ .content = command.substr(command.find(' ')), .tts = false };
+			Discord::MessagePacket messageToSend;
+			messageToSend.content = command.substr(command.find(' '));
+			messageToSend.tts = false;
 
 			asio::post(*client->pool,
 				[=] {
-					client->httpAPI.StartTyping(Discord::Snowflake(590695217028661250));
+					client->httpAPI.StartTyping(Discord::Snowflake(590695217028661250)); //TODO: Remove these IDs
 					std::this_thread::sleep_for(std::chrono::seconds(5));
 					client->httpAPI.SendMessage(Discord::Snowflake(590695217028661250), messageToSend);
 				}
