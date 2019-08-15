@@ -4,6 +4,8 @@
 
 #include <rapidjson/document.h>
 
+#include <optional>
+
 namespace Discord {
 
 	struct User {
