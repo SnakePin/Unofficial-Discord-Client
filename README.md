@@ -48,19 +48,17 @@ libcurl (alerady provided by CPR)
  - Install `Win64 OpenSSL v1.1.1c` or `Win32 OpenSSL v1.1.1c` from https://slproweb.com/products/Win32OpenSSL.html
  - Install [CMake](https://cmake.org/)
  - Install a Visual Studio version that is supported by CMake, you can find supported Visual Studio versions from [CMake Documentation](https://cmake.org/cmake/help/latest/manual/cmake-generators.7.html#visual-studio-generators)
- - Open command line in project root directory
- - Issue following command `cmake .`
- - Open resulting .sln file in Visual Studio
- - Build the solution
-
+ - Execute following commands in project root directory:
+ - Release build: `cmake . --config Release`
+ - Debug build: `cmake . --config Debug`
+ 
 Now depending on your configuration, you can find output files at `output\bin\Debug` or `output\bin\Release`
  
 ### Linux
  - Install libssl: `apt-get install libssl-dev` in Debian, `yum install openssl-devel` in RHEL
  - Install [CMake](https://cmake.org/)
- - Open command line in project root directory
- - Issue following commands:
- - `cmake .`
- - `make`
-
+ - Execute following commands in project root directory:
+ - Release build: `cmake . --config Release`
+ - Debug build: `cmake . --config Debug`
+ 
 Now depending on your configuration, you can find output files at `output\bin`

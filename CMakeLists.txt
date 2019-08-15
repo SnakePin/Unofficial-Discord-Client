@@ -53,8 +53,6 @@ target_include_directories(Unofficial-Discord-Client PUBLIC "${PROJECT_SOURCE_DI
 # Add CPR
 # Go away tests, go away!
 set(BUILD_CPR_TESTS OFF)
-# Static link CURL
-set(CURL_STATICLIB ON)
 add_subdirectory(external/cpr)
 target_include_directories(Unofficial-Discord-Client PUBLIC ${CPR_INCLUDE_DIRS})
 target_link_libraries(Unofficial-Discord-Client ${CPR_LIBRARIES})
@@ -69,9 +67,9 @@ target_link_libraries(Unofficial-Discord-Client ${OPENSSL_LIBRARIES})
 #include_directories(${LIBASIO_INCLUDE_DIR})
 #target_link_libraries(Unofficial-Discord-Client ${LIBASIO_LIBRARIES})
 
-# Use standalone asio (most useful comment btw)
+# Use standalone asio
 target_compile_definitions(Unofficial-Discord-Client PUBLIC USE_STANDALONE_ASIO ASIO_STANDALONE)
-
+ 
 ## Add libcrypto
 #find_package(libcrypto REQUIRED)
 #include_directories(${LIBCRYPTO_INCLUDE_DIR})
