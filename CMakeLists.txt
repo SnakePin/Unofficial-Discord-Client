@@ -53,6 +53,8 @@ target_include_directories(Unofficial-Discord-Client PUBLIC "${PROJECT_SOURCE_DI
 # Add CPR
 # Go away tests, go away!
 set(BUILD_CPR_TESTS OFF)
+# Static link CURL
+set(CURL_STATICLIB ON)
 add_subdirectory(external/cpr)
 target_include_directories(Unofficial-Discord-Client PUBLIC ${CPR_INCLUDE_DIRS})
 target_link_libraries(Unofficial-Discord-Client ${CPR_LIBRARIES})
