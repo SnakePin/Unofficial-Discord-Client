@@ -13,7 +13,6 @@ Requires C++17.
  - [Gateway] [Respond to HELLO packet with IDENTIFY packet](https://github.com/SnakePin/Unofficial-Discord-Client/commit/de1a98e68269697dacb2c368bd8da9f445755036)
 
 ### Represented Discord Objects
-
 `Guild, Channel, User, Member, Message, Role, Reaction, Emoji, Embed(stub), Snowflake`
 
 Snowflakes will always be stored internally as `uint64_t`.  
@@ -23,18 +22,40 @@ For represented discord packets, see `discord/packets.hpp` in the include folder
 
 
 ## Useful Links
-
  - [Discord websocket protocol](https://discordapp.com/developers/docs/topics/gateway).
 
 ## Libraries
 
 ### Included in this repo
-
- - [cpr](https://github.com/whoshuu/cpr) for handling HTTP requests.
+ - [cpr](https://github.com/whoshuu/cpr) for handling HTTP(s) requests.
  - [Simple-Websocket-Server](https://gitlab.com/eidheim/Simple-WebSocket-Server) for handling the gateway websocket client.
  - [RapidJSON](https://github.com/Tencent/rapidjson/)
  - [Asio](https://think-async.com/Asio/) required by *Simple-Websocket-Server*.
 
-### Required System Libraries
+### Required Libraries
+libssl (libssl-dev in Debian, openssl-devel in RHEL)
+libcurl (alerady provided by CPR)
 
-libssl, libcurl. Possibly others.
+
+## How to build
+
+### Windows(MSVC)
+ - Install `Win64 OpenSSL v1.1.1c` or `Win32 OpenSSL v1.1.1c` from https://slproweb.com/products/Win32OpenSSL.html
+ - Install [CMake](https://cmake.org/)
+ - Install a Visual Studio version that is supported by CMake, you can find supported Visual Studio versions from [CMake Documentation](https://cmake.org/cmake/help/latest/manual/cmake-generators.7.html#visual-studio-generators)
+ - Open command line in project root directory
+ - Issue following command `cmake .`
+ - Open resulting .sln file in Visual Studio
+ - Build the solution
+
+Now depending on your configuration, you can find output files at `output\bin\Debug` or `output\bin\Release`
+ 
+### Linux
+ - Install libssl: `apt-get install libssl-dev` in Debian, `yum install openssl-devel` in RHEL
+ - Install [CMake](https://cmake.org/)
+ - Open command line in project root directory
+ - Issue following commands:
+ - `cmake .`
+ - `make`
+
+Now depending on your configuration, you can find output files at `output\bin`
