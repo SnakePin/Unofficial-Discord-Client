@@ -15,8 +15,9 @@
 #include <rapidjson/document.h>
 #include <rapidjson/writer.h>
 #include <rapidjson/pointer.h>
-#include <rapidjson/filewritestream.h>
-#include <rapidjson/filereadstream.h>
+
+#include <rapidjson/istreamwrapper.h>
+#include <fstream>
 
 #include <tinyformat.h>
 
@@ -44,19 +45,9 @@ public:
 		rapidjson::Pointer("/seq").Set(document, this->sequenceNumber);
 		rapidjson::Pointer("/session_time").Set(document, lastSessionUpdateTime);
 
-		#if defined(_WIN32)
-		FILE* fp = fopen("session.json", "w");
-		#else
-		FILE* fp = fopen("session.json", "wb");
-		#endif
-
-		char writeBuffer[65536];
-		rapidjson::FileWriteStream os(fp, writeBuffer, sizeof(writeBuffer));
-
-		rapidjson::Writer<rapidjson::FileWriteStream> writer(os);
-		document.Accept(writer);
-
-		fclose(fp);
+		std::ifstream jsonFile("session.json");
+		rapidjson::IStreamWrapper iswrapper(jsonFile);
+		document.ParseStream(iswrapper);
 	}
 
 	void OnHelloPacket() {
@@ -156,17 +147,10 @@ public:
 	// Reads the session_id and sequence number from session.json and sends a RESUME packet with the read information.
 	// This will do nothing if the session ID is too old.
 	void LoadAndSendResume() {
-		#if defined(_WIN32)
-		FILE* fp = fopen("session.json", "r");
-		#else
-		FILE* fp = fopen("session.json", "rb"); // non-Windows use "r"
-		#endif
-
-		char readBuffer[65536];
-		rapidjson::FileReadStream is(fp, readBuffer, sizeof(readBuffer));
+		std::ifstream jsonFile("session.json");
+		rapidjson::IStreamWrapper iswrapper(jsonFile);
 		rapidjson::Document document;
-		document.ParseStream(is);
-		fclose(fp);
+		document.ParseStream(iswrapper);
 
 		std::time_t sessionTime = document["session_time"].GetInt();
 		std::time_t currentTime = std::time(nullptr);
