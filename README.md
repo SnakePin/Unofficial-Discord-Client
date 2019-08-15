@@ -49,8 +49,9 @@ libcurl (alerady provided by CPR)
  - Install [CMake](https://cmake.org/)
  - Install a Visual Studio version that is supported by CMake, you can find supported Visual Studio versions from [CMake Documentation](https://cmake.org/cmake/help/latest/manual/cmake-generators.7.html#visual-studio-generators)
  - Execute following commands in project root directory:
- - Release build: `cmake . --config Release`
- - Debug build: `cmake . --config Debug`
+ - `cmake .`
+ - Release build: `cmake --build . --target ALL_BUILD --config Release`
+ - Debug build: `cmake --build . --target ALL_BUILD --config Debug`
  
 Now depending on your configuration, you can find output files at `output\bin\Debug` or `output\bin\Release`
  
@@ -58,7 +59,8 @@ Now depending on your configuration, you can find output files at `output\bin\De
  - Install libssl: `apt-get install libssl-dev` in Debian, `yum install openssl-devel` in RHEL
  - Install [CMake](https://cmake.org/)
  - Execute following commands in project root directory:
- - Release build: `cmake . --config Release`
- - Debug build: `cmake . --config Debug`
+ - `cmake .`
+ - Release build: `cmake --build . --target ALL_BUILD --config Release`
+ - Debug build: `cmake --build . --target ALL_BUILD --config Debug`
  
 Now depending on your configuration, you can find output files at `output\bin`
