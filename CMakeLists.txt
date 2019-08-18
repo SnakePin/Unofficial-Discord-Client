@@ -19,12 +19,17 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/output/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/output/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/output/bin)
 
+# rapidjson include path
+set(RAPIDJSON_INCLUDE_PATH "${PROJECT_SOURCE_DIR}/external/rapidjson/include")
+
 # Add all files
 file(GLOB_RECURSE SOURCES
   "include/*.h"
   "include/*.hpp"
   "src/*.c"
   "src/*.cpp"
+  "${RAPIDJSON_INCLUDE_PATH}/*.h"
+  "${RAPIDJSON_INCLUDE_PATH}/*.hpp"
 )
 
 # Add an executable with the above sources
@@ -48,7 +53,7 @@ else()
   set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 endif()
 
-target_include_directories(Unofficial-Discord-Client PUBLIC "${PROJECT_SOURCE_DIR}/include")
+target_include_directories(Unofficial-Discord-Client PUBLIC "${PROJECT_SOURCE_DIR}/include" "${RAPIDJSON_INCLUDE_PATH}")
 
 # Add CPR
 # Go away tests, go away!
