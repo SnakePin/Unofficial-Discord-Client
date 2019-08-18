@@ -15,9 +15,9 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # This needs to be here, before any add_executable calls and after project
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/output/lib)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/output/lib)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/output/bin)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/output/archive")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/output/lib")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/output/bin")
 
 # Add all files
 file(GLOB_RECURSE SOURCES
@@ -30,40 +30,48 @@ file(GLOB_RECURSE SOURCES
 # Add an executable with the above sources
 add_executable(Unofficial-Discord-Client ${SOURCES})
 
+set(PROJ_OPTIONS "-Wall -Wextra")
+set(PROJ_DEBUG_OPTIONS "")
+set(PROJ_RELEASE_OPTIONS "-O3")
+set(PROJ_LINKER_OPTIONS "")
+
 # Only add debug linker option to this project because we only need debug information for this project
 if (WIN32 AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-  string(APPEND CMAKE_CXX_FLAGS " /Wall")
+  set(PROJ_OPTIONS "/Wall")
   if(CMAKE_BUILD_TYPE EQUAL Debug OR CMAKE_BUILD_TYPE EQUAL RelWithDebInfo)
-    target_link_options(Unofficial-Discord-Client PUBLIC "/DEBUG:FULL")
+    set(PROJ_LINKER_OPTIONS "/DEBUG:FULL")
   endif()
-  set(CMAKE_CXX_FLAGS_RELEASE "/O3")
 elseif(WIN32 AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
-  string(APPEND CMAKE_CXX_FLAGS " /Wall /Wextra")
   if(CMAKE_BUILD_TYPE EQUAL Debug OR CMAKE_BUILD_TYPE EQUAL RelWithDebInfo)
-	target_link_options(Unofficial-Discord-Client PUBLIC "/debug:full")
+	set(PROJ_LINKER_OPTIONS "/debug:full")
   endif()
-  set(CMAKE_CXX_FLAGS_RELEASE "/O3")
 else()
-  string(APPEND CMAKE_CXX_FLAGS " -Wall -Wextra")
-  set(CMAKE_CXX_FLAGS_DEBUG "-g")
-  set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+  set(PROJ_DEBUG_OPTIONS "-g")
 endif()
+
+target_compile_options(Unofficial-Discord-Client PUBLIC "${PROJ_OPTIONS}")
+target_compile_options(Unofficial-Discord-Client PUBLIC "$<$<CONFIG:DEBUG>:${PROJ_DEBUG_OPTIONS}>")
+target_compile_options(Unofficial-Discord-Client PUBLIC "$<$<CONFIG:RELEASE>:${PROJ_RELEASE_OPTIONS}>")
+target_link_options(Unofficial-Discord-Client PUBLIC "${PROJ_LINKER_OPTIONS}")
+
+
+target_include_directories(Unofficial-Discord-Client PUBLIC "${PROJECT_SOURCE_DIR}/include")
 
 # rapidjson include path
 set(RAPIDJSON_INCLUDE_PATH "${PROJECT_SOURCE_DIR}/external/rapidjson/include")
-target_include_directories(Unofficial-Discord-Client PUBLIC "${PROJECT_SOURCE_DIR}/include" "${RAPIDJSON_INCLUDE_PATH}")
+target_include_directories(Unofficial-Discord-Client PUBLIC "${RAPIDJSON_INCLUDE_PATH}")
 
 # Add CPR
 # Go away tests, go away!
 set(BUILD_CPR_TESTS OFF)
 add_subdirectory(external/cpr)
-target_include_directories(Unofficial-Discord-Client PUBLIC ${CPR_INCLUDE_DIRS})
-target_link_libraries(Unofficial-Discord-Client ${CPR_LIBRARIES})
+target_include_directories(Unofficial-Discord-Client PUBLIC "${CPR_INCLUDE_DIRS}")
+target_link_libraries(Unofficial-Discord-Client "${CPR_LIBRARIES}")
 
 # Add OpenSSL
 find_package(OpenSSL REQUIRED)
-target_include_directories(Unofficial-Discord-Client PUBLIC ${OPENSSL_INCLUDE_DIR})
-target_link_libraries(Unofficial-Discord-Client ${OPENSSL_LIBRARIES})
+target_include_directories(Unofficial-Discord-Client PUBLIC "${OPENSSL_INCLUDE_DIR}")
+target_link_libraries(Unofficial-Discord-Client "${OPENSSL_LIBRARIES}")
 
 # Use standalone asio
 target_compile_definitions(Unofficial-Discord-Client PUBLIC USE_STANDALONE_ASIO ASIO_STANDALONE)
