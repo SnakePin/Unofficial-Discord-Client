@@ -1,7 +1,7 @@
 ﻿# Set the minimum version of CMake that can be used
 # To find the cmake version run
 # $ cmake --version
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.4)
 
 # Set the project name and make rest of the file a project, this enables more CMake features
 project (Unofficial-Discord-Client)
@@ -19,40 +19,38 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/output/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/output/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/output/bin)
 
-# rapidjson include path
-set(RAPIDJSON_INCLUDE_PATH "${PROJECT_SOURCE_DIR}/external/rapidjson/include")
-
 # Add all files
 file(GLOB_RECURSE SOURCES
   "include/*.h"
   "include/*.hpp"
   "src/*.c"
   "src/*.cpp"
-  "${RAPIDJSON_INCLUDE_PATH}/*.h"
-  "${RAPIDJSON_INCLUDE_PATH}/*.hpp"
 )
 
 # Add an executable with the above sources
 add_executable(Unofficial-Discord-Client ${SOURCES})
 
+# Only add debug linker option to this project because we only need debug information for this project
 if (WIN32 AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-  set(CMAKE_CXX_FLAGS "/Wall")
+  string(APPEND CMAKE_CXX_FLAGS " /Wall")
   if(CMAKE_BUILD_TYPE EQUAL Debug OR CMAKE_BUILD_TYPE EQUAL RelWithDebInfo)
     target_link_options(Unofficial-Discord-Client PUBLIC "/DEBUG:FULL")
   endif()
   set(CMAKE_CXX_FLAGS_RELEASE "/O3")
 elseif(WIN32 AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
-  set(CMAKE_CXX_FLAGS "/Wall /Wextra")
+  string(APPEND CMAKE_CXX_FLAGS " /Wall /Wextra")
   if(CMAKE_BUILD_TYPE EQUAL Debug OR CMAKE_BUILD_TYPE EQUAL RelWithDebInfo)
-    target_link_options(Unofficial-Discord-Client PUBLIC "/debug:full")
+	target_link_options(Unofficial-Discord-Client PUBLIC "/debug:full")
   endif()
   set(CMAKE_CXX_FLAGS_RELEASE "/O3")
 else()
-  set(CMAKE_CXX_FLAGS "-Wall -Wextra")
+  string(APPEND CMAKE_CXX_FLAGS " -Wall -Wextra")
   set(CMAKE_CXX_FLAGS_DEBUG "-g")
   set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 endif()
 
+# rapidjson include path
+set(RAPIDJSON_INCLUDE_PATH "${PROJECT_SOURCE_DIR}/external/rapidjson/include")
 target_include_directories(Unofficial-Discord-Client PUBLIC "${PROJECT_SOURCE_DIR}/include" "${RAPIDJSON_INCLUDE_PATH}")
 
 # Add CPR
@@ -67,16 +65,5 @@ find_package(OpenSSL REQUIRED)
 target_include_directories(Unofficial-Discord-Client PUBLIC ${OPENSSL_INCLUDE_DIR})
 target_link_libraries(Unofficial-Discord-Client ${OPENSSL_LIBRARIES})
 
-## Add asio
-#find_package(libasio REQUIRED)
-#include_directories(${LIBASIO_INCLUDE_DIR})
-#target_link_libraries(Unofficial-Discord-Client ${LIBASIO_LIBRARIES})
-
 # Use standalone asio
 target_compile_definitions(Unofficial-Discord-Client PUBLIC USE_STANDALONE_ASIO ASIO_STANDALONE)
- 
-## Add libcrypto
-#find_package(libcrypto REQUIRED)
-#include_directories(${LIBCRYPTO_INCLUDE_DIR})
-#target_link_libraries(Unofficial-Discord-Client ${LIBCRYPTO_LIBRARIES})
-
