@@ -11,8 +11,21 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
 
+# Set required C++ version
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Manually add C++17 support to CMake if version < 3.8
+if(${CMAKE_VERSION} VERSION_LESS "3.8.0") 
+  if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8.0)
+    set(CMAKE_CXX17_STANDARD_COMPILE_OPTION "-std=c++17")
+    set(CMAKE_CXX17_EXTENSION_COMPILE_OPTION "-std=gnu++17")
+  elseif (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5.1)
+    set(CMAKE_CXX17_STANDARD_COMPILE_OPTION "-std=c++1z")
+    set(CMAKE_CXX17_EXTENSION_COMPILE_OPTION "-std=gnu++1z")
+  endif()
+endif()
+
 
 # This needs to be here, before any add_executable calls and after project
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/output/archive")
