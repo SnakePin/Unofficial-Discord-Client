@@ -43,29 +43,22 @@ file(GLOB_RECURSE SOURCES
 # Add an executable with the above sources
 add_executable(Unofficial-Discord-Client ${SOURCES})
 
-set(PROJ_OPTIONS "-Wall -Wextra")
-set(PROJ_DEBUG_OPTIONS "")
-set(PROJ_RELEASE_OPTIONS "-O3")
-set(PROJ_LINKER_OPTIONS "")
-
+target_compile_options(Unofficial-Discord-Client PUBLIC "$<$<CONFIG:RELEASE>:-O3>")
 # Only add debug linker option to this project because we only need debug information for this project
 if (WIN32 AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-  set(PROJ_OPTIONS "/Wall")
+  target_compile_options(Unofficial-Discord-Client PUBLIC "/Wall")
   if(CMAKE_BUILD_TYPE EQUAL Debug OR CMAKE_BUILD_TYPE EQUAL RelWithDebInfo)
-    set(PROJ_LINKER_OPTIONS "/DEBUG:FULL")
+    set_target_properties(Unofficial-Discord-Client PROPERTIES LINK_FLAGS "/DEBUG:FULL")
   endif()
 elseif(WIN32 AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+  target_compile_options(Unofficial-Discord-Client PUBLIC "/Wall" "/Wextra")
   if(CMAKE_BUILD_TYPE EQUAL Debug OR CMAKE_BUILD_TYPE EQUAL RelWithDebInfo)
-	set(PROJ_LINKER_OPTIONS "/debug:full")
+	set_target_properties(Unofficial-Discord-Client PROPERTIES LINK_FLAGS "/debug:full")
   endif()
 else()
-  set(PROJ_DEBUG_OPTIONS "-g")
+  target_compile_options(Unofficial-Discord-Client PUBLIC "-Wall" "-Wextra")
+  target_compile_options(Unofficial-Discord-Client PUBLIC "$<$<CONFIG:DEBUG>:-g>")
 endif()
-
-target_compile_options(Unofficial-Discord-Client PUBLIC "${PROJ_OPTIONS}")
-target_compile_options(Unofficial-Discord-Client PUBLIC "$<$<CONFIG:DEBUG>:${PROJ_DEBUG_OPTIONS}>")
-target_compile_options(Unofficial-Discord-Client PUBLIC "$<$<CONFIG:RELEASE>:${PROJ_RELEASE_OPTIONS}>")
-set_target_properties(Unofficial-Discord-Client PROPERTIES LINK_FLAGS "${PROJ_LINKER_OPTIONS}")
 
 
 target_include_directories(Unofficial-Discord-Client PUBLIC "${PROJECT_SOURCE_DIR}/include")
