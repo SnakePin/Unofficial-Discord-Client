@@ -52,7 +52,7 @@ endif()
 target_compile_options(Unofficial-Discord-Client PUBLIC "${PROJ_OPTIONS}")
 target_compile_options(Unofficial-Discord-Client PUBLIC "$<$<CONFIG:DEBUG>:${PROJ_DEBUG_OPTIONS}>")
 target_compile_options(Unofficial-Discord-Client PUBLIC "$<$<CONFIG:RELEASE>:${PROJ_RELEASE_OPTIONS}>")
-target_link_options(Unofficial-Discord-Client PUBLIC "${PROJ_LINKER_OPTIONS}")
+set_target_properties(Unofficial-Discord-Client PROPERTIES LINK_FLAGS "${PROJ_LINKER_OPTIONS}")
 
 
 target_include_directories(Unofficial-Discord-Client PUBLIC "${PROJECT_SOURCE_DIR}/include")
