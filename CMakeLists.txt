@@ -1,7 +1,7 @@
 ﻿# Set the minimum version of CMake that can be used
 # To find the cmake version run
 # $ cmake --version
-cmake_minimum_required(VERSION 3.4)
+cmake_minimum_required(VERSION 3.2)
 
 # Set the project name and make rest of the file a project, this enables more CMake features
 project (Unofficial-Discord-Client)
