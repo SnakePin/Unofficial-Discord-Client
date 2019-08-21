@@ -1,7 +1,7 @@
 ﻿# Set the minimum version of CMake that can be used
 # To find the cmake version run
 # $ cmake --version
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 3.8)
 
 # Set the project name and make rest of the file a project, this enables more CMake features
 project (Unofficial-Discord-Client)
@@ -10,22 +10,6 @@ project (Unofficial-Discord-Client)
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
-
-# Set required C++ version
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-# Manually add C++17 support to CMake if version < 3.8
-if(${CMAKE_VERSION} VERSION_LESS "3.8.0") 
-  if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8.0)
-    set(CMAKE_CXX17_STANDARD_COMPILE_OPTION "-std=c++17")
-    set(CMAKE_CXX17_EXTENSION_COMPILE_OPTION "-std=gnu++17")
-  elseif (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5.1)
-    set(CMAKE_CXX17_STANDARD_COMPILE_OPTION "-std=c++1z")
-    set(CMAKE_CXX17_EXTENSION_COMPILE_OPTION "-std=gnu++1z")
-  endif()
-endif()
-
 
 # This needs to be here, before any add_executable calls and after project
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/output/archive")
@@ -42,6 +26,9 @@ file(GLOB_RECURSE SOURCES
 
 # Add an executable with the above sources
 add_executable(Unofficial-Discord-Client ${SOURCES})
+
+# Set required C++ version, this needs to be here, after the add_executable call
+target_compile_features(Unofficial-Discord-Client PUBLIC cxx_std_17)
 
 target_compile_options(Unofficial-Discord-Client PUBLIC "$<$<CONFIG:RELEASE>:-O3>")
 # Only add debug linker option to this project because we only need debug information for this project
