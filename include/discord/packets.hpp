@@ -8,6 +8,7 @@
 #include <vector>
 #include <optional>
 #include <variant>
+#include <functional>
 
 namespace Discord {
 
