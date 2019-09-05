@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.8)
 # Set the project name and make rest of the file a project, this enables more CMake features
 project (Unofficial-Discord-Client)
 
-# If build type is not specified then fall back to Release config
+# If build type is not specified then fallback to Release config
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
@@ -25,7 +25,7 @@ file(GLOB_RECURSE SOURCES
 )
 
 # Add an executable with the above sources
-add_executable(Unofficial-Discord-Client ${SOURCES})
+add_executable(Unofficial-Discord-Client "${SOURCES}")
 
 # Set required C++ version, this needs to be here, after the add_executable call
 target_compile_features(Unofficial-Discord-Client PUBLIC cxx_std_17)
@@ -69,9 +69,26 @@ target_link_libraries(Unofficial-Discord-Client "${OPENSSL_LIBRARIES}")
 # Use standalone asio
 target_compile_definitions(Unofficial-Discord-Client PRIVATE USE_STANDALONE_ASIO ASIO_STANDALONE)
 
-find_package(SDL2 REQUIRED)
+# Add SDL2
+if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+  set(SDL2_LIB_PATH_PREFIX "x64")
+else()
+  set(SDL2_LIB_PATH_PREFIX "x86")
+endif()
+
+if (UNIX OR APPLE)
+  find_package(SDL2 REQUIRED)
+elseif(MSVC)
+  set(SDL2_LIBRARIES "${PROJECT_SOURCE_DIR}/external/sdl2-precompiled/msvc/libs/${SDL2_LIB_PATH_PREFIX}/SDL2.lib")
+  set(SDL2_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/external/sdl2-precompiled/msvc/include") #TODO: change this to include/SDL2
+elseif(MINGW)
+  set(SDL2_LIBRARIES "${PROJECT_SOURCE_DIR}/external/sdl2-precompiled/mingw/libs/${SDL2_LIB_PATH_PREFIX}/libSDL2.a")
+  set(SDL2_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/external/sdl2-precompiled/mingw/include") #TODO: change this to include/SDL2
+endif()
+
 target_include_directories(Unofficial-Discord-Client PRIVATE "${SDL2_INCLUDE_DIR}")
 target_link_libraries(Unofficial-Discord-Client "${SDL2_LIBRARIES}")
 
+# Add OpenGL
 find_package(OpenGL REQUIRED)
 target_link_libraries(Unofficial-Discord-Client "${OPENGL_gl_LIBRARY}")
