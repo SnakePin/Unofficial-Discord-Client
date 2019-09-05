@@ -64,8 +64,15 @@ find_package(OpenSSL REQUIRED)
 target_include_directories(Unofficial-Discord-Client SYSTEM PRIVATE ${OPENSSL_INCLUDE_DIR})
 target_link_libraries(Unofficial-Discord-Client ${OPENSSL_LIBRARIES})
 
-# Use standalone asio
+# Add libasio and use standalone asio
 target_compile_definitions(Unofficial-Discord-Client PRIVATE USE_STANDALONE_ASIO ASIO_STANDALONE)
+set(LIBASIO_INCLUDE_PATH "${PROJECT_SOURCE_DIR}/external/libasio")
+
+# Add SWS
+set(SWS_INCLUDE_PATH "${PROJECT_SOURCE_DIR}/external/sws")
+
+# Add most of the include paths to project include path
+target_include_directories(Unofficial-Discord-Client SYSTEM PUBLIC ${LIBASIO_INCLUDE_PATH} ${SWS_INCLUDE_PATH})
 
 # Add SDL2
 if (NOT WIN32)
