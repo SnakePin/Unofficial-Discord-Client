@@ -21,6 +21,8 @@
 
 #include <tinyformat.h>
 
+#include <imguiClient.hpp>
+
 class MyClient : public Discord::Client {
 public:
 
@@ -349,6 +351,8 @@ int main(int argc, char **argv) {
 	ConsoleTest console(client);
 
 	std::thread consoleThread(&ConsoleTest::run, &console);
+	
+	std::thread uiThread(&startImguiClient);
 
 	client->Run();
 	

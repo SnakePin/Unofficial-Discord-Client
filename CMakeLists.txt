@@ -68,3 +68,10 @@ target_link_libraries(Unofficial-Discord-Client "${OPENSSL_LIBRARIES}")
 
 # Use standalone asio
 target_compile_definitions(Unofficial-Discord-Client PRIVATE USE_STANDALONE_ASIO ASIO_STANDALONE)
+
+find_package(SDL2 REQUIRED)
+target_include_directories(Unofficial-Discord-Client PRIVATE "${SDL2_INCLUDE_DIR}")
+target_link_libraries(Unofficial-Discord-Client "${SDL2_LIBRARIES}")
+
+find_package(OpenGL REQUIRED)
+target_link_libraries(Unofficial-Discord-Client "${OPENGL_gl_LIBRARY}")
