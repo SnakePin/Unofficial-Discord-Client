@@ -33,7 +33,7 @@ target_compile_features(Unofficial-Discord-Client PUBLIC cxx_std_17)
 # Only add debug linker option to this project because we only need debug information for this project
 if (WIN32 AND MSVC OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
   target_compile_options(Unofficial-Discord-Client PRIVATE "/W4")
-  target_compile_options(Unofficial-Discord-Client PRIVATE "$<$<CONFIG:RELEASE>:/O3>")
+  target_compile_options(Unofficial-Discord-Client PRIVATE "$<$<CONFIG:RELEASE>:/O2>")
   if(CMAKE_BUILD_TYPE EQUAL Debug OR CMAKE_BUILD_TYPE EQUAL RelWithDebInfo)
     set_target_properties(Unofficial-Discord-Client PROPERTIES LINK_FLAGS "/DEBUG:FULL")
   endif()
@@ -66,7 +66,7 @@ target_link_libraries(Unofficial-Discord-Client ${OPENSSL_LIBRARIES})
 
 # Add libasio and use standalone asio
 target_compile_definitions(Unofficial-Discord-Client PRIVATE USE_STANDALONE_ASIO ASIO_STANDALONE)
-set(LIBASIO_INCLUDE_PATH "${PROJECT_SOURCE_DIR}/external/libasio")
+set(LIBASIO_INCLUDE_PATH "${PROJECT_SOURCE_DIR}/external/libasio/include")
 
 # Add SWS
 set(SWS_INCLUDE_PATH "${PROJECT_SOURCE_DIR}/external/sws")
