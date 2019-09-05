@@ -58,6 +58,7 @@ Now depending on your configuration, you can find output files at `output\bin\De
  
 ### Linux
  - Install libssl: `apt-get install libssl-dev` in Debian, `yum install openssl-devel` in RHEL
+ - Install SDL2: `apt-get install libsdl2-dev`
  - Install [CMake](https://cmake.org/)
  - Execute following commands in project root directory:
  - `git submodule update --init --recursive`
