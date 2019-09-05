@@ -32,16 +32,9 @@ target_compile_features(Unofficial-Discord-Client PUBLIC cxx_std_17)
 
 target_compile_options(Unofficial-Discord-Client PRIVATE "$<$<CONFIG:RELEASE>:-O3>")
 # Only add debug linker option to this project because we only need debug information for this project
-if (WIN32 AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-  target_compile_options(Unofficial-Discord-Client PRIVATE "/Wall")
-  if(CMAKE_BUILD_TYPE EQUAL Debug OR CMAKE_BUILD_TYPE EQUAL RelWithDebInfo)
-    set_target_properties(Unofficial-Discord-Client PROPERTIES LINK_FLAGS "/DEBUG:FULL")
-  endif()
-elseif(WIN32 AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
-  target_compile_options(Unofficial-Discord-Client PRIVATE "/Wall" "/Wextra")
-  if(CMAKE_BUILD_TYPE EQUAL Debug OR CMAKE_BUILD_TYPE EQUAL RelWithDebInfo)
-	set_target_properties(Unofficial-Discord-Client PROPERTIES LINK_FLAGS "/debug:full")
-  endif()
+if (WIN32 AND MSVC OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+  target_compile_options(Unofficial-Discord-Client PRIVATE "/W4")
+  set_target_properties(Unofficial-Discord-Client PROPERTIES LINK_FLAGS "$<$<CONFIG:DEBUG>:/DEBUG:FULL>")
 else()
   target_compile_options(Unofficial-Discord-Client PRIVATE "-Wall" "-Wextra")
   target_compile_options(Unofficial-Discord-Client PRIVATE "$<$<CONFIG:DEBUG>:-g>")
@@ -52,18 +45,18 @@ target_include_directories(Unofficial-Discord-Client PUBLIC "${PROJECT_SOURCE_DI
 
 # rapidjson include path
 set(RAPIDJSON_INCLUDE_PATH "${PROJECT_SOURCE_DIR}/external/rapidjson/include")
-target_include_directories(Unofficial-Discord-Client PUBLIC "${RAPIDJSON_INCLUDE_PATH}")
+target_include_directories(Unofficial-Discord-Client SYSTEM PUBLIC "${RAPIDJSON_INCLUDE_PATH}")
 
 # Add CPR
 # Go away tests, go away!
 set(BUILD_CPR_TESTS OFF)
 add_subdirectory(external/cpr)
-target_include_directories(Unofficial-Discord-Client PRIVATE "${CPR_INCLUDE_DIRS}")
+target_include_directories(Unofficial-Discord-Client SYSTEM PRIVATE "${CPR_INCLUDE_DIRS}")
 target_link_libraries(Unofficial-Discord-Client "${CPR_LIBRARIES}")
 
 # Add OpenSSL
 find_package(OpenSSL REQUIRED)
-target_include_directories(Unofficial-Discord-Client PRIVATE "${OPENSSL_INCLUDE_DIR}")
+target_include_directories(Unofficial-Discord-Client SYSTEM PRIVATE "${OPENSSL_INCLUDE_DIR}")
 target_link_libraries(Unofficial-Discord-Client "${OPENSSL_LIBRARIES}")
 
 # Use standalone asio
@@ -76,7 +69,7 @@ else()
   set(SDL2_LIB_PATH_PREFIX "x86")
 endif()
 
-if (UNIX OR APPLE)
+if (NOT WIN32)
   find_package(SDL2 REQUIRED)
 elseif(MSVC)
   set(SDL2_LIBRARIES "${PROJECT_SOURCE_DIR}/external/sdl2-precompiled/msvc/libs/${SDL2_LIB_PATH_PREFIX}/SDL2.lib")
@@ -86,7 +79,7 @@ elseif(MINGW)
   set(SDL2_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/external/sdl2-precompiled/mingw/include") #TODO: change this to include/SDL2
 endif()
 
-target_include_directories(Unofficial-Discord-Client PRIVATE "${SDL2_INCLUDE_DIR}")
+target_include_directories(Unofficial-Discord-Client SYSTEM PRIVATE "${SDL2_INCLUDE_DIR}")
 target_link_libraries(Unofficial-Discord-Client "${SDL2_LIBRARIES}")
 
 # Add OpenGL
