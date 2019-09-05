@@ -31,12 +31,12 @@ def download_file(url, local_filename):
 	return local_filename
 
 if len(sys.argv) != 2:
-	compiler = input('MSVC or mingw? ').lower()
+	compiler = input('MSVC or MinGW? ').lower()
 else:
 	compiler = sys.argv[1]
 
 if not compiler in ['msvc', 'mingw']:
-	print('Please enter "MSVC" or "mingw"')
+	print('Please enter "msvc" or "mingw"')
 	sys.exit(1)
 
 if compiler == 'msvc':
@@ -52,8 +52,8 @@ if compiler == 'msvc':
 		
 	os.remove(msvc_filename)
 	
-	shutil.copytree(msvc_lib, 'msvc/libs')
-	shutil.copytree(msvc_include, 'msvc/include/SDL2')
+	shutil.copytree(msvc_lib, 'external/sdl2-precompiled/msvc/libs')
+	shutil.copytree(msvc_include, 'external/sdl2-precompiled/msvc/include/SDL2')
 	
 	try:
 		shutil.rmtree(exfolder)
@@ -75,9 +75,9 @@ elif compiler == 'mingw':
 	
 	os.remove(mingw_filename)
 	
-	shutil.copytree(mingw_lib32, 'mingw/libs/x86')
-	shutil.copytree(mingw_lib64, 'mingw/libs/x64')
-	shutil.copytree(mingw_include, 'mingw/include')
+	shutil.copytree(mingw_lib32, 'external/sdl2-precompiled/mingw/libs/x86')
+	shutil.copytree(mingw_lib64, 'external/sdl2-precompiled/mingw/libs/x64')
+	shutil.copytree(mingw_include, 'external/sdl2-precompiled/mingw/include')
 	
 	try:
 		shutil.rmtree(exfolder)
