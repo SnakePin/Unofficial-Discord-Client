@@ -1,6 +1,6 @@
 #pragma once
 
-#include <discord/snowflake.hpp>
+#include "discord/snowflake.hpp"
 
 #include <rapidjson/document.h>
 

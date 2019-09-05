@@ -1,10 +1,10 @@
 #pragma once
 
-#include <discord/snowflake.hpp>
-#include <discord/emoji.hpp>
-#include <discord/role.hpp>
-#include <discord/channel.hpp>
-#include <discord/member.hpp>
+#include "discord/snowflake.hpp"
+#include "discord/emoji.hpp"
+#include "discord/role.hpp"
+#include "discord/channel.hpp"
+#include "discord/member.hpp"
 
 #include <vector>
 #include <string>

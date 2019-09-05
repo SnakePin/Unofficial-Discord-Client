@@ -3,11 +3,11 @@
 #include <regex>
 #include <variant>
 
-#include <discord/discord.hpp>
-#include <discord/message.hpp>
-#include <discord/guild.hpp>
-#include <discord/packets.hpp>
-#include <discord/snowflake.hpp>
+#include "discord/discord.hpp"
+#include "discord/message.hpp"
+#include "discord/guild.hpp"
+#include "discord/packets.hpp"
+#include "discord/snowflake.hpp"
 
 #include <asio.hpp>
 #include <asio/thread_pool.hpp>
@@ -21,7 +21,7 @@
 
 #include <tinyformat.h>
 
-#include <imguiClient.hpp>
+#include "imguiClient.hpp"
 
 class MyClient : public Discord::Client {
 public:
