@@ -30,21 +30,21 @@ add_executable(Unofficial-Discord-Client ${SOURCES})
 # Set required C++ version, this needs to be here, after the add_executable call
 target_compile_features(Unofficial-Discord-Client PUBLIC cxx_std_17)
 
-target_compile_options(Unofficial-Discord-Client PUBLIC "$<$<CONFIG:RELEASE>:-O3>")
+target_compile_options(Unofficial-Discord-Client PRIVATE "$<$<CONFIG:RELEASE>:-O3>")
 # Only add debug linker option to this project because we only need debug information for this project
 if (WIN32 AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-  target_compile_options(Unofficial-Discord-Client PUBLIC "/Wall")
+  target_compile_options(Unofficial-Discord-Client PRIVATE "/Wall")
   if(CMAKE_BUILD_TYPE EQUAL Debug OR CMAKE_BUILD_TYPE EQUAL RelWithDebInfo)
     set_target_properties(Unofficial-Discord-Client PROPERTIES LINK_FLAGS "/DEBUG:FULL")
   endif()
 elseif(WIN32 AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
-  target_compile_options(Unofficial-Discord-Client PUBLIC "/Wall" "/Wextra")
+  target_compile_options(Unofficial-Discord-Client PRIVATE "/Wall" "/Wextra")
   if(CMAKE_BUILD_TYPE EQUAL Debug OR CMAKE_BUILD_TYPE EQUAL RelWithDebInfo)
 	set_target_properties(Unofficial-Discord-Client PROPERTIES LINK_FLAGS "/debug:full")
   endif()
 else()
-  target_compile_options(Unofficial-Discord-Client PUBLIC "-Wall" "-Wextra")
-  target_compile_options(Unofficial-Discord-Client PUBLIC "$<$<CONFIG:DEBUG>:-g>")
+  target_compile_options(Unofficial-Discord-Client PRIVATE "-Wall" "-Wextra")
+  target_compile_options(Unofficial-Discord-Client PRIVATE "$<$<CONFIG:DEBUG>:-g>")
 endif()
 
 
@@ -58,13 +58,13 @@ target_include_directories(Unofficial-Discord-Client PUBLIC "${RAPIDJSON_INCLUDE
 # Go away tests, go away!
 set(BUILD_CPR_TESTS OFF)
 add_subdirectory(external/cpr)
-target_include_directories(Unofficial-Discord-Client PUBLIC "${CPR_INCLUDE_DIRS}")
+target_include_directories(Unofficial-Discord-Client PRIVATE "${CPR_INCLUDE_DIRS}")
 target_link_libraries(Unofficial-Discord-Client "${CPR_LIBRARIES}")
 
 # Add OpenSSL
 find_package(OpenSSL REQUIRED)
-target_include_directories(Unofficial-Discord-Client PUBLIC "${OPENSSL_INCLUDE_DIR}")
+target_include_directories(Unofficial-Discord-Client PRIVATE "${OPENSSL_INCLUDE_DIR}")
 target_link_libraries(Unofficial-Discord-Client "${OPENSSL_LIBRARIES}")
 
 # Use standalone asio
-target_compile_definitions(Unofficial-Discord-Client PUBLIC USE_STANDALONE_ASIO ASIO_STANDALONE)
+target_compile_definitions(Unofficial-Discord-Client PRIVATE USE_STANDALONE_ASIO ASIO_STANDALONE)
