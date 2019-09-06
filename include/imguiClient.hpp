@@ -1,3 +1,5 @@
 #pragma once
 
-int startImguiClient();
+#include "myClient.hpp"
+
+int startImguiClient(std::shared_ptr<MyClient> client);

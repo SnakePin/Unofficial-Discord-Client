@@ -9,7 +9,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
 
-int startImguiClient() {
+int startImguiClient(std::shared_ptr<MyClient> client) {
 	std::cout << "Starting SDL2...\n";
 	
 	const int WINDOW_WIDTH = 1280;
@@ -73,11 +73,29 @@ int startImguiClient() {
 		ImGui::End();
 		
 		ImGui::Begin("Account");
-		
-		ImGui::End();
-		
-		ImGui::Begin("Discord");
-		
+		if(ImGui::BeginTabBar("Discord")){
+			
+			for(const Discord::Guild& guild : client->guilds) {
+				if(ImGui::BeginTabItem(guild.name.c_str())) {
+					
+					if(ImGui::BeginTabBar(guild.name.c_str(), ImGuiTabBarFlags_::ImGuiTabBarFlags_FittingPolicyScroll)) {
+						
+						for(const Discord::Channel& channel : guild.channels) {
+							if(channel.type == 0 && ImGui::BeginTabItem(channel.name.value_or("Unnamed Channel").c_str())) {
+								ImGui::Text("ayy lmao");
+								ImGui::EndTabItem();
+							}
+						}
+						
+						ImGui::EndTabBar();
+					}
+					
+					ImGui::EndTabItem();
+				}
+			}
+			
+			ImGui::EndTabBar();
+		}
 		ImGui::End();
 
 		// Rendering

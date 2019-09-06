@@ -23,150 +23,138 @@
 
 #include <imguiClient.hpp>
 
-class MyClient : public Discord::Client {
-public:
+MyClient::MyClient(std::string token, Discord::AuthTokenType tokenType)
+    : Client(token, tokenType),
+	pool(std::make_shared<asio::thread_pool>(4)), /* Thread pool contains 4 threads. */
+	lastSessionUpdateTime(0) {
 
-	std::shared_ptr<asio::thread_pool> pool; // user created threadpool for making HTTP requests
-	std::vector<Discord::Guild> guilds;
-	std::vector<Discord::Channel> privateChannels;
-	std::time_t lastSessionUpdateTime;
+}
 
-	MyClient(std::string token, Discord::AuthTokenType tokenType)
-	    : Client(token, tokenType),
-		pool(std::make_shared<asio::thread_pool>(4)), /* Thread pool contains 4 threads. */
-		lastSessionUpdateTime(0) {
+void MyClient::UpdateSessionJson() {
+	rapidjson::Document document;
+	lastSessionUpdateTime = std::time(nullptr);
 
+	rapidjson::Pointer("/session_id").Set(document, sessionID.c_str());
+	rapidjson::Pointer("/seq").Set(document, this->sequenceNumber);
+	rapidjson::Pointer("/session_time").Set(document, lastSessionUpdateTime);
+
+	std::ifstream jsonFile("session.json");
+	rapidjson::IStreamWrapper iswrapper(jsonFile);
+	document.ParseStream(iswrapper);
+}
+
+void MyClient::OnHelloPacket() {
+	// explicitly do nothing!
+	// this stops super->OnHelloPacket from running (and calling the SendIdentify method)
+}
+
+void MyClient::OnReadyPacket(Discord::ReadyPacket packet) {
+	std::cout << "Received ready packet: " << packet.version << " " << packet.sessionID << " " << packet.user.username << std::endl;
+	std::cout << "Writing session data to session.json..." << std::endl;
+
+	// TODO shorten this
+
+	// Only add Guilds whose IDs we don't have.
+	{
+		std::vector<Discord::Snowflake> existing(guilds.size());
+		std::transform(guilds.begin(), guilds.end(), existing.begin(), [](const Discord::Guild& g){ return g.id; });
+
+		std::copy_if(packet.guilds.begin(), packet.guilds.end(), std::back_inserter(guilds), [&](const Discord::Guild& g){
+			return std::find(existing.begin(), existing.end(), g.id) == existing.end();
+		});
 	}
 
-	// Writes the session ID, sequence number, and update time to session.json.
-	void UpdateSessionJson() {
-		rapidjson::Document document;
-		lastSessionUpdateTime = std::time(nullptr);
+	// Ditto, private channels
+	{
+		std::vector<Discord::Snowflake> existing(privateChannels.size());
+		std::transform(privateChannels.begin(), privateChannels.end(), existing.begin(), [](const Discord::Channel& c){ return c.id; });
 
-		rapidjson::Pointer("/session_id").Set(document, sessionID.c_str());
-		rapidjson::Pointer("/seq").Set(document, this->sequenceNumber);
-		rapidjson::Pointer("/session_time").Set(document, lastSessionUpdateTime);
-
-		std::ifstream jsonFile("session.json");
-		rapidjson::IStreamWrapper iswrapper(jsonFile);
-		document.ParseStream(iswrapper);
+		std::copy_if(packet.privateChannels.begin(), packet.privateChannels.end(), std::back_inserter(privateChannels), [&](const Discord::Channel& c){
+			return std::find(existing.begin(), existing.end(), c.id) == existing.end();
+		});
 	}
 
-	void OnHelloPacket() {
-		// explicitly do nothing!
-		// this stops super->OnHelloPacket from running (and calling the SendIdentify method)
-	}
+	UpdateSessionJson();
+}
 
-	void OnReadyPacket(Discord::ReadyPacket packet) {
-		std::cout << "Received ready packet: " << packet.version << " " << packet.sessionID << " " << packet.user.username << std::endl;
-		std::cout << "Writing session data to session.json..." << std::endl;
+void MyClient::OnGuildCreate(Discord::Guild g) {
+	guilds.push_back(g);
 
-		// TODO shorten this
+	for(Discord::Channel &chan : g.channels) {
+		if(chan.type == 0){
+			Discord::MessagePacket messageToSend;
+			messageToSend.content = "Hello to channel <#" + std::to_string(chan.id.value) + ">";
+			messageToSend.tts = false;
 
-		// Only add Guilds whose IDs we don't have.
-		{
-			std::vector<Discord::Snowflake> existing(guilds.size());
-			std::transform(guilds.begin(), guilds.end(), existing.begin(), [](const Discord::Guild& g){ return g.id; });
-
-			std::copy_if(packet.guilds.begin(), packet.guilds.end(), std::back_inserter(guilds), [&](const Discord::Guild& g){
-				return std::find(existing.begin(), existing.end(), g.id) == existing.end();
-			});
+			asio::post(*pool,
+				[=] {httpAPI.SendMessage(std::to_string(chan.id.value), messageToSend);}
+			);
 		}
-
-		// Ditto, private channels
-		{
-			std::vector<Discord::Snowflake> existing(privateChannels.size());
-			std::transform(privateChannels.begin(), privateChannels.end(), existing.begin(), [](const Discord::Channel& c){ return c.id; });
-
-			std::copy_if(packet.privateChannels.begin(), packet.privateChannels.end(), std::back_inserter(privateChannels), [&](const Discord::Channel& c){
-				return std::find(existing.begin(), existing.end(), c.id) == existing.end();
-			});
-		}
-
-		UpdateSessionJson();
 	}
 
-	void OnGuildCreate(Discord::Guild g) {
-		guilds.push_back(g);
+	UpdateSessionJson();
+}
 
-		for(Discord::Channel &chan : g.channels) {
-			if(chan.type == 0){
-				Discord::MessagePacket messageToSend;
-				messageToSend.content = "Hello to channel <#" + std::to_string(chan.id.value) + ">";
-				messageToSend.tts = false;
+void MyClient::OnGuildMemberListUpdate(Discord::GuildMemberListUpdatePacket packet) {
+	using namespace Discord;
+	std::cout << "Received: GuildMemberListUpdatePacket\nGuild ID: " << packet.guildID.value << std::endl;
+	std::cout << "Groups: ";
+	for(const GuildMemberListGroup &group : packet.groups) std::cout << group.id << "(" << group.count << "), ";
+	std::cout << std::endl;
 
-				asio::post(*pool,
-					[=] {httpAPI.SendMessage(std::to_string(chan.id.value), messageToSend);}
-				);
-			}
-		}
+	std::cout << "We have these operations:" << std::endl;
+	for(const GuildMemberListUpdateOperation& operation : packet.operations) {
+		std::cout << "    " << "OP: " << operation.op << std::endl;
+		std::cout << "    " << "Range: " << operation.range.first << " - " << operation.range.second << std::endl;
 
-		UpdateSessionJson();
-	}
+		for(const std::variant<GuildMemberListGroup, Member>& item : operation.items) {
+			if(std::holds_alternative<GuildMemberListGroup>(item)) {
+				GuildMemberListGroup group = std::get<GuildMemberListGroup>(item);
+				std::cout << "        " << group.id << " - " << group.count << std::endl;
 
-	void OnGuildMemberListUpdate(Discord::GuildMemberListUpdatePacket packet) {
-		using namespace Discord;
-		std::cout << "Received: GuildMemberListUpdatePacket\nGuild ID: " << packet.guildID.value << std::endl;
-		std::cout << "Groups: ";
-		for(const GuildMemberListGroup &group : packet.groups) std::cout << group.id << "(" << group.count << "), ";
-		std::cout << std::endl;
-
-		std::cout << "We have these operations:" << std::endl;
-		for(const GuildMemberListUpdateOperation& operation : packet.operations) {
-			std::cout << "    " << "OP: " << operation.op << std::endl;
-			std::cout << "    " << "Range: " << operation.range.first << " - " << operation.range.second << std::endl;
-
-			for(const std::variant<GuildMemberListGroup, Member>& item : operation.items) {
-				if(std::holds_alternative<GuildMemberListGroup>(item)) {
-					GuildMemberListGroup group = std::get<GuildMemberListGroup>(item);
-					std::cout << "        " << group.id << " - " << group.count << std::endl;
-
-				}else if(std::holds_alternative<Member>(item)) {
-					Member member = std::get<Member>(item);
-					std::cout << "        " << "  Member: " << member.user.username << std::endl;
-				}
+			}else if(std::holds_alternative<Member>(item)) {
+				Member member = std::get<Member>(item);
+				std::cout << "        " << "  Member: " << member.user.username << std::endl;
 			}
 		}
 	}
+}
 
-	void OnTypingStart(Discord::TypingStartPacket packet) {
-		if(packet.member)
-			std::cout << packet.member.value().user.username << " is typing..." << std::endl;
+void MyClient::OnTypingStart(Discord::TypingStartPacket packet) {
+	if(packet.member)
+		std::cout << packet.member.value().user.username << " is typing..." << std::endl;
+}
+
+void MyClient::OnMessageCreate(Discord::Message m) {
+	std::cout << m.id.value << " <" << m.author.username << "> " << m.content << std::endl;
+}
+
+void MyClient::OnMessageReactionAdd(Discord::MessageReactionPacket p) {
+	std::cout << p.messageID.value << " User " << p.userID.value << " added reaction " << p.emoji.name << std::endl;
+}
+
+void MyClient::OnMessageReactionRemove(Discord::MessageReactionPacket p) {
+	std::cout << p.messageID.value << " User " << p.userID.value << " removed reaction " << p.emoji.name << std::endl;
+}
+
+void MyClient::LoadAndSendResume() {
+	std::ifstream jsonFile("session.json");
+	rapidjson::IStreamWrapper iswrapper(jsonFile);
+	rapidjson::Document document;
+	document.ParseStream(iswrapper);
+
+	std::time_t sessionTime = document["session_time"].GetInt();
+	std::time_t currentTime = std::time(nullptr);
+
+	if(currentTime - sessionTime < 10*60) {
+		std::string sessionID = document["session_id"].GetString();
+		int32_t sequence = document["seq"].GetInt();
+		std::cout << "Resuming session with seq: " << sequence << std::endl;
+		this->SendResume(sessionID, sequence);
+	}else {
+		std::cout << "The session has (possibly) expired. No resume was sent." << std::endl;
 	}
-
-	void OnMessageCreate(Discord::Message m) {
-		std::cout << m.id.value << " <" << m.author.username << "> " << m.content << std::endl;
-	}
-
-	void OnMessageReactionAdd(Discord::MessageReactionPacket p) {
-		std::cout << p.messageID.value << " User " << p.userID.value << " added reaction " << p.emoji.name << std::endl;
-	}
-
-	void OnMessageReactionRemove(Discord::MessageReactionPacket p) {
-		std::cout << p.messageID.value << " User " << p.userID.value << " removed reaction " << p.emoji.name << std::endl;
-	}
-
-	// Reads the session_id and sequence number from session.json and sends a RESUME packet with the read information.
-	// This will do nothing if the session ID is too old.
-	void LoadAndSendResume() {
-		std::ifstream jsonFile("session.json");
-		rapidjson::IStreamWrapper iswrapper(jsonFile);
-		rapidjson::Document document;
-		document.ParseStream(iswrapper);
-
-		std::time_t sessionTime = document["session_time"].GetInt();
-		std::time_t currentTime = std::time(nullptr);
-
-		if(currentTime - sessionTime < 10*60) {
-			std::string sessionID = document["session_id"].GetString();
-			int32_t sequence = document["seq"].GetInt();
-			std::cout << "Resuming session with seq: " << sequence << std::endl;
-			this->SendResume(sessionID, sequence);
-		}else {
-			std::cout << "The session has (possibly) expired. No resume was sent." << std::endl;
-		}
-	}
-};
+}
 
 class ConsoleTest {
 private:
@@ -352,7 +340,7 @@ int main(int argc, char **argv) {
 
 	std::thread consoleThread(&ConsoleTest::run, &console);
 	
-	std::thread uiThread(&startImguiClient);
+	std::thread uiThread(&startImguiClient, client);
 
 	client->Run();
 	
