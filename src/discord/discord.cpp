@@ -1,6 +1,6 @@
-#include <discord/discord.hpp>
-#include <discord/token.hpp>
-#include <discord/packets.hpp>
+#include "discord/discord.hpp"
+#include "discord/token.hpp"
+#include "discord/packets.hpp"
 
 #include "sws/client_wss.hpp"
 

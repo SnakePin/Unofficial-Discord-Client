@@ -1,4 +1,4 @@
-#include <discord/discord.hpp>
+#include "discord/discord.hpp"
 
 #include <rapidjson/pointer.h>
 #include <rapidjson/stringbuffer.h>

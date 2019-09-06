@@ -1,9 +1,9 @@
 #pragma once
 
-#include <discord/user.hpp>
-#include <discord/emoji.hpp>
-#include <discord/guild.hpp>
-#include <discord/channel.hpp>
+#include "discord/user.hpp"
+#include "discord/emoji.hpp"
+#include "discord/guild.hpp"
+#include "discord/channel.hpp"
 
 #include <vector>
 #include <optional>

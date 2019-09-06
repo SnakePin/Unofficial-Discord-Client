@@ -1,7 +1,7 @@
 #pragma once
 
-#include <discord/snowflake.hpp>
-#include <discord/user.hpp>
+#include "discord/snowflake.hpp"
+#include "discord/user.hpp"
 
 #include <rapidjson/document.h>
 

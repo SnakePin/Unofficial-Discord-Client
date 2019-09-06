@@ -4,11 +4,11 @@
 #include <vector>
 #include <asio.hpp>
 
-#include <discord/message.hpp>
-#include <discord/guild.hpp>
-#include <discord/token.hpp>
-#include <discord/snowflake.hpp>
-#include <discord/packets.hpp>
+#include "discord/message.hpp"
+#include "discord/guild.hpp"
+#include "discord/token.hpp"
+#include "discord/snowflake.hpp"
+#include "discord/packets.hpp"
 
 #include <sws/client_wss.hpp>
 

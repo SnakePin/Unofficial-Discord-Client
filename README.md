@@ -46,6 +46,7 @@ libcurl (alerady provided by CPR)
 
 ### Windows(MSVC)
  - Install `Win64 OpenSSL v1.1.1c` or `Win32 OpenSSL v1.1.1c` from https://slproweb.com/products/Win32OpenSSL.html
+ - Install SDL2: `python scripts\download_sdl2_win.py msvc`
  - Install [CMake](https://cmake.org/)
  - Install a Visual Studio version that is supported by CMake, you can find supported Visual Studio versions from [CMake Documentation](https://cmake.org/cmake/help/latest/manual/cmake-generators.7.html#visual-studio-generators)
  - Execute following commands in project root directory:
@@ -58,7 +59,7 @@ Now depending on your configuration, you can find output files at `output\bin\De
  
 ### Linux
  - Install libssl: `apt-get install libssl-dev` in Debian, `yum install openssl-devel` in RHEL
- - Install SDL2: `apt-get install libsdl2-dev`
+ - Install SDL2: `apt-get install libsdl2-dev` in Debian, `yum install SDL2-devel` in RHEL
  - Install [CMake](https://cmake.org/)
  - Execute following commands in project root directory:
  - `git submodule update --init --recursive`
@@ -66,4 +67,4 @@ Now depending on your configuration, you can find output files at `output\bin\De
  - Release build: `cmake --build . --config Release`
  - Debug build: `cmake --build . --config Debug`
  
-Now depending on your configuration, you can find output files at `output\bin`
+Now you can find output files at `output/bin`

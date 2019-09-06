@@ -1,13 +1,11 @@
-#include <discord/guild.hpp>
-#include <discord/member.hpp>
-#include <discord/user.hpp>
-#include <discord/channel.hpp>
-#include <discord/emoji.hpp>
-#include <discord/message.hpp>
-
-#include <discord/packets.hpp>
-
-#include <discord/snowflake.hpp>
+#include "discord/guild.hpp"
+#include "discord/member.hpp"
+#include "discord/user.hpp"
+#include "discord/channel.hpp"
+#include "discord/emoji.hpp"
+#include "discord/message.hpp"
+#include "discord/packets.hpp"
+#include "discord/snowflake.hpp"
 
 /*
 	This file contains automatically generated static functions for
