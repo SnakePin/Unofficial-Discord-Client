@@ -22,7 +22,7 @@ namespace Discord {
 		std::optional<uint32_t> flags;
 		std::optional<int32_t> premiumType;
 
-		static User LoadFrom(rapidjson::Document &doc, std::string pointer);
+		static User LoadFrom(rapidjson::Document &doc, std::string pointer = "");
 	};
 
 }

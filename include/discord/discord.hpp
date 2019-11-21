@@ -42,7 +42,7 @@ namespace Discord {
 
 		// Websocket Gateway Events
 		// OnHelloPacket's default behavior is to call SendIdentify().
-		virtual void OnHelloPacket();
+		virtual void OnHelloPacket() = 0;
 		virtual void OnReadyPacket(ReadyPacket packet) = 0;
 		virtual void OnGuildCreate(Guild guild) = 0;
 		virtual void OnGuildMemberListUpdate(GuildMemberListUpdatePacket packet) = 0;
@@ -57,8 +57,16 @@ namespace Discord {
 			HTTP_API_CLASS(const Client& clientObj);
 			HTTP_API_CLASS(const AuthToken _token);
 
-			void StartTyping(const Snowflake &channelID);
-			void SendMessage(const Snowflake &channelID, MessagePacket messageToSend);
+			bool TriggerTypingIndicator(const Snowflake &channelID);
+			bool CreateMessage(const Snowflake &channelID, CreateMessageParam messageToSend);
+			bool DeleteMessage(const Snowflake &channelID, const Snowflake &messageID);
+			bool GetChannel(const Snowflake &channelID, Channel& channel);
+			bool GetChannelMessage(const Snowflake &channelID, const Snowflake &messageID, Message &message);
+			bool GetPinnedMessages(const Snowflake &channelID, std::vector<Message>& messages);
+			bool UnpinChannelMessage(const Snowflake &channelID, const Snowflake &messageID);
+
+			bool GetCurrentUser(User &user);
+			bool GetUserByID(User &user, const Snowflake &userID);
 
 			// Requests the (default: 50) most recent messages from a given channel, and
 			// pushes them into the vector. Returns true if the request was successful.
@@ -69,7 +77,7 @@ namespace Discord {
 			// TODO implement
 			// Sends a PATCH to https://discordapp.com/api/v6/users/@me/settings
 			// whose body is the JSON object {"status":"idle"} or similar.
-			void UpdatePresenceStatusSetting(std::string status);
+			bool UpdatePresenceStatusSetting(std::string status);
 
 			const AuthToken token;
 			const std::string userAgent;
@@ -81,7 +89,7 @@ namespace Discord {
 		std::shared_ptr<WssClient::Connection> connection;
 
 		// Used with SendHeartbeatAndResetTimer.
-		asio::steady_timer *heartbeatTimer;
+		asio::steady_timer heartbeatTimer;
 
 
 		// Gateway Packet Processing
@@ -103,6 +111,8 @@ namespace Discord {
 
 
 		std::string GenerateGuildChannelViewPacket(const Snowflake &guild, const Snowflake &channel);
+
+		void ScheduleNewWSSPacket(std::string_view out_message_str, const std::function<void(const std::error_code &)> &callback = nullptr, unsigned char fin_rsv_opcode = 129);
 
 	public:
 

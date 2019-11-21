@@ -25,6 +25,6 @@ namespace Discord {
 		bool managed;
 		bool mentionable;
 
-		static Role LoadFrom(rapidjson::Document &doc, std::string pointer);
+		static Role LoadFrom(rapidjson::Document &doc, std::string pointer = "");
 	};
 }

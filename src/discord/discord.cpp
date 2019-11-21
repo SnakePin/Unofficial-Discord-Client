@@ -20,19 +20,17 @@ Client::Client(std::string token, AuthTokenType tokenType)
     : token(token, tokenType),
 	sessionID(""),
 	heartbeatInterval(40000),
+	heartbeatTimer(asio::steady_timer(*websocket.io_service)),
     websocket("gateway.discord.gg/?v=6&encoding=json", false),
 	sequenceNumber(0),
     
 	// When we pass *this to HTTP_API_CLASS's constructor it will call the Client::HTTP_API_CLASS::HTTP_API_CLASS(const Client& clientObj)
 	// This means HTTP_API_CLASS will have reference to the outer class to allow it to access things like token
-	httpAPI(*this),
-	
-	heartbeatTimer(nullptr) {
-	
+	httpAPI(*this)
+{
 	if(tokenType == AuthTokenType::USER) {
 		std::cout << "** Client created in User mode **" << std::endl;
 	}
-
 }
 
 std::string Client::GenerateIdentifyPacket() {
@@ -91,8 +89,8 @@ void Client::SendHeartbeatAndResetTimer(const asio::error_code& error) {
 		connection->send(packet);
 		std::cout << "Client: Sending: " << packet << "\n";
 
-		heartbeatTimer->expires_from_now(std::chrono::milliseconds(heartbeatInterval - 2000));
-		heartbeatTimer->async_wait(std::bind(&Client::SendHeartbeatAndResetTimer, this, std::placeholders::_1));
+		heartbeatTimer.expires_from_now(std::chrono::milliseconds(heartbeatInterval - 2000));
+		heartbeatTimer.async_wait(std::bind(&Client::SendHeartbeatAndResetTimer, this, std::placeholders::_1));
 	}
 }
 
@@ -109,9 +107,8 @@ void Client::ProcessHello(rapidjson::Document &document) {
 	rapidjson::Value eventData = document["d"].GetObject();
 	heartbeatInterval = eventData["heartbeat_interval"].GetInt();
 
-	heartbeatTimer = new asio::steady_timer(*websocket.io_service);
-	heartbeatTimer->expires_from_now(std::chrono::milliseconds(heartbeatInterval - 2000));
-	heartbeatTimer->async_wait(std::bind(&Client::SendHeartbeatAndResetTimer, this, std::placeholders::_1));
+	heartbeatTimer.expires_from_now(std::chrono::milliseconds(heartbeatInterval - 2000));
+	heartbeatTimer.async_wait(std::bind(&Client::SendHeartbeatAndResetTimer, this, std::placeholders::_1));
 
 	std::cout << "Received HELLO (opcode 10) packet. Heartbeat interval: " << heartbeatInterval << std::endl;
 	
@@ -150,7 +147,8 @@ void Client::Run() {
 	// Start constructing the websocket events:
 	// on_message, on_open, on_close, on_error
 	websocket.on_message = [this](std::shared_ptr<WssClient::Connection> /* connection */, std::shared_ptr<WssClient::InMessage> in_message) {
-		std::string response = in_message->string(); // string() can only be called once! see sws/client_ws.hpp for why
+		// string() can only be called once because it consumes the stream buffer, so make sure to store the return value!
+		std::string response = in_message->string();
 	
 		rapidjson::Document document;
 		document.Parse(response.c_str());
@@ -211,7 +209,7 @@ void Client::Run() {
 
 	websocket.on_close = [this](std::shared_ptr<WssClient::Connection> /*connection*/, int status, const std::string & /*reason*/) {
 		std::cout << "Client: Closed connection with status code " << status << std::endl;
-		heartbeatTimer->cancel();
+		heartbeatTimer.cancel();
 	};
 
 	websocket.on_error = [](std::shared_ptr<WssClient::Connection> /*connection*/, const SimpleWeb::error_code &ec) {
@@ -255,9 +253,7 @@ std::string Client::GenerateGuildChannelViewPacket(const Snowflake &guild, const
 void Client::OpenGuildChannelView(const Snowflake &guild, const Snowflake &channel) {
 	std::string packet = GenerateGuildChannelViewPacket(guild, channel);
 
-	asio::post(*websocket.io_service, [=] {
-		connection->send(packet);
-	});
+	ScheduleNewWSSPacket(packet);
 }
 
 void Client::OpenPrivateChannelView(const Snowflake &channel) {
@@ -282,9 +278,7 @@ void Client::OpenPrivateChannelView(const Snowflake &channel) {
 
 	std::string packet = buffer.GetString();
 
-	asio::post(*websocket.io_service, [=] {
-		connection->send(packet);
-	});
+	ScheduleNewWSSPacket(packet);
 }
 
 void Client::UpdatePresence(std::string status) {
@@ -301,7 +295,11 @@ void Client::UpdatePresence(std::string status) {
 
 	std::string packet = buffer.GetString();
 
+	ScheduleNewWSSPacket(packet);
+}
+
+void Client::ScheduleNewWSSPacket(std::string_view out_message_str, const std::function<void(const std::error_code &)> &callback, unsigned char fin_rsv_opcode) {
 	asio::post(*websocket.io_service, [=] {
-		connection->send(packet);
+		connection->send(out_message_str, callback, fin_rsv_opcode);
 	});
 }

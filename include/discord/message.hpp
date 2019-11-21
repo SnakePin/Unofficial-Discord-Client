@@ -41,10 +41,10 @@ namespace Discord {
 		// MessageActivityObject activity;
 		// MessageApplicationObject application;
 
-		static Message LoadFrom(rapidjson::Document &doc, std::string pointer);
+		static Message LoadFrom(rapidjson::Document &doc, std::string pointer = "");
 	};
 
-	struct MessagePacket {
+	struct CreateMessageParam {
 		// https://discordapp.com/developers/docs/resources/channel#create-message-params
 		std::string content;
 		bool tts;

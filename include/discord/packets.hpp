@@ -109,7 +109,7 @@ namespace Discord {
 		// Used for sending Discord's "science" requests.
 		std::string analyticsToken; // note for future: This is one of the many things which do not exist for Bot accounts.
 
-		static ReadyPacket LoadFrom(rapidjson::Document &doc, std::string pointer);
+		static ReadyPacket LoadFrom(rapidjson::Document &doc, std::string pointer = "");
 	};
 
 	struct TypingStartPacket {
@@ -121,7 +121,7 @@ namespace Discord {
 
 		uint64_t timestamp;
 		
-		static TypingStartPacket LoadFrom(rapidjson::Document &doc, std::string pointer);
+		static TypingStartPacket LoadFrom(rapidjson::Document &doc, std::string pointer = "");
 	};
 
 	// Used for MESSAGE_REACTION_ADD and MESSAGE_REACTION_REMOVE events.
@@ -134,7 +134,7 @@ namespace Discord {
 		std::optional<Snowflake> guildID;
 		Emoji emoji;
 
-		static MessageReactionPacket LoadFrom(rapidjson::Document &doc, std::string pointer);
+		static MessageReactionPacket LoadFrom(rapidjson::Document &doc, std::string pointer = "");
 	};
 
 }

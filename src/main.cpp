@@ -82,12 +82,12 @@ void MyClient::OnGuildCreate(Discord::Guild g) {
 
 	for(Discord::Channel &chan : g.channels) {
 		if(chan.type == 0){
-			Discord::MessagePacket messageToSend;
+			Discord::CreateMessageParam messageToSend;
 			messageToSend.content = "Hello to channel <#" + std::to_string(chan.id.value) + ">";
 			messageToSend.tts = false;
 
 			asio::post(*pool,
-				[=] {httpAPI.SendMessage(std::to_string(chan.id.value), messageToSend);}
+				[=] {httpAPI.CreateMessage(std::to_string(chan.id.value), messageToSend);}
 			);
 		}
 	}
@@ -161,11 +161,12 @@ private:
 
 	std::shared_ptr<MyClient> client;
 	bool running;
+	Discord::User currentUser;
 
 public:
 	ConsoleTest(std::shared_ptr<MyClient> client)
 	    : client(client), running(false) {
-
+			client->httpAPI.GetCurrentUser(currentUser);
 	}
 
 	void processCommand(std::string command) {
@@ -189,14 +190,14 @@ public:
 
 		}
 		else if(command.rfind("sendmsg", 0) == 0) {
-			Discord::MessagePacket messageToSend;
+			Discord::CreateMessageParam messageToSend;
 			messageToSend.content = command.substr(command.find(' '));
 			messageToSend.tts = false;
 
 			//This channel ID is channel ID of test discord guild's general channel's ID
 			asio::post(*client->pool, 
 				[=] {
-					client->httpAPI.SendMessage(Discord::Snowflake(590695217028661250), messageToSend);
+					client->httpAPI.CreateMessage(currentUser.id, messageToSend);
 				}
 			);
 			
@@ -222,15 +223,15 @@ public:
 		}
 		else if(command.rfind("delaymsg", 0) == 0) {
 			// Sends a 'typing' signal, then the message after a 5 second delay.
-			Discord::MessagePacket messageToSend;
+			Discord::CreateMessageParam messageToSend;
 			messageToSend.content = command.substr(command.find(' '));
 			messageToSend.tts = false;
 
 			asio::post(*client->pool,
 				[=] {
-					client->httpAPI.StartTyping(Discord::Snowflake(590695217028661250)); //TODO: Remove these IDs
+					client->httpAPI.TriggerTypingIndicator(currentUser.id);
 					std::this_thread::sleep_for(std::chrono::seconds(5));
-					client->httpAPI.SendMessage(Discord::Snowflake(590695217028661250), messageToSend);
+					client->httpAPI.CreateMessage(currentUser.id, messageToSend);
 				}
 			);
 
@@ -332,9 +333,28 @@ public:
 	}
 };
 
-int main(int argc, char **argv) {
-	// $ ./Unofficial-Discord-Client [discord token]
-	std::shared_ptr<MyClient> client = std::make_shared<MyClient>( (argc == 2)? argv[1] : "token", Discord::AuthTokenType::USER);
+void showHelpMessage(char* firstArg)
+{
+	std::cout << "Usage: " << std::endl
+	<< firstArg << " <Discord token> [token type]" << std::endl
+	<< "Info: Token type can be either \"USER\" or \"BOT\", it defaults to \"USER\" if not specified.";
+}
+
+int main(int argc, char *argv[]) {
+	if(argc < 2) {
+		showHelpMessage(argv[0]);
+		return 1;
+	}
+
+	if(argc >= 3) {
+		if(strcmp(argv[2], "USER") == 0) {
+
+		} else if(strcmp(argv[2], "BOT") == 0) {
+			
+		}
+	}
+
+	std::shared_ptr<MyClient> client = std::make_shared<MyClient>(argv[1], Discord::AuthTokenType::USER);
 	
 	ConsoleTest console(client);
 

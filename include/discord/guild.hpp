@@ -69,7 +69,7 @@ namespace Discord {
 		std::string description;
 		std::string bannerHash;
 
-		static Guild LoadFrom(rapidjson::Document &doc, std::string pointer);
+		static Guild LoadFrom(rapidjson::Document &doc, std::string pointer = "");
 
 	};
 

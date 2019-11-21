@@ -21,7 +21,7 @@ namespace Discord {
 		std::optional<bool> managed;
 		std::optional<bool> animated;
 
-		static Emoji LoadFrom(rapidjson::Document &doc, std::string pointer);
+		static Emoji LoadFrom(rapidjson::Document &doc, std::string pointer = "");
 	};
 
 }

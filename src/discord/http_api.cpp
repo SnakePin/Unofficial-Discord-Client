@@ -13,6 +13,9 @@ using namespace Discord;
 static std::string AuthTokenToAuthHeaderValue(const AuthToken& token);
 static std::string JsonDocumentToJsonString(rapidjson::Document& jsonDocument);
 
+//TODO: Fix the ssl issue as soon as possible
+//TODO: Handle API errors and return a bool according to succession status, maybe even return error objects.
+
 Client::HTTP_API_CLASS::HTTP_API_CLASS(const Client& clientObj)
     : HTTP_API_CLASS(clientObj.token) {
 
@@ -49,7 +52,7 @@ static std::string JsonDocumentToJsonString(rapidjson::Document& jsonDocument)
     return std::string(_stringBuffer.GetString());
 }
 
-void Client::HTTP_API_CLASS::SendMessage(const Discord::Snowflake &channelID, Discord::MessagePacket messageToSend)
+bool Client::HTTP_API_CLASS::CreateMessage(const Discord::Snowflake &channelID, Discord::CreateMessageParam messageToSend)
 {
     rapidjson::Document JsonDocument;
     rapidjson::Pointer("/content").Set(JsonDocument, messageToSend.content.c_str());
@@ -57,7 +60,7 @@ void Client::HTTP_API_CLASS::SendMessage(const Discord::Snowflake &channelID, Di
 
     std::string postBody = JsonDocumentToJsonString(JsonDocument);
 
-    cpr::Response response = cpr::Post(cpr::Url{"https://discordapp.com/api/v6/channels/"+std::to_string(channelID.value)+"/messages"},
+    cpr::Response response = cpr::Post(cpr::Url{tfm::format("https://discordapp.com/api/v6/channels/%s/messages", channelID.value)},
                                        cpr::Body{postBody},
                                        cpr::Header
 										{
@@ -66,14 +69,24 @@ void Client::HTTP_API_CLASS::SendMessage(const Discord::Snowflake &channelID, Di
 										   {"User-Agent", userAgent}
 										},
                                        cpr::VerifySsl{false});
-    //response.status_code;                  // 200
-    //response.header["content-type"];       // application/json; charset=utf-8
-    //response.text;  
+    return response.status_code == 200;
 }
 
-void Client::HTTP_API_CLASS::StartTyping(const Discord::Snowflake &channelID)
+bool Client::HTTP_API_CLASS::DeleteMessage(const Snowflake &channelID, const Snowflake &messageID) 
 {
-    cpr::Response response = cpr::Post(cpr::Url{"https://discordapp.com/api/v6/channels/"+std::to_string(channelID.value)+"/typing"},
+    cpr::Response response = cpr::Delete(cpr::Url{tfm::format("https://discordapp.com/api/v6/channels/%s/messages/%s", channelID.value, messageID.value)},
+                                       cpr::Header
+										{
+										   {"Authorization", AuthTokenToAuthHeaderValue(token)},
+										   {"User-Agent", userAgent}
+										},
+                                       cpr::VerifySsl{false});
+    return response.status_code == 204;
+}
+
+bool Client::HTTP_API_CLASS::TriggerTypingIndicator(const Discord::Snowflake &channelID)
+{
+    cpr::Response response = cpr::Post(cpr::Url{tfm::format("https://discordapp.com/api/v6/channels/%s/typing", channelID.value)},
                                        cpr::Header
                                        {
                                             {"Authorization", AuthTokenToAuthHeaderValue(token)},
@@ -81,6 +94,7 @@ void Client::HTTP_API_CLASS::StartTyping(const Discord::Snowflake &channelID)
 											{"User-Agent", userAgent}
                                        },
                                        cpr::VerifySsl{false});
+    return response.status_code == 204;
 }
 
 bool Client::HTTP_API_CLASS::GetMessagesInto(const Snowflake &channelID, std::vector<Message>& messages, int count) {
@@ -105,6 +119,138 @@ bool Client::HTTP_API_CLASS::GetMessagesInto(const Snowflake &channelID, std::ve
 				Message::LoadFrom(document, tfm::format("/%d", i))
 			);
 		}
+
+		return true;
+	}
+
+	return false;
+}
+
+bool Client::HTTP_API_CLASS::GetChannel(const Snowflake &channelID, Channel& channel) {
+	cpr::Response response = cpr::Get(
+		cpr::Url{tfm::format("https://discordapp.com/api/v6/channels/%s", channelID.value)},
+		cpr::Header
+		{
+			{"Authorization", AuthTokenToAuthHeaderValue(token)},
+			{"User-Agent", userAgent}
+		},
+		cpr::VerifySsl{false}
+	);
+
+	if(response.status_code == 200) {
+		rapidjson::Document document;
+		document.Parse(response.text.c_str());
+
+		channel = Channel::LoadFrom(document);
+
+		return true;
+	}
+
+	return false;
+}
+
+bool Client::HTTP_API_CLASS::GetChannelMessage(const Snowflake &channelID, const Snowflake &messageID, Message &message) {
+	cpr::Response response = cpr::Get(
+		cpr::Url{tfm::format("https://discordapp.com/api/v6/channels/%s/messages/%s", channelID.value, messageID.value)},
+		cpr::Header
+		{
+			{"Authorization", AuthTokenToAuthHeaderValue(token)},
+			{"User-Agent", userAgent}
+		},
+		cpr::VerifySsl{false}
+	);
+
+	if(response.status_code == 200) {
+		rapidjson::Document document;
+		document.Parse(response.text.c_str());
+
+		message = Message::LoadFrom(document);
+
+		return true;
+	}
+
+	return false;
+}
+
+bool Client::HTTP_API_CLASS::GetPinnedMessages(const Snowflake &channelID, std::vector<Message>& messages) {
+	cpr::Response response = cpr::Get(
+		cpr::Url{tfm::format("https://discordapp.com/api/v6/channels/%s/pins", channelID.value)},
+		cpr::Header
+		{
+			{"Authorization", AuthTokenToAuthHeaderValue(token)},
+			{"User-Agent", userAgent}
+		},
+		cpr::VerifySsl{false}
+	);
+
+	if(response.status_code == 200) {
+		rapidjson::Document document;
+		document.Parse(response.text.c_str());
+
+		if(!document.IsArray()) return false;
+
+		for(int i=0; i<document.GetArray().Size(); i++) {
+			messages.push_back(
+				Message::LoadFrom(document, tfm::format("/%d", i))
+			);
+		}
+
+		return true;
+	}
+
+	return false;
+}
+
+bool Client::HTTP_API_CLASS::UnpinChannelMessage(const Snowflake &channelID, const Snowflake &messageID) {
+    cpr::Response response = cpr::Delete(cpr::Url{tfm::format("https://discordapp.com/api/v6/channels/%s/pins/%s", channelID.value, messageID.value)},
+                                       cpr::Header
+										{
+										   {"Authorization", AuthTokenToAuthHeaderValue(token)},
+										   {"User-Agent", userAgent}
+										},
+                                       cpr::VerifySsl{false});
+    return response.status_code == 204;
+}
+
+bool Client::HTTP_API_CLASS::GetCurrentUser(User &user) {
+    cpr::Response response = cpr::Get(
+		cpr::Url{"https://discordapp.com/api/v6/users/@me"},
+		cpr::Header
+		{
+			{"Authorization", AuthTokenToAuthHeaderValue(token)},
+			{"User-Agent", userAgent}
+		},
+		cpr::VerifySsl{false}
+	);
+
+	if(response.status_code == 200) {
+		rapidjson::Document document;
+		document.Parse(response.text.c_str());
+
+		user = User::LoadFrom(document);
+
+		return true;
+	}
+
+	return false;
+}
+
+bool Client::HTTP_API_CLASS::GetUserByID(User &user, const Snowflake &userID) {
+    cpr::Response response = cpr::Get(
+		cpr::Url{tfm::format("https://discordapp.com/api/v6/users/%s", userID.value)},
+		cpr::Header
+		{
+			{"Authorization", AuthTokenToAuthHeaderValue(token)},
+			{"User-Agent", userAgent}
+		},
+		cpr::VerifySsl{false}
+	);
+
+	if(response.status_code == 200) {
+		rapidjson::Document document;
+		document.Parse(response.text.c_str());
+
+		user = User::LoadFrom(document);
 
 		return true;
 	}

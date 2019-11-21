@@ -36,7 +36,7 @@ namespace Discord {
 
 		std::optional<std::string> lastPinTimestamp;
 
-		static Channel LoadFrom(rapidjson::Document &doc, std::string pointer);
+		static Channel LoadFrom(rapidjson::Document &doc, std::string pointer = "");
 	};
 
 }

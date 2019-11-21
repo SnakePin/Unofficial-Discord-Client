@@ -22,7 +22,7 @@ namespace Discord {
 		bool deaf;
 		bool mute;
 
-		static Member LoadFrom(rapidjson::Document &doc, std::string pointer);
+		static Member LoadFrom(rapidjson::Document &doc, std::string pointer = "");
 	};
 
 }
