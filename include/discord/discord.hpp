@@ -27,7 +27,6 @@ namespace Discord {
 
 		uint64_t sequenceNumber;
 
-
 		Client(std::string token, AuthTokenType tokenType);
 		
 		// Generate and send an IDENTIFY packet
@@ -89,8 +88,9 @@ namespace Discord {
 		std::shared_ptr<WssClient::Connection> connection;
 
 		// Used with SendHeartbeatAndResetTimer.
-		asio::steady_timer heartbeatTimer;
+		std::unique_ptr<asio::steady_timer> heartbeatTimer;
 
+		std::shared_ptr<asio::io_context> io_service;
 
 		// Gateway Packet Processing
 		// These functions call the gateway event methods above.
