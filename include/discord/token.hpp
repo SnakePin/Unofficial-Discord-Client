@@ -4,8 +4,7 @@
 namespace Discord {
     enum class AuthTokenType {
         USER,
-        BOT,
-        BEARER
+        BOT
     };
 
 	struct AuthToken {

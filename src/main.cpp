@@ -346,11 +346,13 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
+
+	Discord::AuthTokenType tokenType;
 	if(argc >= 3) {
 		if(strcmp(argv[2], "USER") == 0) {
-
+			tokenType = Discord::AuthTokenType::USER;
 		} else if(strcmp(argv[2], "BOT") == 0) {
-			
+			tokenType = Discord::AuthTokenType::BOT;
 		}
 	}
 

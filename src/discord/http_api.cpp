@@ -34,9 +34,6 @@ static std::string AuthTokenToAuthHeaderValue(const AuthToken& token)
     if (token.tokenType == AuthTokenType::BOT) {
         authHeaderValue = "Bot " + token.token;
     }
-    else if(token.tokenType == AuthTokenType::BEARER){
-        authHeaderValue = "Bearer " + token.token;
-    }
     else {
         authHeaderValue = token.token;
     }
