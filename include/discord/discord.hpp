@@ -30,13 +30,13 @@ namespace Discord {
 
 		uint64_t sequenceNumber;
 
-		Client(std::string_view token, AuthTokenType tokenType);
+		Client(std::string& token, AuthTokenType tokenType);
 		
 		// Generate and send an IDENTIFY packet
 		void SendIdentify();
 
 		// Generate and send a RESUME packet
-		void SendResume(std::string sessionID, uint32_t sequenceNumber);
+		void SendResume(std::string& sessionID, uint32_t sequenceNumber);
 
 		// Start the websocket and event loop.
 		// This will block until the event loop is stopped (websocket.stop()).
@@ -80,17 +80,14 @@ namespace Discord {
 			// TODO implement
 			// Sends a PATCH to https://discordapp.com/api/v6/users/@me/settings
 			// whose body is the JSON object {"status":"idle"} or similar.
-			bool UpdatePresenceStatusSetting(std::string status);
+			bool UpdatePresenceStatusSetting(std::string& status);
 
 			const AuthToken token;
-
-			//Do not change the this field's type to string_view, CPR doesn't accept it
-			std::string userAgent = std::string(DefaultUserAgentString);
+			std::string userAgent;
 		} httpAPI;
 
 		// User agent string to use in gateway connection and in HTTP API instance
-		//Do not change the this field's type to string_view, rapidjson doesn't accept it
-		std::string userAgent = std::string(DefaultUserAgentString);
+		std::string userAgent;
 	private:
 	
 		// Gets set every time the websocket opens a new connection.
@@ -112,14 +109,14 @@ namespace Discord {
 
 		// Generates an IDENTIFY packet.
 		// https://discordapp.com/developers/docs/topics/gateway#identify
-		std::string_view GenerateIdentifyPacket(bool compress = false);
+		std::string GenerateIdentifyPacket(bool compress = false);
 
 		// Generates a RESUME packet using the specified sessionID and sequenceNumber.
 		// https://discordapp.com/developers/docs/topics/gateway#resume
-		std::string_view GenerateResumePacket(std::string sessionID, uint32_t sequenceNumber);
+		std::string GenerateResumePacket(std::string& sessionID, uint32_t sequenceNumber);
 
 
-		std::string_view GenerateGuildChannelViewPacket(const Snowflake &guild, const Snowflake &channel);
+		std::string GenerateGuildChannelViewPacket(const Snowflake &guild, const Snowflake &channel);
 
 		void ScheduleNewWSSPacket(std::string_view out_message_str, const std::function<void(const std::error_code &)> &callback = nullptr, unsigned char fin_rsv_opcode = 129);
 
@@ -139,7 +136,7 @@ namespace Discord {
 		// Distinct from HTTP API's UpdatePresenceStatusSetting, because it only temporarily
 		// sets the status to this. Used when the Client program has detected no activity
 		// for 10 minutes, and decides that the user is now idle.
-		void UpdatePresence(std::string status);
+		void UpdatePresence(std::string& status);
 
 	};
 }

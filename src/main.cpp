@@ -23,7 +23,7 @@
 #include "imguiClient.hpp"
 #include "myClient.hpp"
 
-MyClient::MyClient(std::string token, Discord::AuthTokenType tokenType)
+MyClient::MyClient(std::string& token, Discord::AuthTokenType tokenType)
 	: Client(token, tokenType),
 	pool(std::make_shared<asio::thread_pool>(4)), /* Thread pool contains 4 threads. */
 	lastSessionUpdateTime(0)
@@ -350,7 +350,7 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
-	Discord::AuthTokenType tokenType;
+	Discord::AuthTokenType tokenType = Discord::AuthTokenType::USER;
 	if(argc >= 3) {
 		if(strcmp(argv[2], "USER") == 0) {
 			tokenType = Discord::AuthTokenType::USER;
@@ -359,7 +359,7 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	std::shared_ptr<MyClient> client = std::make_shared<MyClient>(argv[1], tokenType);
+	std::shared_ptr<MyClient> client = std::make_shared<MyClient>(std::string(argv[1]), tokenType);
 	
 	ConsoleTest console(client);
 

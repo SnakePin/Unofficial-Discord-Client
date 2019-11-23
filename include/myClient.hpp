@@ -19,7 +19,7 @@ public:
 	std::vector<Discord::Channel> privateChannels;
 	std::time_t lastSessionUpdateTime;
 
-	MyClient(std::string token, Discord::AuthTokenType tokenType);
+	MyClient(std::string& token, Discord::AuthTokenType tokenType);
 
 	// Writes the session ID, sequence number, and update time to session.json.
 	void UpdateSessionJson();

@@ -19,11 +19,12 @@ static std::string AuthTokenToAuthHeaderValue(const AuthToken& token);
 Client::HTTP_API_CLASS::HTTP_API_CLASS(const Client& clientObj)
 	: HTTP_API_CLASS(clientObj.token)
 {
-	userAgent = clientObj.userAgent;
+
 }
 
 Client::HTTP_API_CLASS::HTTP_API_CLASS(const AuthToken _token)
-	: token(_token)
+	: token(_token),
+	userAgent(DefaultUserAgentString)
 {
 	
 }
@@ -49,7 +50,7 @@ bool Client::HTTP_API_CLASS::CreateMessage(const Discord::Snowflake &channelID, 
 	rapidjson::Pointer("/content").Set(JsonDocument, messageToSend.content.c_str());
 	rapidjson::Pointer("/tts").Set(JsonDocument, messageToSend.tts);
 
-	std::string postBody = std::string(JsonDocumentToJsonString(JsonDocument));
+	std::string postBody = JsonDocumentToJsonString(JsonDocument);
 
 	cpr::Response response = cpr::Post(cpr::Url{tfm::format("https://discordapp.com/api/v6/channels/%s/messages", channelID.value)},
 										cpr::Body{postBody},

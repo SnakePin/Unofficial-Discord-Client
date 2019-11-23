@@ -17,12 +17,14 @@
 using namespace Discord;
 using namespace Utils;
 
-Client::Client(std::string_view token, AuthTokenType tokenType)
-	: token(std::string(token), tokenType),
+Client::Client(std::string& token, AuthTokenType tokenType)
+	: token(token, tokenType),
 	sessionID(""),
 	heartbeatInterval(40000),
 	websocket("gateway.discord.gg/?v=6&encoding=json", false),
 	sequenceNumber(0),
+	//Make sure userAgent and token are set before httpAPI is initialized
+	userAgent(DefaultUserAgentString),
 
 	// When we pass *this to HTTP_API_CLASS's constructor it will call the Client::HTTP_API_CLASS::HTTP_API_CLASS(const Client& clientObj)
 	// This means HTTP_API_CLASS will have reference to the outer class to allow it to access things like token
@@ -32,7 +34,7 @@ Client::Client(std::string_view token, AuthTokenType tokenType)
 	heartbeatTimer = std::make_unique<asio::steady_timer>(*io_context);
 }
 
-std::string_view Client::GenerateIdentifyPacket(bool compress) {
+std::string Client::GenerateIdentifyPacket(bool compress) {
 	rapidjson::Document document;
 
 	rapidjson::Pointer("/op").Set(document, GatewayOpcodes::Identify);
@@ -62,7 +64,7 @@ std::string_view Client::GenerateIdentifyPacket(bool compress) {
 	return JsonDocumentToJsonString(document);
 }
 
-std::string_view Client::GenerateResumePacket(std::string sessionID, uint32_t sequenceNumber) {
+std::string Client::GenerateResumePacket(std::string& sessionID, uint32_t sequenceNumber) {
 	rapidjson::Document document;
 
 	rapidjson::Pointer("/op").Set(document, GatewayOpcodes::Resume);
@@ -73,7 +75,7 @@ std::string_view Client::GenerateResumePacket(std::string sessionID, uint32_t se
 	return JsonDocumentToJsonString(document);
 }
 
-std::string_view Client::GenerateGuildChannelViewPacket(const Snowflake& guild, const Snowflake& channel) {
+std::string Client::GenerateGuildChannelViewPacket(const Snowflake& guild, const Snowflake& channel) {
 	// Produce a packet that looks like scripts/outbound_packets/op14.json
 
 	std::string gid = std::to_string(guild.value);
@@ -116,7 +118,7 @@ void Client::SendIdentify() {
 	connection->send(GenerateIdentifyPacket());
 }
 
-void Client::SendResume(std::string sessionID, uint32_t sequenceNumber) {
+void Client::SendResume(std::string& sessionID, uint32_t sequenceNumber) {
 	this->sessionID = sessionID;
 	connection->send(GenerateResumePacket(sessionID, sequenceNumber));
 }
@@ -271,11 +273,10 @@ void Client::OpenPrivateChannelView(const Snowflake& channel) {
 	rapidjson::Pointer("/op").Set(document, 13);
 	rapidjson::Pointer("/d/channel_id").Set(document, std::to_string(channel.value).c_str());
 
-	std::string_view packet = JsonDocumentToJsonString(document);
-	ScheduleNewWSSPacket(packet);
+	ScheduleNewWSSPacket(JsonDocumentToJsonString(document));
 }
 
-void Client::UpdatePresence(std::string status) {
+void Client::UpdatePresence(std::string& status) {
 	rapidjson::Document document;
 	rapidjson::Pointer("/op").Set(document, GatewayOpcodes::StatusUpdate);
 	rapidjson::Pointer("/d/status").Set(document, status.c_str());
@@ -283,8 +284,7 @@ void Client::UpdatePresence(std::string status) {
 	rapidjson::Pointer("/d/afk").Set(document, false);
 	rapidjson::Pointer("/d/activities").Set(document, rapidjson::Value(rapidjson::kArrayType));
 
-	std::string_view packet = JsonDocumentToJsonString(document);
-	ScheduleNewWSSPacket(packet);
+	ScheduleNewWSSPacket(JsonDocumentToJsonString(document));
 }
 
 void Client::ScheduleNewWSSPacket(std::string_view out_message_str, const std::function<void(const std::error_code&)>& callback, unsigned char fin_rsv_opcode) {
