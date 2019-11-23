@@ -5,6 +5,7 @@
 #include "imgui.h"
 #include "imgui_impl_sdl.h"
 #include "imgui_impl_opengl2.h"
+#include "imgui_stdlib.h"
 #include <stdio.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
@@ -16,7 +17,7 @@ int startImguiClient(std::shared_ptr<MyClient> client) {
 	const int WINDOW_HEIGHT = 720;
 	
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0){
-		printf("Error: %s\n", SDL_GetError());
+		std::cout << "SDL_Init error: " << SDL_GetError() << "\n";
 		return -1;
 	}
 	
@@ -26,7 +27,7 @@ int startImguiClient(std::shared_ptr<MyClient> client) {
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
 	SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
-	SDL_Window* window = SDL_CreateWindow("Dear ImGui SDL2+OpenGL example", 1920 + 1920/2 - WINDOW_WIDTH/2, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH, WINDOW_HEIGHT, window_flags);
+	SDL_Window* window = SDL_CreateWindow("Unofficial Discord Client GUI", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH, WINDOW_HEIGHT, window_flags);
 	SDL_GLContext gl_context = SDL_GL_CreateContext(window);
 	SDL_GL_MakeCurrent(window, gl_context);
 	SDL_GL_SetSwapInterval(1); // Enable vsync
@@ -34,7 +35,7 @@ int startImguiClient(std::shared_ptr<MyClient> client) {
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	ImGuiIO& io = ImGui::GetIO();
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;	 // Enable Keyboard Controls
 
@@ -48,16 +49,15 @@ int startImguiClient(std::shared_ptr<MyClient> client) {
 
 	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 	
-	char* username = (char*) calloc(33, 1);
-	char* password = (char*) calloc(129, 1);
+	std::string usernameString;
+	std::string passwordString;
 
-	bool done = false;
-	while (!done) {
+	while (true) {
 		SDL_Event event;
 		while (SDL_PollEvent(&event)) {
 			ImGui_ImplSDL2_ProcessEvent(&event);
 			if (event.type == SDL_QUIT)
-				done = true;
+				goto CleanupAndExit;
 		}
 
 		ImGui_ImplOpenGL2_NewFrame();
@@ -67,34 +67,32 @@ int startImguiClient(std::shared_ptr<MyClient> client) {
 		ImGui::DockSpaceOverViewport();
 		
 		ImGui::Begin("Login");
-		ImGui::InputText("username", username, 32);
-		ImGui::InputText("password", password, 128, ImGuiInputTextFlags_Password);
-		ImGui::Button("Login");
+		{
+			ImGui::InputText("username", &usernameString);
+			ImGui::InputText("password", &passwordString, ImGuiInputTextFlags_Password);
+			ImGui::Button("Login");
+		}
 		ImGui::End();
 		
 		ImGui::Begin("Account");
-		if(ImGui::BeginTabBar("Discord")){
-			
-			for(const Discord::Guild& guild : client->guilds) {
-				if(ImGui::BeginTabItem(guild.name.c_str())) {
-					
-					if(ImGui::BeginTabBar(guild.name.c_str(), ImGuiTabBarFlags_::ImGuiTabBarFlags_FittingPolicyScroll)) {
-						
-						for(const Discord::Channel& channel : guild.channels) {
-							if(channel.type == 0 && ImGui::BeginTabItem(channel.name.value_or("Unnamed Channel").c_str())) {
-								ImGui::Text("ayy lmao");
-								ImGui::EndTabItem();
+		{
+			if(ImGui::BeginTabBar("Discord")){
+				for(const Discord::Guild& guild : client->guilds) {
+					if(ImGui::BeginTabItem(guild.name.c_str())) {
+						if(ImGui::BeginTabBar(guild.name.c_str(), ImGuiTabBarFlags_::ImGuiTabBarFlags_FittingPolicyScroll)) {
+							for(const Discord::Channel& channel : guild.channels) {
+								if(channel.type == 0 && ImGui::BeginTabItem(channel.name.value_or("Unnamed Channel").c_str())) {
+									ImGui::Text("ayy lmao");
+									ImGui::EndTabItem();
+								}
 							}
+							ImGui::EndTabBar();
 						}
-						
-						ImGui::EndTabBar();
+						ImGui::EndTabItem();
 					}
-					
-					ImGui::EndTabItem();
 				}
+				ImGui::EndTabBar();
 			}
-			
-			ImGui::EndTabBar();
 		}
 		ImGui::End();
 
@@ -106,6 +104,8 @@ int startImguiClient(std::shared_ptr<MyClient> client) {
 		ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
 		SDL_GL_SwapWindow(window);
 	}
+
+CleanupAndExit:
 
 	// Cleanup
 	ImGui_ImplOpenGL2_Shutdown();

@@ -23,8 +23,17 @@ namespace Discord {
 		Snowflake(uint64_t v) : value(v) {}
 
 		// Unix epoch in milliseconds
-		inline uint64_t UnixEpoch() {
+		inline uint64_t GetUnixEpoch() {
 			return (value >> 22) + 1420070400000;
+		}
+		inline uint8_t GetInternalWorkerID() {
+			return (value & 0x3E0000) >> 17;
+		}
+		inline uint8_t GetInternalProcessID() {
+			return (value & 0x1F000) >> 12;
+		}
+		inline uint16_t GetIncrement() {
+			return value & 0xFFF;
 		}
 
 		inline bool operator==(const Snowflake &other) {

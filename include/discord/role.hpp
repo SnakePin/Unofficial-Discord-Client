@@ -2,9 +2,7 @@
 
 #include "discord/snowflake.hpp"
 
-#include <vector>
 #include <string>
-#include <optional>
 
 #include <rapidjson/document.h>
 #include <rapidjson/pointer.h>

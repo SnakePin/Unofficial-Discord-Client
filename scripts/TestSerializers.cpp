@@ -1,8 +1,8 @@
 /*
-    Compile as:
-        $ g++ -std=c++17 -I../include TestSerializers.cpp ../src/discord/serializers.cpp
-    
-    See GuildCreatePacket.json in this folder to see what it's parsing.
+	Compile as:
+		$ g++ -std=c++17 -I../include TestSerializers.cpp ../src/discord/serializers.cpp
+	
+	See GuildCreatePacket.json in this folder to see what it's parsing.
  */
 
 #include <discord/guild.hpp>
@@ -31,39 +31,39 @@ void testGuildCreate() {
 	char *json = ReadAllBytes("GuildCreatePacket.json", &read);
 	rapidjson::Document doc;
 	doc.Parse(json);
-    delete[] json;
+	delete[] json;
 
 	Guild g = Guild::LoadFrom(doc, "/d");
 
 	std::cout << "Guild name: " << g.name << "\n";
 	std::cout << "Guild region: " << g.region << "\n";
-    std::cout << "Guild description: " << g.description << "\n";
-    std::cout << "Joined Guild at: " << g.joinedAt.value() << "\n";
-    std::cout << "Guild Member Count: " << g.memberCount.value_or(0) << "\n";
-    std::cout << "Guild ID: " << g.id.value << "\n";
-    time_t guildCreateTime = g.id.UnixEpoch()/1000;
-    std::cout << "Guild Epoch & ctime: " << g.id.UnixEpoch()/1000 << " " << ctime(&guildCreateTime) << "\n";
+	std::cout << "Guild description: " << g.description << "\n";
+	std::cout << "Joined Guild at: " << g.joinedAt.value() << "\n";
+	std::cout << "Guild Member Count: " << g.memberCount.value_or(0) << "\n";
+	std::cout << "Guild ID: " << g.id.value << "\n";
+	time_t guildCreateTime = g.id.GetUnixEpoch()/1000;
+	std::cout << "Guild Epoch & ctime: " << g.id.GetUnixEpoch()/1000 << " " << ctime(&guildCreateTime) << "\n";
 
-    std::cout << "Roles:\n";
-    for(const Role &role : g.roles) {
-        std::cout << "\tRole ID: " << role.id.value << "\n";
-        std::cout << "\tRole name: " << role.name << "\n\n";
-    }
+	std::cout << "Roles:\n";
+	for(const Role &role : g.roles) {
+		std::cout << "\tRole ID: " << role.id.value << "\n";
+		std::cout << "\tRole name: " << role.name << "\n\n";
+	}
 
-    std::cout << "Members:\n";
+	std::cout << "Members:\n";
 
-    for(const Member &mem : g.members) {
-        std::cout << "\tID: " << mem.user.id.value << "\n";
-        std::cout << "\tJoined at: " << mem.joinedAt << "\n";
-        std::cout << "\tUsername: " << mem.user.username << "\n\n";
-    }
+	for(const Member &mem : g.members) {
+		std::cout << "\tID: " << mem.user.id.value << "\n";
+		std::cout << "\tJoined at: " << mem.joinedAt << "\n";
+		std::cout << "\tUsername: " << mem.user.username << "\n\n";
+	}
 
-    std::cout << "Channels:\n";
-    std::string channelTypes[] = {"Text", "1", "Voice", "3", "Category"};
-    for(const Channel &chan : g.channels) {
-        std::cout << "\tType: " << channelTypes[chan.type] << "\n";
-        std::cout << "\tName: " << chan.name.value() << "\n\n";
-    }
+	std::cout << "Channels:\n";
+	std::string channelTypes[] = {"Text", "1", "Voice", "3", "Category"};
+	for(const Channel &chan : g.channels) {
+		std::cout << "\tType: " << channelTypes[chan.type] << "\n";
+		std::cout << "\tName: " << chan.name.value() << "\n\n";
+	}
 }
 
 void testMessageCreate() {
@@ -73,15 +73,15 @@ void testMessageCreate() {
 	char *json = ReadAllBytes("MessageCreatePacket.json", &read);
 	rapidjson::Document doc;
 	doc.Parse(json);
-    delete[] json;
+	delete[] json;
 
 	Message m = Message::LoadFrom(doc, "/d");
 
-    std::cout << "Message: " << m.content << "\n";
+	std::cout << "Message: " << m.content << "\n";
 	std::cout << "Author: " << m.author.username << "\n";
-    std::cout << "Message ID: " << m.id.value << "\n";
-    time_t msgCreateTime = m.id.UnixEpoch()/1000;
-    std::cout << "Message Epoch & ctime: " << m.id.UnixEpoch()/1000 << " " << ctime(&msgCreateTime) << "\n";
+	std::cout << "Message ID: " << m.id.value << "\n";
+	time_t msgCreateTime = m.id.GetUnixEpoch()/1000;
+	std::cout << "Message Epoch & ctime: " << m.id.GetUnixEpoch()/1000 << " " << ctime(&msgCreateTime) << "\n";
 }
 
 void testTypingStart() {
@@ -91,15 +91,15 @@ void testTypingStart() {
 	char *json = ReadAllBytes("TypingStartPacket.json", &read);
 	rapidjson::Document doc;
 	doc.Parse(json);
-    delete[] json;
+	delete[] json;
 
 	TypingStartPacket p = TypingStartPacket::LoadFrom(doc, "/d");
 
-    std::cout << "User: " << p.userID.value << "\n";
+	std::cout << "User: " << p.userID.value << "\n";
 	std::cout << "Channel: " << p.channelID.value << "\n";
 	std::cout << "Channel: " << p.guildID.value().value << "\n";
-    time_t msgCreateTime = p.timestamp;
-    std::cout << "Packet ctime: " << ctime(&msgCreateTime) << "\n";
+	time_t msgCreateTime = p.timestamp;
+	std::cout << "Packet ctime: " << ctime(&msgCreateTime) << "\n";
 }
 
 void testReactionAdd() {
@@ -109,12 +109,12 @@ void testReactionAdd() {
 	char *json = ReadAllBytes("MessageReactionAddPacket.json", &read);
 	rapidjson::Document doc;
 	doc.Parse(json);
-    delete[] json;
+	delete[] json;
 
 	MessageReactionPacket p = MessageReactionPacket::LoadFrom(doc, "/d");
 	Emoji &emote = p.emoji;
 
-    std::cout << "User: " << p.userID.value << "\n";
+	std::cout << "User: " << p.userID.value << "\n";
 	std::cout << "Channel: " << p.channelID.value << "\n";
 	std::cout << "Guild: " << p.guildID.value_or( Snowflake() ).value << "\n";
 	std::cout << "Message: " << p.messageID.value << "\n";
@@ -129,7 +129,7 @@ void testGuildMemberListUpdate() {
 	char *json = ReadAllBytes("GuildMemberListUpdatePacket.json", &read);
 	rapidjson::Document doc;
 	doc.Parse(json);
-    delete[] json;
+	delete[] json;
 
 	GuildMemberListUpdatePacket packet = GuildMemberListUpdatePacket::LoadFrom(doc, "/d");
 	std::cout << "GuildMemberListUpdatePacket\nGuild ID: " << packet.guildID.value << std::endl;
@@ -139,17 +139,17 @@ void testGuildMemberListUpdate() {
 
 	std::cout << "We have these operations:" << std::endl;
 	for(const GuildMemberListUpdateOperation& operation : packet.operations) {
-		std::cout << "    " << "OP: " << operation.op << std::endl;
-		std::cout << "    " << "Range: " << operation.range.first << " - " << operation.range.second << std::endl;
+		std::cout << "	" << "OP: " << operation.op << std::endl;
+		std::cout << "	" << "Range: " << operation.range.first << " - " << operation.range.second << std::endl;
 
 		for(const std::variant<GuildMemberListGroup, Member>& item : operation.items) {
 			if(std::holds_alternative<GuildMemberListGroup>(item)) {
 				GuildMemberListGroup group = std::get<GuildMemberListGroup>(item);
-				std::cout << "        " << group.id << " - " << group.count << std::endl;
+				std::cout << "		" << group.id << " - " << group.count << std::endl;
 
 			}else if(std::holds_alternative<Member>(item)) {
 				Member member = std::get<Member>(item);
-				std::cout << "        " << "  Member: " << member.user.username << std::endl;
+				std::cout << "		" << "  Member: " << member.user.username << std::endl;
 			}
 		}
 	}
@@ -164,20 +164,20 @@ int main() {
 	return 0;
 }
 
-char *  ReadAllBytes(const char * filename, int * read) {
+char* ReadAllBytes(const char * filename, int * read) {
 	using namespace std;
-    ifstream ifs(filename, ios::binary|ios::ate);
-    ifstream::pos_type pos = ifs.tellg();
+	ifstream ifs(filename, ios::binary|ios::ate);
+	ifstream::pos_type pos = ifs.tellg();
 
-    int length = pos;
+	int length = pos;
 
-    // Manuall memory management.
-    // Not a good idea use a container/.
-    char *pChars = new char[length];
-    ifs.seekg(0, ios::beg);
-    ifs.read(pChars, length);
+	// Manuall memory management.
+	// Not a good idea use a container/.
+	char *pChars = new char[length];
+	ifs.seekg(0, ios::beg);
+	ifs.read(pChars, length);
 
-    ifs.close();
-    *read = length;
-    return pChars;
+	ifs.close();
+	*read = length;
+	return pChars;
 }

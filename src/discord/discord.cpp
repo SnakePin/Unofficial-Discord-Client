@@ -1,23 +1,24 @@
 #include "discord/discord.hpp"
 #include "discord/token.hpp"
 #include "discord/packets.hpp"
+#include "discord/gateway_opcodes.hpp"
+#include "discord/utils.hpp"
 
 #include "sws/client_wss.hpp"
 
 #include <rapidjson/document.h>
-#include <rapidjson/writer.h>
 #include <rapidjson/pointer.h>
-#include <rapidjson/stringbuffer.h>
-#include <rapidjson/filewritestream.h>
 
 #include <memory>
 #include <algorithm>
 #include <functional>
+#include <string_view>
 
 using namespace Discord;
+using namespace Utils;
 
-Client::Client(std::string token, AuthTokenType tokenType)
-	: token(token, tokenType),
+Client::Client(std::string_view token, AuthTokenType tokenType)
+	: token(std::string(token), tokenType),
 	sessionID(""),
 	heartbeatInterval(40000),
 	websocket("gateway.discord.gg/?v=6&encoding=json", false),
@@ -27,25 +28,21 @@ Client::Client(std::string token, AuthTokenType tokenType)
 	// This means HTTP_API_CLASS will have reference to the outer class to allow it to access things like token
 	httpAPI(*this)
 {
-	io_service = std::make_shared<asio::io_context>();
-	heartbeatTimer = std::make_unique<asio::steady_timer>(*io_service);
-
-	if (tokenType == AuthTokenType::USER) {
-		std::cout << "** Client created in User mode **" << std::endl;
-	}
+	io_context = std::make_shared<asio::io_context>();
+	heartbeatTimer = std::make_unique<asio::steady_timer>(*io_context);
 }
 
-std::string Client::GenerateIdentifyPacket() {
+std::string_view Client::GenerateIdentifyPacket(bool compress) {
 	rapidjson::Document document;
 
-	rapidjson::Pointer("/op").Set(document, 2);
-	rapidjson::Pointer("/d/token").Set(document, this->token.token.c_str());
-	rapidjson::Pointer("/d/compress").Set(document, false);
+	rapidjson::Pointer("/op").Set(document, GatewayOpcodes::Identify);
+	rapidjson::Pointer("/d/token").Set(document, this->token.value.c_str());
+	rapidjson::Pointer("/d/compress").Set(document, compress);
 
 	rapidjson::Pointer("/d/properties/os").Set(document, "Linux");
 	rapidjson::Pointer("/d/properties/browser").Set(document, "Chrome");
 	rapidjson::Pointer("/d/properties/device").Set(document, "");
-	rapidjson::Pointer("/d/properties/browser_user_agent").Set(document, httpAPI.userAgent.c_str());
+	rapidjson::Pointer("/d/properties/browser_user_agent").Set(document, userAgent.c_str());
 	rapidjson::Pointer("/d/properties/browser_version").Set(document, "");
 	rapidjson::Pointer("/d/properties/os_version").Set(document, "");
 	rapidjson::Pointer("/d/properties/referrer").Set(document, "");
@@ -61,27 +58,46 @@ std::string Client::GenerateIdentifyPacket() {
 	rapidjson::Pointer("/d/presence/since").Set(document, 0);
 	rapidjson::Pointer("/d/presence/activities").Set(document, rapidjson::Value(rapidjson::kArrayType)); // TODO implement activities
 	rapidjson::Pointer("/d/presence/afk").Set(document, false);
-
-	rapidjson::StringBuffer buffer;
-	rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-	document.Accept(writer);
-
-	return std::string(buffer.GetString());
+	
+	return JsonDocumentToJsonString(document);
 }
 
-std::string Client::GenerateResumePacket(std::string sessionID, uint32_t sequenceNumber) {
+std::string_view Client::GenerateResumePacket(std::string sessionID, uint32_t sequenceNumber) {
 	rapidjson::Document document;
 
-	rapidjson::Pointer("/op").Set(document, 6); // RESUME
+	rapidjson::Pointer("/op").Set(document, GatewayOpcodes::Resume);
 	rapidjson::Pointer("/d/session_id").Set(document, sessionID.c_str());
-	rapidjson::Pointer("/d/token").Set(document, this->token.token.c_str());
+	rapidjson::Pointer("/d/token").Set(document, this->token.value.c_str());
 	rapidjson::Pointer("/d/seq").Set(document, sequenceNumber);
 
-	rapidjson::StringBuffer buffer;
-	rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-	document.Accept(writer);
+	return JsonDocumentToJsonString(document);
+}
 
-	return std::string(buffer.GetString());
+std::string_view Client::GenerateGuildChannelViewPacket(const Snowflake& guild, const Snowflake& channel) {
+	// Produce a packet that looks like scripts/outbound_packets/op14.json
+
+	std::string gid = std::to_string(guild.value);
+	std::string cid = std::to_string(channel.value);
+
+	rapidjson::Document document;
+	rapidjson::Document::AllocatorType& allocator = document.GetAllocator();
+	rapidjson::Pointer("/op").Set(document, 14); // GUILD_SWITCH
+	rapidjson::Pointer("/d/guild_id").Set(document, gid.c_str());
+	rapidjson::Pointer("/d/typing").Set(document, true);
+	rapidjson::Pointer("/d/activities").Set(document, true);
+
+	rapidjson::Value inn(rapidjson::kArrayType);
+	inn.PushBack(0, allocator);
+	inn.PushBack(99, allocator);
+	rapidjson::Value arr(rapidjson::kArrayType);
+	arr.PushBack(inn, allocator);
+
+	rapidjson::Value obj(rapidjson::kObjectType);
+	obj.AddMember(rapidjson::Value(cid.c_str(), allocator), arr, allocator);
+
+	rapidjson::Pointer("/d/channels").Set(document, obj);
+
+	return JsonDocumentToJsonString(document);
 }
 
 void Client::SendHeartbeatAndResetTimer(const asio::error_code& error) {
@@ -122,16 +138,6 @@ void Client::OnHelloPacket() {
 }
 
 void Client::ProcessReady(rapidjson::Document& document) {
-	FILE* fp = fopen("ready.json", "wb");
-
-	char writeBuffer[65536];
-	rapidjson::FileWriteStream os(fp, writeBuffer, sizeof(writeBuffer));
-
-	rapidjson::Writer<rapidjson::FileWriteStream> writer(os);
-	document.Accept(writer);
-
-	fclose(fp);
-
 	ReadyPacket packet = ReadyPacket::LoadFrom(document, "/d");
 	sessionID = packet.sessionID;
 	OnReadyPacket(packet);
@@ -154,18 +160,18 @@ void Client::Run() {
 
 		rapidjson::Document document;
 		document.Parse(response.c_str());
-		int opcode = document["op"].GetInt();
+		GatewayOpcodes opcode = (GatewayOpcodes)document["op"].GetInt();
 
-		if (opcode == 10) { // HELLO
+		if (opcode == GatewayOpcodes::Hello) { // HELLO
 			ProcessHello(document);
 
 		}
-		else if (opcode == 9) { // Error: resume failed.
+		else if (opcode == GatewayOpcodes::InvalidSession) { // Error: resume failed.
 			std::cout << "Resume failed.\n";
 			std::cout << response << std::endl;
 
 		}
-		else if (opcode == 0) { // DISPATCH
+		else if (opcode == GatewayOpcodes::Dispatch) { // DISPATCH
 			std::string eventName = document["t"].GetString();
 
 			if (document["s"].IsUint64())
@@ -229,48 +235,24 @@ void Client::Run() {
 		std::cout << "Client: Error: " << ec << ", error message: " << ec.message() << std::endl;
 	};
 
-	//Set io_service to the shared io_service
-
-	websocket.io_service = this->io_service;
-
+	//Reset io_service if it was ran before
+	if (io_context->stopped()) {
+		//io_context must be resetted in prior to run()
+		io_context->reset();
+	}
+	
+	//Set io_service to the shared io_context
+	websocket.io_service = this->io_context;
+	
 	websocket.start();
-}
 
-std::string Client::GenerateGuildChannelViewPacket(const Snowflake& guild, const Snowflake& channel) {
-	// Produce a packet that looks like scripts/outbound_packets/op14.json
+	//Start io_service
+	io_context->run();
 
-	std::string gid = std::to_string(guild.value);
-	std::string cid = std::to_string(channel.value);
-
-	rapidjson::Document document;
-	rapidjson::Document::AllocatorType& allocator = document.GetAllocator();
-	rapidjson::Pointer("/op").Set(document, 14); // GUILD_SWITCH
-	rapidjson::Pointer("/d/guild_id").Set(document, gid.c_str());
-	rapidjson::Pointer("/d/typing").Set(document, true);
-	rapidjson::Pointer("/d/activities").Set(document, true);
-
-	rapidjson::Value inn(rapidjson::kArrayType);
-	inn.PushBack(0, allocator);
-	inn.PushBack(99, allocator);
-	rapidjson::Value arr(rapidjson::kArrayType);
-	arr.PushBack(inn, allocator);
-
-	rapidjson::Value obj(rapidjson::kObjectType);
-	obj.AddMember(rapidjson::Value(cid.c_str(), allocator), arr, allocator);
-
-	rapidjson::Pointer("/d/channels").Set(document, obj);
-
-	rapidjson::StringBuffer buffer;
-	rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-	document.Accept(writer);
-
-	return std::string(buffer.GetString());
 }
 
 void Client::OpenGuildChannelView(const Snowflake& guild, const Snowflake& channel) {
-	std::string packet = GenerateGuildChannelViewPacket(guild, channel);
-
-	ScheduleNewWSSPacket(packet);
+	ScheduleNewWSSPacket(GenerateGuildChannelViewPacket(guild, channel));
 }
 
 void Client::OpenPrivateChannelView(const Snowflake& channel) {
@@ -289,29 +271,19 @@ void Client::OpenPrivateChannelView(const Snowflake& channel) {
 	rapidjson::Pointer("/op").Set(document, 13);
 	rapidjson::Pointer("/d/channel_id").Set(document, std::to_string(channel.value).c_str());
 
-	rapidjson::StringBuffer buffer;
-	rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-	document.Accept(writer);
-
-	std::string packet = buffer.GetString();
-
+	std::string_view packet = JsonDocumentToJsonString(document);
 	ScheduleNewWSSPacket(packet);
 }
 
 void Client::UpdatePresence(std::string status) {
 	rapidjson::Document document;
-	rapidjson::Pointer("/op").Set(document, 3);
+	rapidjson::Pointer("/op").Set(document, GatewayOpcodes::StatusUpdate);
 	rapidjson::Pointer("/d/status").Set(document, status.c_str());
 	rapidjson::Pointer("/d/since").Set(document, 0);
 	rapidjson::Pointer("/d/afk").Set(document, false);
 	rapidjson::Pointer("/d/activities").Set(document, rapidjson::Value(rapidjson::kArrayType));
 
-	rapidjson::StringBuffer buffer;
-	rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-	document.Accept(writer);
-
-	std::string packet = buffer.GetString();
-
+	std::string_view packet = JsonDocumentToJsonString(document);
 	ScheduleNewWSSPacket(packet);
 }
 

@@ -6,6 +6,7 @@
 #include <rapidjson/document.h>
 
 #include <optional>
+#include <vector>
 
 namespace Discord {
 	

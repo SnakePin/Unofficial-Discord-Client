@@ -13,7 +13,6 @@
 #include <asio/thread_pool.hpp>
 
 #include <rapidjson/document.h>
-#include <rapidjson/writer.h>
 #include <rapidjson/pointer.h>
 
 #include <rapidjson/istreamwrapper.h>
@@ -22,12 +21,16 @@
 #include <tinyformat.h>
 
 #include "imguiClient.hpp"
+#include "myClient.hpp"
 
 MyClient::MyClient(std::string token, Discord::AuthTokenType tokenType)
-    : Client(token, tokenType),
+	: Client(token, tokenType),
 	pool(std::make_shared<asio::thread_pool>(4)), /* Thread pool contains 4 threads. */
-	lastSessionUpdateTime(0) {
-
+	lastSessionUpdateTime(0)
+{
+	if (tokenType == Discord::AuthTokenType::USER) {
+		std::cout << "** Client created in User mode **" << std::endl;
+	}
 }
 
 void MyClient::UpdateSessionJson() {
@@ -104,17 +107,17 @@ void MyClient::OnGuildMemberListUpdate(Discord::GuildMemberListUpdatePacket pack
 
 	std::cout << "We have these operations:" << std::endl;
 	for(const GuildMemberListUpdateOperation& operation : packet.operations) {
-		std::cout << "    " << "OP: " << operation.op << std::endl;
-		std::cout << "    " << "Range: " << operation.range.first << " - " << operation.range.second << std::endl;
+		std::cout << "\t" << "OP: " << operation.op << std::endl;
+		std::cout << "\t" << "Range: " << operation.range.first << " - " << operation.range.second << std::endl;
 
 		for(const std::variant<GuildMemberListGroup, Member>& item : operation.items) {
 			if(std::holds_alternative<GuildMemberListGroup>(item)) {
 				GuildMemberListGroup group = std::get<GuildMemberListGroup>(item);
-				std::cout << "        " << group.id << " - " << group.count << std::endl;
+				std::cout << "\t\t" << group.id << " - " << group.count << std::endl;
 
 			}else if(std::holds_alternative<Member>(item)) {
 				Member member = std::get<Member>(item);
-				std::cout << "        " << "  Member: " << member.user.username << std::endl;
+				std::cout << "\t\t" << "  Member: " << member.user.username << std::endl;
 			}
 		}
 	}
@@ -165,7 +168,7 @@ private:
 
 public:
 	ConsoleTest(std::shared_ptr<MyClient> client)
-	    : client(client), running(false) {
+		: client(client), running(false) {
 			client->httpAPI.GetCurrentUser(currentUser);
 	}
 
@@ -195,9 +198,10 @@ public:
 			messageToSend.tts = false;
 
 			//This channel ID is channel ID of test discord guild's general channel's ID
+			//TODO: remove this id
 			asio::post(*client->pool, 
 				[=] {
-					client->httpAPI.CreateMessage(currentUser.id, messageToSend);
+					client->httpAPI.CreateMessage(Discord::Snowflake(590695217028661250), messageToSend);
 				}
 			);
 			
@@ -210,7 +214,7 @@ public:
 					std::vector<Discord::Message> newMessages;
 					std::cout << "Requesting 50 messages from channel " << channelID.value << "...\n";
 
-					client->httpAPI.GetMessagesInto(channelID, newMessages);
+					client->httpAPI.GetMessagesInto(Discord::Snowflake(590695217028661250), newMessages);
 
 					std::cout << "Got " << newMessages.size() << " new messages.\n";
 					for(const auto& message : newMessages) {
@@ -231,7 +235,7 @@ public:
 				[=] {
 					client->httpAPI.TriggerTypingIndicator(currentUser.id);
 					std::this_thread::sleep_for(std::chrono::seconds(5));
-					client->httpAPI.CreateMessage(currentUser.id, messageToSend);
+					client->httpAPI.CreateMessage(Discord::Snowflake(590695217028661250), messageToSend);
 				}
 			);
 
@@ -239,11 +243,11 @@ public:
 		else if(command == "guilds") {
 			// Loop through all the guilds and print their names
 
-			std::cout << "Found " << client->guilds.size() << " guilds:\n    ";
+			std::cout << "Found " << client->guilds.size() << " guilds:\n\t";
 			for(Discord::Guild &guild : client->guilds) {
 				std::cout << guild.name << " | " << guild.id.value << std::endl;
 				for(Discord::Channel &channel : guild.channels) {
-					std::cout << "    Type " << channel.type << " | " << channel.name.value_or("(Channel name?)") << " | " << channel.id.value << std::endl;
+					std::cout << "\tType " << channel.type << " | " << channel.name.value_or("(Channel name?)") << " | " << channel.id.value << std::endl;
 				}
 				std::cout << std::endl;
 				std::cout << std::endl;
@@ -262,7 +266,7 @@ public:
 			for(Discord::Guild &guild : client->guilds) {
 				std::cout << guild.name << " has " << guild.members.size() << " members." << std::endl;
 				for(Discord::Member &m : guild.members) {
-					std::cout << "    " << m.user.username << std::endl;
+					std::cout << "\t" << m.user.username << std::endl;
 				}
 				std::cout << "\n";
 			}
@@ -346,7 +350,6 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
-
 	Discord::AuthTokenType tokenType;
 	if(argc >= 3) {
 		if(strcmp(argv[2], "USER") == 0) {
@@ -356,7 +359,7 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	std::shared_ptr<MyClient> client = std::make_shared<MyClient>(argv[1], Discord::AuthTokenType::USER);
+	std::shared_ptr<MyClient> client = std::make_shared<MyClient>(argv[1], tokenType);
 	
 	ConsoleTest console(client);
 

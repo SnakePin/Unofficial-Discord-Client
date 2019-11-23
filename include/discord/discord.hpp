@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 #include <vector>
 #include <asio.hpp>
 
@@ -17,7 +18,9 @@
 namespace Discord {
 	
 	using WssClient = SimpleWeb::SocketClient<SimpleWeb::WSS>;
-	
+
+	constexpr std::string_view DefaultUserAgentString = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Ubuntu Chromium/75.0.3770.90 Chrome/75.0.3770.90 Safari/537.36";
+
 	class Client {
 	public:
 		AuthToken token;
@@ -27,7 +30,7 @@ namespace Discord {
 
 		uint64_t sequenceNumber;
 
-		Client(std::string token, AuthTokenType tokenType);
+		Client(std::string_view token, AuthTokenType tokenType);
 		
 		// Generate and send an IDENTIFY packet
 		void SendIdentify();
@@ -49,19 +52,20 @@ namespace Discord {
 		virtual void OnTypingStart(TypingStartPacket p) = 0;
 		virtual void OnMessageReactionAdd(MessageReactionPacket p) = 0;
 		virtual void OnMessageReactionRemove(MessageReactionPacket p) = 0;
-
+		
+		// HTTP API instance and HTTP API class declaration
 		class HTTP_API_CLASS
 		{
 		public:
-			HTTP_API_CLASS(const Client& clientObj);
+			HTTP_API_CLASS(const Client &clientObj);
 			HTTP_API_CLASS(const AuthToken _token);
-
+	
 			bool TriggerTypingIndicator(const Snowflake &channelID);
 			bool CreateMessage(const Snowflake &channelID, CreateMessageParam messageToSend);
 			bool DeleteMessage(const Snowflake &channelID, const Snowflake &messageID);
-			bool GetChannel(const Snowflake &channelID, Channel& channel);
+			bool GetChannel(const Snowflake &channelID, Channel &channel);
 			bool GetChannelMessage(const Snowflake &channelID, const Snowflake &messageID, Message &message);
-			bool GetPinnedMessages(const Snowflake &channelID, std::vector<Message>& messages);
+			bool GetPinnedMessages(const Snowflake &channelID, std::vector<Message> &messages);
 			bool UnpinChannelMessage(const Snowflake &channelID, const Snowflake &messageID);
 
 			bool GetCurrentUser(User &user);
@@ -70,7 +74,7 @@ namespace Discord {
 			// Requests the (default: 50) most recent messages from a given channel, and
 			// pushes them into the vector. Returns true if the request was successful.
 			// Success does not necessarily mean that any new messages were received, however.
-			bool GetMessagesInto(const Snowflake &channelID, std::vector<Message>& messages, int count = 50);
+			bool GetMessagesInto(const Snowflake &channelID, std::vector<Message> &messages, int count = 50);
 
 			// TODO replace with an enum
 			// TODO implement
@@ -79,9 +83,14 @@ namespace Discord {
 			bool UpdatePresenceStatusSetting(std::string status);
 
 			const AuthToken token;
-			const std::string userAgent;
-		};
-		HTTP_API_CLASS httpAPI;
+
+			//Do not change the this field's type to string_view, CPR doesn't accept it
+			std::string userAgent = std::string(DefaultUserAgentString);
+		} httpAPI;
+
+		// User agent string to use in gateway connection and in HTTP API instance
+		//Do not change the this field's type to string_view, rapidjson doesn't accept it
+		std::string userAgent = std::string(DefaultUserAgentString);
 	private:
 	
 		// Gets set every time the websocket opens a new connection.
@@ -90,7 +99,7 @@ namespace Discord {
 		// Used with SendHeartbeatAndResetTimer.
 		std::unique_ptr<asio::steady_timer> heartbeatTimer;
 
-		std::shared_ptr<asio::io_context> io_service;
+		std::shared_ptr<asio::io_context> io_context;
 
 		// Gateway Packet Processing
 		// These functions call the gateway event methods above.
@@ -103,14 +112,14 @@ namespace Discord {
 
 		// Generates an IDENTIFY packet.
 		// https://discordapp.com/developers/docs/topics/gateway#identify
-		std::string GenerateIdentifyPacket();
+		std::string_view GenerateIdentifyPacket(bool compress = false);
 
 		// Generates a RESUME packet using the specified sessionID and sequenceNumber.
 		// https://discordapp.com/developers/docs/topics/gateway#resume
-		std::string GenerateResumePacket(std::string sessionID, uint32_t sequenceNumber);
+		std::string_view GenerateResumePacket(std::string sessionID, uint32_t sequenceNumber);
 
 
-		std::string GenerateGuildChannelViewPacket(const Snowflake &guild, const Snowflake &channel);
+		std::string_view GenerateGuildChannelViewPacket(const Snowflake &guild, const Snowflake &channel);
 
 		void ScheduleNewWSSPacket(std::string_view out_message_str, const std::function<void(const std::error_code &)> &callback = nullptr, unsigned char fin_rsv_opcode = 129);
 

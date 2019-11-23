@@ -56,7 +56,7 @@ set(BUILD_CPR_TESTS OFF)
 # Only enable HTTP support in libcurl
 set(HTTP_ONLY ON)
 add_subdirectory(external/cpr)
-target_include_directories(Unofficial-Discord-Client SYSTEM PRIVATE ${CPR_INCLUDE_DIRS})
+target_include_directories(Unofficial-Discord-Client SYSTEM PUBLIC ${CPR_INCLUDE_DIRS})
 target_link_libraries(Unofficial-Discord-Client ${CPR_LIBRARIES})
 
 # Add OpenSSL

@@ -8,9 +8,9 @@ namespace Discord {
     };
 
 	struct AuthToken {
-        AuthToken(std::string _token, AuthTokenType _tokenType);
+        AuthToken(std::string _value, AuthTokenType _tokenType) : value(_value), tokenType(_tokenType) { };
 
-		std::string token;
+		std::string value;
 		AuthTokenType tokenType;
 	};
 }
