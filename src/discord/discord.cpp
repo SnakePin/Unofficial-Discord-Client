@@ -18,12 +18,11 @@ using namespace Discord;
 using namespace Utils;
 
 Client::Client(std::string& token, AuthTokenType tokenType)
-	: token(token, tokenType),
+	: token(token, tokenType), //Make sure token is set before httpAPI is initialized
 	sessionID(""),
 	heartbeatInterval(40000),
 	websocket("gateway.discord.gg/?v=6&encoding=json", false),
 	sequenceNumber(0),
-	//Make sure userAgent and token are set before httpAPI is initialized
 	userAgent(DefaultUserAgentString),
 
 	// When we pass *this to HTTP_API_CLASS's constructor it will call the Client::HTTP_API_CLASS::HTTP_API_CLASS(const Client& clientObj)
@@ -104,10 +103,8 @@ std::string Client::GenerateGuildChannelViewPacket(const Snowflake& guild, const
 
 void Client::SendHeartbeatAndResetTimer(const asio::error_code& error) {
 	if (!error) {
-		std::string packet = "{\"op\":1,\"d\":" + std::to_string(sequenceNumber) + "}";
-
-		connection->send(packet);
-		std::cout << "Client: Sending: " << packet << "\n";
+		connection->send("{\"op\":1,\"d\":" + std::to_string(sequenceNumber) + "}");
+		std::cout << "Client: Sending heartbeat.\n";
 
 		heartbeatTimer->expires_from_now(std::chrono::milliseconds(heartbeatInterval - 2000));
 		heartbeatTimer->async_wait(std::bind(&Client::SendHeartbeatAndResetTimer, this, std::placeholders::_1));
@@ -115,6 +112,7 @@ void Client::SendHeartbeatAndResetTimer(const asio::error_code& error) {
 }
 
 void Client::SendIdentify() {
+	std::cout << "Client: Sending identify packet.\n";
 	connection->send(GenerateIdentifyPacket());
 }
 
@@ -130,7 +128,7 @@ void Client::ProcessHello(rapidjson::Document& document) {
 	heartbeatTimer->expires_from_now(std::chrono::milliseconds(heartbeatInterval - 2000));
 	heartbeatTimer->async_wait(std::bind(&Client::SendHeartbeatAndResetTimer, this, std::placeholders::_1));
 
-	std::cout << "Received HELLO (opcode 10) packet. Heartbeat interval: " << heartbeatInterval << std::endl;
+	std::cout << "Client: Received HELLO packet. Heartbeat interval: " << heartbeatInterval << std::endl;
 
 	OnHelloPacket();
 }
@@ -171,7 +169,9 @@ void Client::Run() {
 		else if (opcode == GatewayOpcodes::InvalidSession) { // Error: resume failed.
 			std::cout << "Resume failed.\n";
 			std::cout << response << std::endl;
-
+		}
+		else if (opcode == GatewayOpcodes::HeartbeatAck) {
+			std::cout << "Client: Heartbeat acknowledged by server.\n";
 		}
 		else if (opcode == GatewayOpcodes::Dispatch) { // DISPATCH
 			std::string eventName = document["t"].GetString();

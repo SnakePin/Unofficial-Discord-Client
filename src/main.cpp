@@ -15,6 +15,8 @@
 #include <rapidjson/document.h>
 #include <rapidjson/pointer.h>
 
+#include <rapidjson/writer.h>
+#include <rapidjson/ostreamwrapper.h>
 #include <rapidjson/istreamwrapper.h>
 #include <fstream>
 
@@ -41,9 +43,10 @@ void MyClient::UpdateSessionJson() {
 	rapidjson::Pointer("/seq").Set(document, this->sequenceNumber);
 	rapidjson::Pointer("/session_time").Set(document, lastSessionUpdateTime);
 
-	std::ifstream jsonFile("session.json");
-	rapidjson::IStreamWrapper iswrapper(jsonFile);
-	document.ParseStream(iswrapper);
+	std::ofstream jsonFile("session.json");
+	rapidjson::OStreamWrapper outstreamwrapper(jsonFile);
+	rapidjson::Writer<rapidjson::OStreamWrapper> writer(outstreamwrapper);
+	document.Accept(writer);
 }
 
 void MyClient::OnHelloPacket() {
@@ -82,18 +85,6 @@ void MyClient::OnReadyPacket(Discord::ReadyPacket packet) {
 
 void MyClient::OnGuildCreate(Discord::Guild g) {
 	guilds.push_back(g);
-
-	for(Discord::Channel &chan : g.channels) {
-		if(chan.type == 0){
-			Discord::CreateMessageParam messageToSend;
-			messageToSend.content = "Hello to channel <#" + std::to_string(chan.id.value) + ">";
-			messageToSend.tts = false;
-
-			asio::post(*pool,
-				[=] {httpAPI.CreateMessage(std::to_string(chan.id.value), messageToSend);}
-			);
-		}
-	}
 
 	UpdateSessionJson();
 }
@@ -359,7 +350,8 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	std::shared_ptr<MyClient> client = std::make_shared<MyClient>(std::string(argv[1]), tokenType);
+	std::string tokenString = std::string(argv[1]);
+	std::shared_ptr<MyClient> client = std::make_shared<MyClient>(tokenString, tokenType);
 	
 	ConsoleTest console(client);
 
