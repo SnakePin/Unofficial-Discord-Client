@@ -167,9 +167,9 @@ public:
 		if(command == "quit") {
 			client->UpdateSessionJson(); // writes the latest sequence number to the session.json file
 
-			std::cout << "Stopping the websocket...\n";
-			client->websocket.stop();
-			std::cout << "Websocket stopped.\n";
+			std::cout << "Stopping...\n";
+			client->Stop();
+			std::cout << "Stopped.\n";
 			running = false;
 
 		}

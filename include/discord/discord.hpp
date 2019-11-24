@@ -39,8 +39,11 @@ namespace Discord {
 		void SendResume(std::string& sessionID, uint32_t sequenceNumber);
 
 		// Start the websocket and event loop.
-		// This will block until the event loop is stopped (websocket.stop()).
+		// This will block until the event loop is stopped (Stop()).
 		void Run();
+
+		// Stop the event loop and websocket
+		void Stop();
 
 		// Websocket Gateway Events
 		// OnHelloPacket's default behavior is to call SendIdentify().

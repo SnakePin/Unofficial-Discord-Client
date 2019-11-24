@@ -248,8 +248,14 @@ void Client::Run() {
 	
 	websocket.start();
 
-	//Start io_service
+	//Start io_service, starts the event loop
 	io_context->run();
+
+}
+
+void Client::Stop() {
+	websocket.stop();
+	io_context->stop();
 
 }
 
