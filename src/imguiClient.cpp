@@ -10,17 +10,20 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
 
+#include <unordered_map>
+#include <tuple>
+
 int startImguiClient(std::shared_ptr<MyClient> client) {
 	std::cout << "Starting SDL2...\n";
-	
+
 	const int WINDOW_WIDTH = 1280;
 	const int WINDOW_HEIGHT = 720;
-	
-	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0){
+
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0) {
 		std::cout << "SDL_Init error: " << SDL_GetError() << "\n";
 		return -1;
 	}
-	
+
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
@@ -31,7 +34,7 @@ int startImguiClient(std::shared_ptr<MyClient> client) {
 	SDL_GLContext gl_context = SDL_GL_CreateContext(window);
 	SDL_GL_MakeCurrent(window, gl_context);
 	SDL_GL_SetSwapInterval(1); // Enable vsync
-	
+
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -48,9 +51,9 @@ int startImguiClient(std::shared_ptr<MyClient> client) {
 	ImGui_ImplOpenGL2_Init();
 
 	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-	
-	std::string usernameString;
-	std::string passwordString;
+
+	std::unordered_map<uint64_t, std::tuple<std::chrono::time_point<std::chrono::system_clock>, std::vector<Discord::Message>>> cache;
+	std::string messageToSend;
 
 	while (true) {
 		SDL_Event event;
@@ -65,24 +68,80 @@ int startImguiClient(std::shared_ptr<MyClient> client) {
 		ImGui::NewFrame();
 
 		ImGui::DockSpaceOverViewport();
-		
-		ImGui::Begin("Login");
+
+		ImGui::Begin("Functions");
 		{
-			ImGui::InputText("username", &usernameString);
-			ImGui::InputText("password", &passwordString, ImGuiInputTextFlags_Password);
-			ImGui::Button("Login");
+			if (ImGui::Button("Identify")) {
+				client->SendIdentify();
+			}
+			if (ImGui::Button("Resume")) {
+				client->LoadAndSendResume();
+			}
+			if (ImGui::Button("Call Client::Run()")) {
+				client->Run();
+			}
 		}
 		ImGui::End();
-		
+
 		ImGui::Begin("Account");
 		{
-			if(ImGui::BeginTabBar("Discord")){
-				for(const Discord::Guild& guild : client->guilds) {
-					if(ImGui::BeginTabItem(guild.name.c_str())) {
-						if(ImGui::BeginTabBar(guild.name.c_str(), ImGuiTabBarFlags_::ImGuiTabBarFlags_FittingPolicyScroll)) {
-							for(const Discord::Channel& channel : guild.channels) {
-								if(channel.type == 0 && ImGui::BeginTabItem(channel.name.value_or("Unnamed Channel").c_str())) {
-									ImGui::Text("ayy lmao");
+			if (ImGui::BeginTabBar("Discord")) {
+				for (const Discord::Guild& guild : client->guilds) {
+					if (ImGui::BeginTabItem(guild.name.c_str())) {
+						if (ImGui::BeginTabBar(guild.name.c_str(), ImGuiTabBarFlags_::ImGuiTabBarFlags_FittingPolicyScroll)) {
+							for (const Discord::Channel& channel : guild.channels) {
+								if (channel.type == 0 && ImGui::BeginTabItem(channel.name.value_or("Unnamed Channel").c_str())) {
+									//TODO: implement the following comment in an actual way
+									/*client->OnMessageCreate = [&cache, &channel](Discord::Message m)
+									{
+										if (cache.find(channel.id.value) != cache.end()) {
+											std::get<1>(cache[channel.id.value]).push_back(m);
+										}
+									};*/
+									std::vector<Discord::Message> messages;
+									if (cache.find(channel.id.value) != cache.end()) {
+										//TODO: make this async and move this code out of UI thread and out of this function and remove hardcoded values
+										auto lastRefresh = std::get<0>(cache[channel.id.value]);
+										auto timeNow = std::chrono::system_clock::now();
+										std::chrono::duration<double> elapsed_seconds = timeNow - lastRefresh;
+
+										if (elapsed_seconds.count() > 60 || lastRefresh == std::chrono::time_point<std::chrono::system_clock>::min()) {
+											std::get<0>(cache[channel.id.value]) = std::chrono::system_clock::now();
+											client->httpAPI.GetMessagesInto(channel.id, messages);
+											std::get<1>(cache[channel.id.value]) = messages;
+										}
+										else {
+											messages = std::get<1>(cache[channel.id.value]);
+										}
+									}
+									else {
+										client->httpAPI.GetMessagesInto(channel.id, messages);
+										cache[channel.id.value] =
+											std::tuple<std::chrono::time_point<std::chrono::system_clock>, std::vector<Discord::Message>>(std::chrono::system_clock::now(), messages);
+									}
+									//Remove all of these and improve
+									std::string usersMessage = messageToSend;
+									ImVec2 inputBoxSize(-1.0f, ImGui::GetTextLineHeight() * 4);
+									if (ImGui::InputTextMultiline("Type a message: ", &usersMessage, inputBoxSize)) {
+										messageToSend = usersMessage;
+									}
+									if (ImGui::Button("Send message") && !messageToSend.empty()) {
+										Discord::CreateMessageParam createMessageParam;
+										createMessageParam.tts = false;
+										createMessageParam.content = messageToSend;
+										client->httpAPI.CreateMessage(channel.id, createMessageParam);
+
+										//TODO: move this code out of this function too and possibly remove this
+										//Invalidates cache for this channel
+										std::get<0>(cache[channel.id.value]) = std::chrono::time_point<std::chrono::system_clock>::min();
+									}
+
+									for (const Discord::Message& message : messages)
+									{
+										ImGui::Text((message.author.username + "#" + message.author.discriminator + ": " + message.content).c_str());
+										ImGui::Spacing();
+									}
+
 									ImGui::EndTabItem();
 								}
 							}
@@ -111,9 +170,9 @@ CleanupAndExit:
 	ImGui_ImplOpenGL2_Shutdown();
 	ImGui_ImplSDL2_Shutdown();
 	ImGui::DestroyContext();
-	
+
 	SDL_DestroyWindow(window);
 	SDL_Quit();
-	
+
 	return 0;
 }
