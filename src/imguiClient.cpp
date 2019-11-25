@@ -103,7 +103,9 @@ int startImguiClient(std::shared_ptr<MyClient> client, std::shared_ptr<std::thre
 			if (ImGui::BeginTabBar("Discord")) {
 				if (ImGui::BeginTabItem("Guilds")) {
 					if (ImGui::BeginTabBar("Guilds", ImGuiTabBarFlags_::ImGuiTabBarFlags_FittingPolicyScroll)) {
+						client->guildsVectorMutex.lock();
 						auto guildsCopy = client->guilds;
+						client->guildsVectorMutex.unlock();
 						for (const Discord::Guild& guild : guildsCopy) {
 							if (ImGui::BeginTabItem(guild.name.c_str())) {
 								if (ImGui::BeginTabBar(guild.name.c_str(), ImGuiTabBarFlags_::ImGuiTabBarFlags_FittingPolicyScroll)) {
@@ -156,7 +158,10 @@ int startImguiClient(std::shared_ptr<MyClient> client, std::shared_ptr<std::thre
 				}
 				if (ImGui::BeginTabItem("DMs")) {
 					if (ImGui::BeginTabBar("DMs", ImGuiTabBarFlags_::ImGuiTabBarFlags_FittingPolicyScroll)) {
+						client->privateChannelsVectorMutex.lock();
 						auto privateChannelsCopy = client->privateChannels;
+						client->privateChannelsVectorMutex.unlock();
+						
 						for (const Discord::Channel& channel : privateChannelsCopy) {
 							std::string channelName;
 

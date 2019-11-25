@@ -62,30 +62,35 @@ void MyClient::OnReadyPacket(Discord::ReadyPacket packet) {
 
 	// Only add Guilds whose IDs we don't have.
 	{
+		guildsVectorMutex.lock();
 		std::vector<Discord::Snowflake> existing(guilds.size());
 		std::transform(guilds.begin(), guilds.end(), existing.begin(), [](const Discord::Guild& g){ return g.id; });
 
 		std::copy_if(packet.guilds.begin(), packet.guilds.end(), std::back_inserter(guilds), [&](const Discord::Guild& g){
 			return std::find(existing.begin(), existing.end(), g.id) == existing.end();
 		});
+		guildsVectorMutex.unlock();
 	}
 
 	// Ditto, private channels
 	{
+		privateChannelsVectorMutex.lock();
 		std::vector<Discord::Snowflake> existing(privateChannels.size());
 		std::transform(privateChannels.begin(), privateChannels.end(), existing.begin(), [](const Discord::Channel& c){ return c.id; });
 
 		std::copy_if(packet.privateChannels.begin(), packet.privateChannels.end(), std::back_inserter(privateChannels), [&](const Discord::Channel& c){
 			return std::find(existing.begin(), existing.end(), c.id) == existing.end();
 		});
+		privateChannelsVectorMutex.unlock();
 	}
 
 	UpdateSessionJson();
 }
 
 void MyClient::OnGuildCreate(Discord::Guild g) {
+	guildsVectorMutex.lock();
 	guilds.push_back(g);
-
+	guildsVectorMutex.unlock();
 	UpdateSessionJson();
 }
 
@@ -235,8 +240,11 @@ public:
 		else if(command == "guilds") {
 			// Loop through all the guilds and print their names
 
-			std::cout << "Found " << client->guilds.size() << " guilds:\n\t";
-			for(Discord::Guild &guild : client->guilds) {
+			client->guildsVectorMutex.lock();
+			auto guildsVectorCopy = client->guilds;
+			client->guildsVectorMutex.unlock();
+			std::cout << "Found " << guildsVectorCopy.size() << " guilds:\n\t";
+			for(Discord::Guild &guild : guildsVectorCopy) {
 				std::cout << guild.name << " | " << guild.id.value << std::endl;
 				for(Discord::Channel &channel : guild.channels) {
 					std::cout << "\tType " << channel.type << " | " << channel.name.value_or("(Channel name?)") << " | " << channel.id.value << std::endl;
@@ -245,8 +253,11 @@ public:
 				std::cout << std::endl;
 			}
 
-			std::cout << "Found " << client->privateChannels.size() << " private channels:\n";
-			for(Discord::Channel &chan : client->privateChannels) {
+			client->privateChannelsVectorMutex.lock();
+			auto privateChannelsCopy = client->privateChannels;
+			client->privateChannelsVectorMutex.unlock();
+			std::cout << "Found " << privateChannelsCopy.size() << " private channels:\n";
+			for(Discord::Channel &chan : privateChannelsCopy) {
 				std::cout << "Type: " << chan.type << " | " << chan.name.value_or("(Noname)") << " | " << chan.id.value << std::endl;
 				std::cout << std::endl;
 			}

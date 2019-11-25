@@ -10,12 +10,15 @@
 #include <asio/thread_pool.hpp>
 
 #include <vector>
+#include <mutex>
 
 class MyClient : public Discord::Client {
 public:
 
 	std::shared_ptr<asio::thread_pool> pool; // user created threadpool for making HTTP requests
+	std::mutex guildsVectorMutex;
 	std::vector<Discord::Guild> guilds;
+	std::mutex privateChannelsVectorMutex;
 	std::vector<Discord::Channel> privateChannels;
 	std::time_t lastSessionUpdateTime;
 
