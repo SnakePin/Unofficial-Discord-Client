@@ -155,12 +155,13 @@ private:
 
 	std::shared_ptr<MyClient> client;
 	bool running;
-	Discord::User currentUser;
+	Discord::Snowflake channelToOperateOn;
 
 public:
 	ConsoleTest(std::shared_ptr<MyClient> client)
-		: client(client), running(false) {
-			client->httpAPI.GetCurrentUser(currentUser);
+		: client(client), running(false), channelToOperateOn(590695217028661250) //This is the internal developers test channel
+	{
+
 	}
 
 	void processCommand(std::string command) {
@@ -191,8 +192,8 @@ public:
 			//This channel ID is channel ID of test discord guild's general channel's ID
 			//TODO: remove this id
 			asio::post(*client->pool, 
-				[=] {
-					client->httpAPI.CreateMessage(Discord::Snowflake(590695217028661250), messageToSend);
+				[this, messageToSend] {
+					client->httpAPI.CreateMessage(channelToOperateOn, messageToSend);
 				}
 			);
 			
@@ -201,11 +202,11 @@ public:
 			Discord::Snowflake channelID(command.substr(command.find(' ')));
 
 			asio::post(*client->pool, 
-				[=] {
+				[this, channelID] {
 					std::vector<Discord::Message> newMessages;
 					std::cout << "Requesting 50 messages from channel " << channelID.value << "...\n";
 
-					client->httpAPI.GetMessagesInto(Discord::Snowflake(590695217028661250), newMessages);
+					client->httpAPI.GetMessagesInto(channelToOperateOn, newMessages);
 
 					std::cout << "Got " << newMessages.size() << " new messages.\n";
 					for(const auto& message : newMessages) {
@@ -223,10 +224,10 @@ public:
 			messageToSend.tts = false;
 
 			asio::post(*client->pool,
-				[=] {
-					client->httpAPI.TriggerTypingIndicator(currentUser.id);
+				[this, messageToSend] {
+					client->httpAPI.TriggerTypingIndicator(channelToOperateOn);
 					std::this_thread::sleep_for(std::chrono::seconds(5));
-					client->httpAPI.CreateMessage(Discord::Snowflake(590695217028661250), messageToSend);
+					client->httpAPI.CreateMessage(channelToOperateOn, messageToSend);
 				}
 			);
 
@@ -276,6 +277,8 @@ public:
 				Discord::Snowflake channelID(match.str());
 
 				std::cout << "Switching to private channel: " << channelID.value << " (OP13) ..." << std::endl;
+				channelToOperateOn = channelID;
+				
 				// TODO this is non functional (!??!!)
 				// client->OpenPrivateChannelView(channelID);
 
@@ -294,6 +297,7 @@ public:
 				std::cout << "Switching to Guild/Channel: " << guildID.value << "/" << channelID.value << " (OP14) ..." << std::endl;
 				client->OpenGuildChannelView(guildID, channelID);
 
+				channelToOperateOn = channelID;
 			}
 			else {
 				goto UNKNOWN_COMMAND; // haHaa!
@@ -315,14 +319,18 @@ public:
 		}
 	}
 
+	void stop() {
+		running = false;
+	}
+
 	void run() {
 		running = true;
 
 		while(running) {
 			std::string command;
 			std::cout << ">> ";
+			if (!running) { break; }
 			std::getline(std::cin, command);
-
 			processCommand(command);
 		}
 	}
@@ -350,18 +358,23 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	std::string tokenString = std::string(argv[1]);
-	std::shared_ptr<MyClient> client = std::make_shared<MyClient>(tokenString, tokenType);
-	
-	ConsoleTest console(client);
+	std::string tokenString(argv[1]);
 
+	std::shared_ptr<MyClient> client = std::make_shared<MyClient>(tokenString, tokenType);
+	std::shared_ptr<std::thread> clientThread = std::make_shared<std::thread>(&Discord::Client::Run, &*client);
+
+	//TODO: make ConsoleTest better and thread-safe, add "condition_variable"s etc
+	ConsoleTest console(client);
 	std::thread consoleThread(&ConsoleTest::run, &console);
 	
-	std::thread uiThread(&startImguiClient, client);
-
-	client->Run();
+	std::thread uiThread(&startImguiClient, client, clientThread);
 	
+	uiThread.join();
+	console.stop();
 	consoleThread.join();
+
+	client->Stop();
+	clientThread->join();
 
 	std::cout << "Exiting main with code 0\n";
 	return 0;

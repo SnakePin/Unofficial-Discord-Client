@@ -9,6 +9,7 @@
 #include <rapidjson/document.h>
 #include <rapidjson/pointer.h>
 
+#include <atomic>
 #include <memory>
 #include <algorithm>
 #include <functional>
@@ -59,7 +60,7 @@ std::string Client::GenerateIdentifyPacket(bool compress) {
 	rapidjson::Pointer("/d/presence/since").Set(document, 0);
 	rapidjson::Pointer("/d/presence/activities").Set(document, rapidjson::Value(rapidjson::kArrayType)); // TODO implement activities
 	rapidjson::Pointer("/d/presence/afk").Set(document, false);
-	
+
 	return JsonDocumentToJsonString(document);
 }
 
@@ -113,12 +114,12 @@ void Client::SendHeartbeatAndResetTimer(const asio::error_code& error) {
 
 void Client::SendIdentify() {
 	std::cout << "Client: Sending identify packet.\n";
-	connection->send(GenerateIdentifyPacket());
+	ScheduleNewWSSPacket(GenerateIdentifyPacket());
 }
 
 void Client::SendResume(std::string& sessionID, uint32_t sequenceNumber) {
 	this->sessionID = sessionID;
-	connection->send(GenerateResumePacket(sessionID, sequenceNumber));
+	ScheduleNewWSSPacket(GenerateResumePacket(sessionID, sequenceNumber));
 }
 
 void Client::ProcessHello(rapidjson::Document& document) {
@@ -152,6 +153,11 @@ void Client::ProcessMessageCreate(rapidjson::Document& document) {
 }
 
 void Client::Run() {
+	//If event loop is already running then return
+	if (isRunning) {
+		return;
+	}
+
 	// Start constructing the websocket events:
 	// on_message, on_open, on_close, on_error
 	websocket.on_message = [this](std::shared_ptr<WssClient::Connection> /* connection */, std::shared_ptr<WssClient::InMessage> in_message) {
@@ -230,33 +236,56 @@ void Client::Run() {
 
 	websocket.on_close = [this](std::shared_ptr<WssClient::Connection> /*connection*/, int status, const std::string& /*reason*/) {
 		std::cout << "Client: Closed connection with status code " << status << std::endl;
-		heartbeatTimer->cancel();
+		Stop();
 	};
 
 	websocket.on_error = [](std::shared_ptr<WssClient::Connection> /*connection*/, const SimpleWeb::error_code& ec) {
 		std::cout << "Client: Error: " << ec << ", error message: " << ec.message() << std::endl;
 	};
 
-	//Reset io_service if it was ran before
+	//Reset io_service if it is in stopped status
 	if (io_context->stopped()) {
-		//io_context must be resetted in prior to run()
+		//io_context must be resetted in prior to run() or else it will stay in stopped status and it won't do work
 		io_context->reset();
 	}
-	
-	//Set io_service to the shared io_context
+
+	//Set io_service of the websocket to the shared io_context and start the websocket
+	//Note: websocket won't be able to make any connection until event loop is started
 	websocket.io_service = this->io_context;
-	
 	websocket.start();
 
-	//Start io_service, starts the event loop
-	io_context->run();
+	//This line will make sure run() doesn't return when there are no tasks to do
+	//This way the run() will only return when stop() is called
+	asio::executor_work_guard<decltype(io_context->get_executor())> work{ io_context->get_executor() };
 
+	//Start the event loop
+	isRunning = true;
+	io_context->run();
+	isRunning = false;
+	eventLoopExit.notify_all();
 }
 
+//TODO: change this function to stop gracefully by letting event loop complete before exiting
 void Client::Stop() {
+	//Return if not running or else the eventLoopExit condition_variable will create deadlock
+	if (!isRunning) {
+		return;
+	}
+
+	heartbeatTimer->cancel();
 	websocket.stop();
 	io_context->stop();
 
+	std::unique_lock<std::mutex> lock(conditionVariableMutex);
+	eventLoopExit.wait(lock);
+}
+
+Client::~Client() {
+	Stop();
+}
+
+bool Client::IsRunning() {
+	return isRunning;
 }
 
 void Client::OpenGuildChannelView(const Snowflake& guild, const Snowflake& channel) {
@@ -293,8 +322,11 @@ void Client::UpdatePresence(std::string& status) {
 	ScheduleNewWSSPacket(JsonDocumentToJsonString(document));
 }
 
-void Client::ScheduleNewWSSPacket(std::string_view out_message_str, const std::function<void(const std::error_code&)>& callback, unsigned char fin_rsv_opcode) {
-	asio::post(*websocket.io_service, [=] {
+void Client::ScheduleNewWSSPacket(std::string out_message_str, const std::function<void(const std::error_code&)> callback, unsigned char fin_rsv_opcode) {
+	//We must explicity add the string and the callback (must not be a reference) to capture list of the lambda here
+	//or else it would have an invalid reference when it is called by event loop run thread
+	//Note: we use std::move on string and callback because we no longer need the local copy of it but on fin_rsv_opcode it doesn't really matter as it has no move ctor
+	asio::post(*websocket.io_service, [this, out_message_str = std::move(out_message_str), callback = std::move(callback), fin_rsv_opcode] {
 		connection->send(out_message_str, callback, fin_rsv_opcode);
 	});
 }

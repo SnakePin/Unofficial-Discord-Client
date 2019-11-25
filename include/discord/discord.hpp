@@ -4,6 +4,9 @@
 #include <string_view>
 #include <vector>
 #include <asio.hpp>
+#include <atomic>
+#include <mutex>
+#include <condition_variable>
 
 #include "discord/message.hpp"
 #include "discord/guild.hpp"
@@ -31,6 +34,8 @@ namespace Discord {
 		uint64_t sequenceNumber;
 
 		Client(std::string& token, AuthTokenType tokenType);
+
+		~Client();
 		
 		// Generate and send an IDENTIFY packet
 		void SendIdentify();
@@ -44,6 +49,8 @@ namespace Discord {
 
 		// Stop the event loop and websocket
 		void Stop();
+
+		bool IsRunning();
 
 		// Websocket Gateway Events
 		// OnHelloPacket's default behavior is to call SendIdentify().
@@ -86,13 +93,21 @@ namespace Discord {
 			bool UpdatePresenceStatusSetting(std::string& status);
 
 			const AuthToken token;
-			std::string userAgent;
+
+			//User agent string to use in HTTP API connections
+			//TODO: give user ability to change this value
+			const std::string userAgent;
 		} httpAPI;
 
-		// User agent string to use in gateway connection and in HTTP API instance
-		std::string userAgent;
 	private:
-	
+		//The mutex that will be used to lock the threads by the std::condition_variable below
+		std::mutex conditionVariableMutex;
+		//This will be notified on event loop exit
+		std::condition_variable eventLoopExit;
+
+		//This bool will be set to true before entering event loop and set to false after event loop exit
+		std::atomic<bool> isRunning = false;
+
 		// Gets set every time the websocket opens a new connection.
 		std::shared_ptr<WssClient::Connection> connection;
 
@@ -118,11 +133,15 @@ namespace Discord {
 		// https://discordapp.com/developers/docs/topics/gateway#resume
 		std::string GenerateResumePacket(std::string& sessionID, uint32_t sequenceNumber);
 
-
 		std::string GenerateGuildChannelViewPacket(const Snowflake &guild, const Snowflake &channel);
 
-		void ScheduleNewWSSPacket(std::string_view out_message_str, const std::function<void(const std::error_code &)> &callback = nullptr, unsigned char fin_rsv_opcode = 129);
+		//Scheduled packets will be sent from the event loop thread
+		//Note: callback function must not reference any local variables as it would possibly be called when your function exits
+		void ScheduleNewWSSPacket(std::string out_message_str, const std::function<void(const std::error_code &)> callback = nullptr, unsigned char fin_rsv_opcode = 129);
 
+		//User agent string to use in gateway connection
+		//TODO: give user ability to change this value
+		const std::string userAgent;
 	public:
 
 		// Sends an OP 14 signal.
