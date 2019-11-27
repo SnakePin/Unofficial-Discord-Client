@@ -4,6 +4,7 @@
 #include "discord/embed.hpp"
 #include "discord/reaction.hpp"
 #include "discord/user.hpp"
+#include "discord/attachment.hpp"
 
 #include <rapidjson/document.h>
 
@@ -27,10 +28,10 @@ namespace Discord {
 		bool tts;
 		bool mentionEveryone;
 
-		// User mentions[]
+		std::vector<User> mentions;
 		std::vector<Snowflake> mentionedroleIDs;
 
-		// attachments[]
+		std::vector<Attachment> attachments;
 		std::vector<Embed> embeds;
 		std::vector<Reaction> reactions;
 

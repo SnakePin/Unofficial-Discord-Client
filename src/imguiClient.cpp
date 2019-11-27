@@ -15,7 +15,9 @@
 
 typedef std::unordered_map<uint64_t, std::tuple<std::chrono::time_point<std::chrono::system_clock>, std::vector<Discord::Message>>> channelMessageCacheType;
 
-static void cacheGetOrUpdate(std::shared_ptr<MyClient> client, channelMessageCacheType& cache, std::vector<Discord::Message>& outMessages, Discord::Snowflake channelID);
+static void cacheGetOrUpdate(std::shared_ptr<MyClient> client, channelMessageCacheType& cache, std::vector<Discord::Message>& outMessages, const Discord::Snowflake& channelID);
+static void ImGuiDisplayDiscordMessage(const Discord::Message& message);
+static void ImGuiDisplayDiscordMessageBoxAndSendButton(std::shared_ptr<MyClient> client, channelMessageCacheType& cache, const Discord::Snowflake& channelID, std::string& messageToSend);
 
 int startImguiClient(std::shared_ptr<MyClient> client, std::shared_ptr<std::thread> clientThread) {
 	std::cout << "Starting SDL2...\n";
@@ -121,26 +123,11 @@ int startImguiClient(std::shared_ptr<MyClient> client, std::shared_ptr<std::thre
 											std::vector<Discord::Message> messages;
 											cacheGetOrUpdate(client, cache, messages, channel.id);
 
-											//Remove all of these and improve
-											std::string usersMessage = messageToSend;
-											ImVec2 inputBoxSize(-1.0f, ImGui::GetTextLineHeight() * 4);
-											if (ImGui::InputTextMultiline("Type a message: ", &usersMessage, inputBoxSize)) {
-												messageToSend = usersMessage;
-											}
-											if (ImGui::Button("Send message") && !messageToSend.empty()) {
-												Discord::CreateMessageParam createMessageParam;
-												createMessageParam.tts = false;
-												createMessageParam.content = messageToSend;
-												client->httpAPI.CreateMessage(channel.id, createMessageParam);
-
-												//TODO: move this code out of this function too and possibly remove this
-												//Invalidates cache for this channel
-												std::get<0>(cache[channel.id.value]) = std::chrono::time_point<std::chrono::system_clock>::min();
-											}
+											ImGuiDisplayDiscordMessageBoxAndSendButton(client, cache, channel.id, messageToSend);
 
 											for (const Discord::Message& message : messages)
 											{
-												ImGui::Text((message.author.username + "#" + message.author.discriminator + ": " + message.content).c_str());
+												ImGuiDisplayDiscordMessage(message);
 												ImGui::Spacing();
 											}
 
@@ -161,7 +148,7 @@ int startImguiClient(std::shared_ptr<MyClient> client, std::shared_ptr<std::thre
 						client->privateChannelsVectorMutex.lock();
 						auto privateChannelsCopy = client->privateChannels;
 						client->privateChannelsVectorMutex.unlock();
-						
+
 						for (const Discord::Channel& channel : privateChannelsCopy) {
 							std::string channelName;
 
@@ -195,26 +182,11 @@ int startImguiClient(std::shared_ptr<MyClient> client, std::shared_ptr<std::thre
 								std::vector<Discord::Message> messages;
 								cacheGetOrUpdate(client, cache, messages, channel.id);
 
-								//Remove all of these and improve
-								std::string usersMessage = messageToSend;
-								ImVec2 inputBoxSize(-1.0f, ImGui::GetTextLineHeight() * 4);
-								if (ImGui::InputTextMultiline("Type a message: ", &usersMessage, inputBoxSize)) {
-									messageToSend = usersMessage;
-								}
-								if (ImGui::Button("Send message") && !messageToSend.empty()) {
-									Discord::CreateMessageParam createMessageParam;
-									createMessageParam.tts = false;
-									createMessageParam.content = messageToSend;
-									client->httpAPI.CreateMessage(channel.id, createMessageParam);
-
-									//TODO: move this code out of this function too and possibly remove this
-									//Invalidates cache for this channel
-									std::get<0>(cache[channel.id.value]) = std::chrono::time_point<std::chrono::system_clock>::min();
-								}
+								ImGuiDisplayDiscordMessageBoxAndSendButton(client, cache, channel.id, messageToSend);
 
 								for (const Discord::Message& message : messages)
 								{
-									ImGui::Text((message.author.username + "#" + message.author.discriminator + ": " + message.content).c_str());
+									ImGuiDisplayDiscordMessage(message);
 									ImGui::Spacing();
 								}
 
@@ -253,7 +225,47 @@ CleanupAndExit:
 	return 0;
 }
 
-static void cacheGetOrUpdate(std::shared_ptr<MyClient> client, channelMessageCacheType& cache, std::vector<Discord::Message>& outMessages, Discord::Snowflake channelID) {
+static void ImGuiDisplayDiscordMessage(const Discord::Message& message) {
+	std::string textToShow;
+	if (message.type == 3) {
+		textToShow = message.author.username + "#" + message.author.discriminator + " started a discord call.";
+	}
+	else if (message.type == 0) {
+		textToShow = message.author.username + "#" + message.author.discriminator + ": " + message.content;
+	}
+	ImGui::Text(textToShow.c_str());
+	for (const Discord::Attachment& attachment : message.attachments)
+	{
+		ImGui::Text("^ Attachment:");
+		ImGui::Text(("\tFilename: " + attachment.filename).c_str());
+		ImGui::Text(("\tSize: " + std::to_string(attachment.size) + " byte(s)").c_str());
+		ImGui::Text(("\tURL: " + attachment.url).c_str());
+		ImGui::Text(("\tProxy URL: " + attachment.proxy_url).c_str());
+	}
+}
+
+void ImGuiDisplayDiscordMessageBoxAndSendButton(std::shared_ptr<MyClient> client, channelMessageCacheType& cache, const Discord::Snowflake& channelID, std::string& messageToSend)
+{
+	//Remove all of these and improve
+	std::string usersMessage = messageToSend;
+	ImVec2 inputBoxSize(-1.0f, ImGui::GetTextLineHeight() * 4);
+	if (ImGui::InputTextMultiline("Type a message: ", &usersMessage, inputBoxSize)) {
+		messageToSend = usersMessage;
+	}
+	if (ImGui::Button("Send message") && !messageToSend.empty()) {
+		Discord::CreateMessageParam createMessageParam;
+		createMessageParam.tts = false;
+		createMessageParam.content = messageToSend;
+		client->httpAPI.CreateMessage(channelID, createMessageParam);
+		messageToSend = "";
+
+		//TODO: move this code out of this function too and possibly remove this
+		//Invalidates cache for this channel
+		std::get<0>(cache[channelID.value]) = std::chrono::time_point<std::chrono::system_clock>::min();
+	}
+}
+
+static void cacheGetOrUpdate(std::shared_ptr<MyClient> client, channelMessageCacheType& cache, std::vector<Discord::Message>& outMessages, const Discord::Snowflake& channelID) {
 	if (cache.find(channelID.value) != cache.end()) {
 		//TODO: make this async and move this code out of UI thread and out of this function and remove hardcoded values
 		auto lastRefresh = std::get<0>(cache[channelID.value]);
