@@ -6,27 +6,66 @@
 #include "imgui_impl_sdl.h"
 #include "imgui_impl_opengl2.h"
 #include "imgui_stdlib.h"
+
+#include "imgui_internal.h"
+
 #include <stdio.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
 
+#include "discord/userFlags.hpp"
+
 #include <unordered_map>
 #include <tuple>
+#include <string>
+#include <optional>
+#include <atomic>
 
-typedef std::unordered_map<uint64_t, std::tuple<std::chrono::time_point<std::chrono::system_clock>, std::vector<Discord::Message>>> channelMessageCacheType;
+class ChannelMessageCachingSystem {
+	using ChannelMessageCacheItemType = std::tuple<std::chrono::time_point<std::chrono::system_clock>, std::vector<Discord::Message>>;
+	using ChannelMessageCacheType = std::unordered_map<uint64_t, ChannelMessageCacheItemType>;
+public:
+	ChannelMessageCachingSystem(std::shared_ptr<MyClient> _client) :
+		client(_client)
+	{
 
-static void cacheGetOrUpdate(std::shared_ptr<MyClient> client, channelMessageCacheType& cache, std::vector<Discord::Message>& outMessages, const Discord::Snowflake& channelID);
+	}
+
+	//This function will create cache item entry if an item with the provided channel ID doesn't exist
+	const std::vector<Discord::Message>& CacheGetOrUpdate(Discord::Snowflake channelID);
+
+	//This function will create cache item entry if an item with the provided channel ID doesn't exist
+	void CacheForceUpdate(Discord::Snowflake channelID);
+
+	//Will return true if the last HTTP API update is 60 seconds ago or if the channel ID doesn't exist
+	bool DoesRequireUpdate(Discord::Snowflake channelID);
+private:
+
+	ChannelMessageCacheType channelMessageCache;
+	std::shared_ptr<MyClient> client;
+};
+
+
+const auto& SystemTimeNow = std::chrono::system_clock::now;
+
 static void ImGuiDisplayDiscordMessage(const Discord::Message& message);
-static void ImGuiDisplayDiscordMessageBoxAndSendButton(std::shared_ptr<MyClient> client, channelMessageCacheType& cache, const Discord::Snowflake& channelID, std::string& messageToSend);
+static void ImGuiDisplayDiscordMessageBoxAndSendButton(std::shared_ptr<MyClient> client, ChannelMessageCachingSystem& cache, const Discord::Snowflake& channelID, std::string& messageToSend);
+
+template<typename R>
+bool is_future_ready(std::future<R> const& f)
+{
+	return f.wait_for(std::chrono::seconds(0)) == std::future_status::ready;
+}
 
 int startImguiClient(std::shared_ptr<MyClient> client, std::shared_ptr<std::thread> clientThread) {
-	std::cout << "Starting SDL2...\n";
+	std::cout << "Starting SDL2..." << std::endl;
 
-	const int WINDOW_WIDTH = 1280;
-	const int WINDOW_HEIGHT = 720;
+	const int defaultWindowWidth = 1280;
+	const int defaultWindowHeight = 720;
+	const char* defaultWindowName = "Unofficial Discord Client GUI";
 
-	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0) {
-		std::cout << "SDL_Init error: " << SDL_GetError() << "\n";
+	if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+		std::cout << "SDL_Init error: " << SDL_GetError() << std::endl;
 		return -1;
 	}
 
@@ -35,8 +74,13 @@ int startImguiClient(std::shared_ptr<MyClient> client, std::shared_ptr<std::thre
 	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
-	SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
-	SDL_Window* window = SDL_CreateWindow("Unofficial Discord Client GUI", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH, WINDOW_HEIGHT, window_flags);
+
+	SDL_Window* window = SDL_CreateWindow(
+		defaultWindowName,
+		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+		defaultWindowWidth, defaultWindowHeight,
+		SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
+
 	SDL_GLContext gl_context = SDL_GL_CreateContext(window);
 	SDL_GL_MakeCurrent(window, gl_context);
 	SDL_GL_SetSwapInterval(1); // Enable vsync
@@ -48,6 +92,8 @@ int startImguiClient(std::shared_ptr<MyClient> client, std::shared_ptr<std::thre
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;	 // Enable Keyboard Controls
 
+	io.Fonts->AddFontDefault();
+
 	// Setup Dear ImGui style
 	ImGui::StyleColorsDark();
 	//ImGui::StyleColorsClassic();
@@ -58,11 +104,16 @@ int startImguiClient(std::shared_ptr<MyClient> client, std::shared_ptr<std::thre
 
 	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
-	channelMessageCacheType cache;
+	ChannelMessageCachingSystem ourCache(client);
 	std::string messageToSend;
 
 	Discord::User currentUser;
-	client->httpAPI.GetCurrentUser(currentUser);
+	int currentuserFetchFailCount = 0;
+	std::atomic<bool> currentUserFetched = false;
+	std::future<bool> currentUserFetchFuture = std::async(std::launch::async, [client, &currentUser, &currentUserFetched]()->bool {
+		currentUserFetched = client->httpAPI.GetCurrentUser(currentUser);
+		return currentUserFetched;
+	});
 
 	while (true) {
 		SDL_Event event;
@@ -77,16 +128,37 @@ int startImguiClient(std::shared_ptr<MyClient> client, std::shared_ptr<std::thre
 		ImGui::NewFrame();
 
 		ImGui::DockSpaceOverViewport();
+		ImGuiViewport* viewport = ImGui::GetMainViewport();
+		/*{
+			ImGuiID dockspace_id = ImGui::DockSpaceOverViewport();
+
+
+			ImGui::DockBuilderRemoveNode(dockspace_id); // Clear out existing layout
+			ImGui::DockBuilderAddNode(dockspace_id);
+			ImGui::DockBuilderSetNodeSize(dockspace_id, viewport->Size);
+
+			ImGuiID dock_main_id = dockspace_id; // This variable will track the document node, however we are not using it here as we aren't docking anything into it.
+			ImGuiID dock_id_left = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 0.20f, nullptr, &dock_main_id);
+			ImGuiID dock_id_right = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.20f, nullptr, &dock_main_id);
+			ImGuiID dock_id_bottom = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Down, 0.20f, nullptr, &dock_main_id);
+
+			ImGui::DockBuilderDockWindow("Functions", dock_id_right);
+			ImGui::DockBuilderDockWindow("Profile", dock_id_left);
+			ImGui::DockBuilderDockWindow("Chats", dock_id_bottom);
+			ImGui::DockBuilderFinish(dockspace_id);
+		}*/
+
+		bool apiErrorsDetected = false;
 
 		ImGui::Begin("Functions");
 		{
 			if (ImGui::Button("Identify")) {
 				client->SendIdentify();
 			}
-			if (ImGui::Button("Resume")) {
+			if (ImGui::Button("Call MyClient::LoadAndSendResume")) {
 				client->LoadAndSendResume();
 			}
-			if (ImGui::Button("Call Client::Run() on another thread")) {
+			if (ImGui::Button("Call Client::Run on another thread")) {
 				client->Stop();
 
 				//If we don't join the thread here, on the next assignment the thread's deconstructor will be called and it will throw error
@@ -94,13 +166,103 @@ int startImguiClient(std::shared_ptr<MyClient> client, std::shared_ptr<std::thre
 				//TODO: use a thread-safe alternative to the line below
 				*clientThread = std::thread(&Discord::Client::Run, &*client);
 			}
-			if (ImGui::Button("Call Client::Stop()")) {
+			if (ImGui::Button("Call Client::Stop")) {
 				client->Stop();
+			}
+			if (ImGui::Button("Call MyClient::UpdateSessionJson")) {
+				client->UpdateSessionJson();
 			}
 		}
 		ImGui::End();
 
-		ImGui::Begin("Account");
+		ImGui::Begin("Profile");
+		{
+			if (currentUserFetched) {
+				auto displayInfoItem = [](std::string infoName, std::string infoContent) {
+					ImGui::Text((infoName + ": " + infoContent).c_str());
+				};
+
+				displayInfoItem("Username", currentUser.username + "#" + currentUser.discriminator);
+
+				if (currentUser.email.has_value()) {
+					displayInfoItem("Email", currentUser.email.value());
+				}
+
+				displayInfoItem("Is Email Verified", (currentUser.verified.has_value() && currentUser.verified.value() == true) ? "Yes" : "No");
+
+				std::string nitroInfoString;
+				if (currentUser.premiumType.has_value()) {
+					nitroInfoString += "Yes(";
+					nitroInfoString += (currentUser.premiumType.value() == 1 ? "Nitro Classic" : "Nitro");
+					nitroInfoString += ')';
+				}
+				else {
+					nitroInfoString = "No";
+				}
+				displayInfoItem("Nitro", nitroInfoString);
+
+				if (currentUser.locale.has_value()) {
+					displayInfoItem("Locale", currentUser.locale.value());
+				}
+
+				displayInfoItem("Is Bot", (currentUser.bot.has_value() && currentUser.bot.value() == true) ? "Yes" : "No");
+
+				if (currentUser.flags.has_value()) {
+					Discord::UserFlags& userFlags = currentUser.flags.value();
+					if (!userFlags.IsNone()) {
+						std::string flagsInfoString;
+						if (currentUser.flags.value().IsBugHunter()) {
+							flagsInfoString += "(Bug Hunter)";
+						}
+						if (currentUser.flags.value().IsDiscordEmployee()) {
+							flagsInfoString += "(Discord Employee)";
+						}
+						if (currentUser.flags.value().IsDiscordPartner()) {
+							flagsInfoString += "(Discord Partner)";
+						}
+						if (currentUser.flags.value().IsEarlySupporter()) {
+							flagsInfoString += "(Early Supporter)";
+						}
+						if (currentUser.flags.value().IsHouseBalance()) {
+							flagsInfoString += "(House of Balance)";
+						}
+						if (currentUser.flags.value().IsHouseBravery()) {
+							flagsInfoString += "(House of Bravery)";
+						}
+						if (currentUser.flags.value().IsHouseBrilliance()) {
+							flagsInfoString += "(House of Brilliance)";
+						}
+						if (currentUser.flags.value().IsHypeSquadEvents()) {
+							flagsInfoString += "(HypeSquad Events)";
+						}
+						displayInfoItem("Badges", flagsInfoString);
+					}
+				}
+			}
+			else {
+				if (currentuserFetchFailCount == 0) {
+					ImGui::TextColored(ImVec4(1, 1, 0, 1), "Fetching current user information...");
+				}
+				else if (currentuserFetchFailCount <= 15) {
+					//Current user is not fetched yet so we check if the task is completed or not
+					if (is_future_ready(currentUserFetchFuture) && !currentUserFetchFuture.get()) {
+						//Task is completed and it returned false, start new task and increase fail count
+						currentUserFetchFuture = std::async(std::launch::async, [client, &currentUser, &currentUserFetched]()->bool {
+							currentUserFetched = client->httpAPI.GetCurrentUser(currentUser);
+							return currentUserFetched;
+						});
+						currentuserFetchFailCount++;
+					}
+					ImGui::TextColored(ImVec4(1, 1, 0, 1), "Fetching user info failed, trying again. Try: %d", currentuserFetchFailCount);
+				}
+				else {
+					ImGui::TextColored(ImVec4(1, 1, 0, 1), "Fetching user info failed 15 times, giving up, restart the client.", currentuserFetchFailCount);
+				}
+			}
+		}
+		ImGui::End();
+
+		ImGui::Begin("Chats");
 		{
 			if (ImGui::BeginTabBar("Discord")) {
 				if (ImGui::BeginTabItem("Guilds")) {
@@ -109,10 +271,21 @@ int startImguiClient(std::shared_ptr<MyClient> client, std::shared_ptr<std::thre
 						auto guildsCopy = client->guilds;
 						client->guildsVectorMutex.unlock();
 						for (const Discord::Guild& guild : guildsCopy) {
+							if (guild.name.empty() || guild.id.value == 0) {
+								apiErrorsDetected = true;
+								continue;
+							}
 							if (ImGui::BeginTabItem(guild.name.c_str())) {
 								if (ImGui::BeginTabBar(guild.name.c_str(), ImGuiTabBarFlags_::ImGuiTabBarFlags_FittingPolicyScroll)) {
 									for (const Discord::Channel& channel : guild.channels) {
+
+										if ((channel.name.has_value() && channel.name.value().empty()) || channel.id.value == 0) {
+											apiErrorsDetected = true;
+											continue;
+										}
+
 										if (channel.type == 0 && ImGui::BeginTabItem(channel.name.value_or("Unnamed Channel").c_str())) {
+											
 											//TODO: implement the following comment in an actual way
 											/*client->OnMessageCreate = [&cache, &channel](Discord::Message m)
 											{
@@ -120,10 +293,9 @@ int startImguiClient(std::shared_ptr<MyClient> client, std::shared_ptr<std::thre
 													std::get<1>(cache[channel.id.value]).push_back(m);
 												}
 											};*/
-											std::vector<Discord::Message> messages;
-											cacheGetOrUpdate(client, cache, messages, channel.id);
+											std::vector<Discord::Message> messages = ourCache.CacheGetOrUpdate(channel.id);
 
-											ImGuiDisplayDiscordMessageBoxAndSendButton(client, cache, channel.id, messageToSend);
+											ImGuiDisplayDiscordMessageBoxAndSendButton(client, ourCache, channel.id, messageToSend);
 
 											for (const Discord::Message& message : messages)
 											{
@@ -171,6 +343,11 @@ int startImguiClient(std::shared_ptr<MyClient> client, std::shared_ptr<std::thre
 								continue;
 							}
 
+							if ((channel.name.has_value() && channel.name.value().empty()) || channel.id.value == 0) {
+								apiErrorsDetected = true;
+								continue;
+							}
+
 							if (ImGui::BeginTabItem(channelName.c_str())) {
 								//TODO: implement the following comment in an actual way
 								/*client->OnMessageCreate = [&cache, &channel](Discord::Message m)
@@ -179,10 +356,9 @@ int startImguiClient(std::shared_ptr<MyClient> client, std::shared_ptr<std::thre
 										std::get<1>(cache[channel.id.value]).push_back(m);
 									}
 								};*/
-								std::vector<Discord::Message> messages;
-								cacheGetOrUpdate(client, cache, messages, channel.id);
+								const std::vector<Discord::Message>& messages = ourCache.CacheGetOrUpdate(channel.id);
 
-								ImGuiDisplayDiscordMessageBoxAndSendButton(client, cache, channel.id, messageToSend);
+								ImGuiDisplayDiscordMessageBoxAndSendButton(client, ourCache, channel.id, messageToSend);
 
 								for (const Discord::Message& message : messages)
 								{
@@ -202,6 +378,26 @@ int startImguiClient(std::shared_ptr<MyClient> client, std::shared_ptr<std::thre
 			ImGui::EndTabBar();
 		}
 		ImGui::End();
+
+
+		if (ImGui::BeginPopup("API Error", ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove)) {
+
+			ImVec2 popupSize = ImGui::GetWindowSize();
+
+			ImVec2 popupPos = viewport->Size;
+			popupPos.x /= 2;
+			popupPos.x -= popupSize.x / 2;
+			popupPos.y /= 2;
+			popupPos.y -= popupSize.y / 2;
+			ImGui::SetWindowPos(popupPos);
+
+			ImGui::TextColored(ImVec4(1, 0, 0, 1), "Discord API errors detected.");
+			ImGui::EndPopup();
+		}
+
+		if (apiErrorsDetected) {
+			ImGui::OpenPopup("API Error");
+		}
 
 		// Rendering
 		ImGui::Render();
@@ -244,7 +440,7 @@ static void ImGuiDisplayDiscordMessage(const Discord::Message& message) {
 	}
 }
 
-void ImGuiDisplayDiscordMessageBoxAndSendButton(std::shared_ptr<MyClient> client, channelMessageCacheType& cache, const Discord::Snowflake& channelID, std::string& messageToSend)
+void ImGuiDisplayDiscordMessageBoxAndSendButton(std::shared_ptr<MyClient> client, ChannelMessageCachingSystem& cache, const Discord::Snowflake& channelID, std::string& messageToSend)
 {
 	//Remove all of these and improve
 	std::string usersMessage = messageToSend;
@@ -261,29 +457,41 @@ void ImGuiDisplayDiscordMessageBoxAndSendButton(std::shared_ptr<MyClient> client
 
 		//TODO: move this code out of this function too and possibly remove this
 		//Invalidates cache for this channel
-		std::get<0>(cache[channelID.value]) = std::chrono::time_point<std::chrono::system_clock>::min();
+		cache.CacheForceUpdate(channelID.value);
 	}
 }
 
-static void cacheGetOrUpdate(std::shared_ptr<MyClient> client, channelMessageCacheType& cache, std::vector<Discord::Message>& outMessages, const Discord::Snowflake& channelID) {
-	if (cache.find(channelID.value) != cache.end()) {
-		//TODO: make this async and move this code out of UI thread and out of this function and remove hardcoded values
-		auto lastRefresh = std::get<0>(cache[channelID.value]);
-		auto timeNow = std::chrono::system_clock::now();
-		std::chrono::duration<double> elapsed_seconds = timeNow - lastRefresh;
+const std::vector<Discord::Message>& ChannelMessageCachingSystem::CacheGetOrUpdate(Discord::Snowflake channelID) {
 
-		if (elapsed_seconds.count() > 60 || lastRefresh == std::chrono::time_point<std::chrono::system_clock>::min()) {
-			std::get<0>(cache[channelID.value]) = std::chrono::system_clock::now();
-			client->httpAPI.GetMessagesInto(channelID.value, outMessages);
-			std::get<1>(cache[channelID.value]) = outMessages;
-		}
-		else {
-			outMessages = std::get<1>(cache[channelID.value]);
-		}
+	//If cache item doesn't exist, DoesRequireUpdate will return true and CacheForceUpdate will create the entry
+	if (DoesRequireUpdate(channelID)) {
+		CacheForceUpdate(channelID);
 	}
-	else {
-		client->httpAPI.GetMessagesInto(channelID, outMessages);
-		cache[channelID.value] =
-			std::tuple<std::chrono::time_point<std::chrono::system_clock>, std::vector<Discord::Message>>(std::chrono::system_clock::now(), outMessages);
+
+	return std::get<1>(channelMessageCache[channelID.value]);
+}
+
+void ChannelMessageCachingSystem::CacheForceUpdate(Discord::Snowflake channelID)
+{
+	if (channelMessageCache.find(channelID.value) == channelMessageCache.end()) {
+		//If cache item doesn't exist, we create it
+		channelMessageCache[channelID.value] = ChannelMessageCacheItemType();
 	}
+
+	//TODO: make this async and move this code out of UI thread
+	client->httpAPI.GetMessagesInto(channelID.value, std::get<1>(channelMessageCache[channelID.value]));
+	std::get<0>(channelMessageCache[channelID.value]) = SystemTimeNow();
+}
+
+bool ChannelMessageCachingSystem::DoesRequireUpdate(Discord::Snowflake channelID)
+{
+	if (channelMessageCache.find(channelID.value) == channelMessageCache.end()) {
+		return true;
+	}
+
+	auto lastRefresh = std::get<0>(channelMessageCache[channelID.value]);
+	auto timeNow = SystemTimeNow();
+	std::chrono::duration<double> elapsed_seconds = timeNow - lastRefresh;
+
+	return elapsed_seconds.count() > 60;
 }

@@ -11,6 +11,7 @@
 
 #include <atomic>
 #include <memory>
+#include <map>
 #include <algorithm>
 #include <functional>
 #include <string_view>
@@ -105,7 +106,7 @@ std::string Client::GenerateGuildChannelViewPacket(const Snowflake& guild, const
 void Client::SendHeartbeatAndResetTimer(const asio::error_code& error) {
 	if (!error) {
 		connection->send("{\"op\":1,\"d\":" + std::to_string(sequenceNumber) + "}");
-		std::cout << "Client: Sending heartbeat.\n";
+		std::cout << "Client: Sending heartbeat." << std::endl;
 
 		heartbeatTimer->expires_from_now(std::chrono::milliseconds(heartbeatInterval - 2000));
 		heartbeatTimer->async_wait(std::bind(&Client::SendHeartbeatAndResetTimer, this, std::placeholders::_1));
@@ -113,7 +114,7 @@ void Client::SendHeartbeatAndResetTimer(const asio::error_code& error) {
 }
 
 void Client::SendIdentify() {
-	std::cout << "Client: Sending identify packet.\n";
+	std::cout << "Client: Sending identify packet." << std::endl;
 	ScheduleNewWSSPacket(GenerateIdentifyPacket());
 }
 
@@ -134,8 +135,78 @@ void Client::ProcessHello(rapidjson::Document& document) {
 	OnHelloPacket();
 }
 
+void Client::ProcessDispatch(rapidjson::Document& document) {
+	std::string eventName = document["t"].GetString();
+
+	if (document["s"].IsUint64())
+		sequenceNumber = std::max(sequenceNumber, document["s"].GetUint64());
+
+	const std::map<std::string, std::function<void(void)>> dispatchEventHandlers
+	{
+		{ "GUILD_CREATE", [this, &document]() { OnGuildCreate(Guild::LoadFrom(document, "/d")); }},
+		{ "READY", [this, &document]() { ProcessReady(document); }},
+		{ "MESSAGE_CREATE", [this, &document]() { OnMessageCreate(Message::LoadFrom(document, "/d")); }},
+		{ "MESSAGE_REACTION_ADD", [this, &document]() { OnMessageReactionAdd(MessageReactionPacket::LoadFrom(document, "/d")); }},
+		{ "MESSAGE_REACTION_REMOVE", [this, &document]() { OnMessageReactionRemove(MessageReactionPacket::LoadFrom(document, "/d")); }},
+		{ "TYPING_START", [this, &document]() { OnTypingStart(TypingStartPacket::LoadFrom(document, "/d")); }},
+		{ "GUILD_MEMBER_LIST_UPDATE", [this, &document]() { OnGuildMemberListUpdate(GuildMemberListUpdatePacket::LoadFrom(document, "/d")); }},
+		{ "RESUMED", [this]() { OnResumeSuccess(); }},
+	};
+
+	if (dispatchEventHandlers.find(eventName) != dispatchEventHandlers.end()) {
+		dispatchEventHandlers.at(eventName)();
+	}
+	else {
+		std::cout << "Client: Unknown dispatch event received: \"" << eventName << "\"" << std::endl;
+	}
+}
+
 void Client::OnHelloPacket() {
 	SendIdentify();
+}
+
+void Client::OnWSSDisconnect(int statusCode, std::string reason) {
+	std::cout << "Client: Closed connection with status code " << statusCode << " and the reason being \"" << reason << "\"" << std::endl;
+}
+void Client::OnWSSError(SimpleWeb::error_code errorCode) {
+	std::cout << "Client: Connection closed. Error: " << errorCode << ", error message: " << errorCode.message() << std::endl;
+}
+void Client::OnWSSConnect() {
+	std::cout << "Client: Opened connection to " << connection->remote_endpoint_address() << std::endl;
+}
+
+void Client::OnResumeFail() {
+	std::cout << "Client: OnResumeFail default impl." << std::endl;
+}
+void Client::OnResumeSuccess() {
+	std::cout << "Client: OnResumeSuccess default impl." << std::endl;
+}
+void Client::OnReadyPacket(Discord::ReadyPacket packet) {
+	std::cout << "Client: OnReadyPacket default impl. Session ID: " << packet.sessionID << std::endl;
+}
+void Client::OnGuildCreate(Guild guild) {
+	std::cout << "Client: OnGuildCreate default impl. Guild ID: " << guild.id.value << std::endl;
+}
+void Client::OnGuildMemberListUpdate(GuildMemberListUpdatePacket packet) {
+	std::cout << "Client: OnGuildMemberListUpdate default impl. Guild ID: " << packet.guildID.value << std::endl;
+}
+void Client::OnMessageCreate(Message m) {
+	std::cout << "Client: OnMessageCreate default impl. Message ID: " << m.id.value << std::endl;
+}
+void Client::OnTypingStart(TypingStartPacket p) {
+	std::cout << "Client: OnTypingStart default impl. User ID: " << p.userID.value << std::endl;
+}
+void Client::OnMessageReactionAdd(MessageReactionPacket p) {
+	std::cout << "Client: OnMessageReactionAdd default impl. User ID: " << p.userID.value << std::endl;
+}
+void Client::OnMessageReactionRemove(MessageReactionPacket p) {
+	std::cout << "Client: OnMessageReactionRemove default impl. User ID: " << p.userID.value << std::endl;
+}
+void Client::OnHeartbeatAck() {
+	std::cout << "Client: OnHeartbeatAck default impl." << std::endl;
+}
+void Client::OnReconnectPacket() {
+	std::cout << "Client: OnReconnectPacket default impl." << std::endl;
 }
 
 void Client::ProcessReady(rapidjson::Document& document) {
@@ -144,12 +215,9 @@ void Client::ProcessReady(rapidjson::Document& document) {
 	OnReadyPacket(packet);
 }
 
-void Client::ProcessGuildCreate(rapidjson::Document& document) {
-	OnGuildCreate(Guild::LoadFrom(document, "/d"));
-}
-
-void Client::ProcessMessageCreate(rapidjson::Document& document) {
-	OnMessageCreate(Message::LoadFrom(document, "/d"));
+void Client::ProcessReconnectPacket(rapidjson::Document& document) {
+	websocket.stop();
+	websocket.start();
 }
 
 void Client::Run() {
@@ -168,79 +236,39 @@ void Client::Run() {
 		document.Parse(response.c_str());
 		GatewayOpcodes opcode = (GatewayOpcodes)document["op"].GetInt();
 
-		if (opcode == GatewayOpcodes::Hello) { // HELLO
+		if (opcode == GatewayOpcodes::Hello) {
 			ProcessHello(document);
-
 		}
-		else if (opcode == GatewayOpcodes::InvalidSession) { // Error: resume failed.
-			std::cout << "Resume failed.\n";
-			std::cout << response << std::endl;
+		else if (opcode == GatewayOpcodes::Dispatch) {
+			ProcessDispatch(document);
+		}
+		else if (opcode == GatewayOpcodes::InvalidSession) {
+			OnResumeFail();
 		}
 		else if (opcode == GatewayOpcodes::HeartbeatAck) {
-			std::cout << "Client: Heartbeat acknowledged by server.\n";
+			OnHeartbeatAck();
 		}
-		else if (opcode == GatewayOpcodes::Dispatch) { // DISPATCH
-			std::string eventName = document["t"].GetString();
-
-			if (document["s"].IsUint64())
-				sequenceNumber = std::max(sequenceNumber, document["s"].GetUint64());
-
-			if (eventName == "GUILD_CREATE") {
-				ProcessGuildCreate(document);
-
-			}
-			else if (eventName == "READY") {
-				ProcessReady(document);
-
-			}
-			else if (eventName == "MESSAGE_CREATE") {
-				ProcessMessageCreate(document);
-
-			}
-			else if (eventName == "MESSAGE_REACTION_ADD") {
-				OnMessageReactionAdd(MessageReactionPacket::LoadFrom(document, "/d"));
-
-			}
-			else if (eventName == "MESSAGE_REACTION_REMOVE") {
-				OnMessageReactionRemove(MessageReactionPacket::LoadFrom(document, "/d"));
-
-			}
-			else if (eventName == "TYPING_START") {
-				OnTypingStart(TypingStartPacket::LoadFrom(document, "/d"));
-
-			}
-			else if (eventName == "GUILD_MEMBER_LIST_UPDATE") {
-				OnGuildMemberListUpdate(GuildMemberListUpdatePacket::LoadFrom(document, "/d"));
-
-			}
-			else if (eventName == "RESUMED") {
-				std::cout << "Session resumed!" << std::endl;
-
-			}
-			else {
-				std::cout << "Client: Message received: \"" << response << "\"" << std::endl;
-
-			}
-
+		else if (opcode == GatewayOpcodes::Reconnect) {
+			ProcessReconnectPacket(document);
 		}
 		else {
-			std::cout << "Client: Message received: \"" << response << "\"" << std::endl;
-
+			std::cout << "Client: Unknown opcode received: \"" << response << "\"" << std::endl;
 		}
 	};
 
 	websocket.on_open = [this](std::shared_ptr<WssClient::Connection> connection) {
-		std::cout << "Client: Opened connection to " << connection->remote_endpoint_address() << std::endl;
 		this->connection = connection;
+		OnWSSConnect();
 	};
 
-	websocket.on_close = [this](std::shared_ptr<WssClient::Connection> /*connection*/, int status, const std::string& /*reason*/) {
-		std::cout << "Client: Closed connection with status code " << status << std::endl;
+	websocket.on_close = [this](std::shared_ptr<WssClient::Connection> /*connection*/, int status, const std::string& reason) {
 		Stop();
+		OnWSSDisconnect(status, reason);
 	};
 
-	websocket.on_error = [](std::shared_ptr<WssClient::Connection> /*connection*/, const SimpleWeb::error_code& ec) {
-		std::cout << "Client: Error: " << ec << ", error message: " << ec.message() << std::endl;
+	websocket.on_error = [this](std::shared_ptr<WssClient::Connection> /*connection*/, const SimpleWeb::error_code& ec) {
+		Stop();
+		OnWSSError(ec);
 	};
 
 	//Reset io_service if it is in stopped status
@@ -326,7 +354,7 @@ void Client::ScheduleNewWSSPacket(std::string out_message_str, const std::functi
 	//We must explicity add the string and the callback (must not be a reference) to capture list of the lambda here
 	//or else it would have an invalid reference when it is called by event loop run thread
 	//Note: we use std::move on string and callback because we no longer need the local copy of it but on fin_rsv_opcode it doesn't really matter as it has no move ctor
-	asio::post(*websocket.io_service, [this, out_message_str = std::move(out_message_str), callback = std::move(callback), fin_rsv_opcode] {
+	asio::post(*websocket.io_service, [this, out_message_str = std::move(out_message_str), callback = std::move(callback), fin_rsv_opcode]{
 		connection->send(out_message_str, callback, fin_rsv_opcode);
-	});
+		});
 }

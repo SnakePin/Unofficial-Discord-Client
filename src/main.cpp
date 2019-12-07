@@ -8,6 +8,7 @@
 #include "discord/guild.hpp"
 #include "discord/packets.hpp"
 #include "discord/snowflake.hpp"
+#include "discord/deserializers.hpp"
 
 #include <asio.hpp>
 #include <asio/thread_pool.hpp>
@@ -43,10 +44,28 @@ void MyClient::UpdateSessionJson() {
 	rapidjson::Pointer("/seq").Set(document, this->sequenceNumber);
 	rapidjson::Pointer("/session_time").Set(document, lastSessionUpdateTime);
 
+	//TODO: implement template based serializers for every struct and most of the C types too and use them here
+	//rapidjson::Pointer("/guilds").Set(document, guilds);
+	//rapidjson::Pointer("/private_channels").Set(document, privateChannels);
+
 	std::ofstream jsonFile("session.json");
 	rapidjson::OStreamWrapper outstreamwrapper(jsonFile);
 	rapidjson::Writer<rapidjson::OStreamWrapper> writer(outstreamwrapper);
 	document.Accept(writer);
+}
+
+void MyClient::StopAndSaveSession() {
+	UpdateSessionJson();
+	Stop();
+}
+
+
+void MyClient::OnWSSError(SimpleWeb::error_code errorCode) {
+	isIdentified = false;
+}
+
+void MyClient::OnWSSDisconnect(int statusCode, std::string reason) {
+	isIdentified = false;
 }
 
 void MyClient::OnHelloPacket() {
@@ -56,8 +75,7 @@ void MyClient::OnHelloPacket() {
 
 void MyClient::OnReadyPacket(Discord::ReadyPacket packet) {
 	std::cout << "Received ready packet: " << packet.version << " " << packet.sessionID << " " << packet.user.username << std::endl;
-	std::cout << "Writing session data to session.json..." << std::endl;
-
+	isIdentified = true;
 	// TODO shorten this
 
 	// Only add Guilds whose IDs we don't have.
@@ -84,6 +102,7 @@ void MyClient::OnReadyPacket(Discord::ReadyPacket packet) {
 		privateChannelsVectorMutex.unlock();
 	}
 
+	std::cout << "Writing session data to session.json..." << std::endl;
 	UpdateSessionJson();
 }
 
@@ -91,7 +110,6 @@ void MyClient::OnGuildCreate(Discord::Guild g) {
 	guildsVectorMutex.lock();
 	guilds.push_back(g);
 	guildsVectorMutex.unlock();
-	UpdateSessionJson();
 }
 
 void MyClient::OnGuildMemberListUpdate(Discord::GuildMemberListUpdatePacket packet) {
@@ -149,7 +167,9 @@ void MyClient::LoadAndSendResume() {
 		std::string sessionID = document["session_id"].GetString();
 		int32_t sequence = document["seq"].GetInt();
 		std::cout << "Resuming session with seq: " << sequence << std::endl;
-		this->SendResume(sessionID, sequence);
+		SendResume(sessionID, sequence);
+		//JsonTypeToStructType(document, "guilds", guilds);
+		//JsonTypeToStructType(document, "private_channels", privateChannels);
 	}else {
 		std::cout << "The session has (possibly) expired. No resume was sent." << std::endl;
 	}
@@ -171,11 +191,9 @@ public:
 
 	void processCommand(std::string command) {
 		if(command == "quit") {
-			client->UpdateSessionJson(); // writes the latest sequence number to the session.json file
-
-			std::cout << "Stopping...\n";
-			client->Stop();
-			std::cout << "Stopped.\n";
+			std::cout << "Stopping..." << std::endl;
+			client->StopAndSaveSession();
+			std::cout << "Stopped." << std::endl;
 			running = false;
 
 		}
@@ -209,15 +227,15 @@ public:
 			asio::post(*client->pool, 
 				[this, channelID] {
 					std::vector<Discord::Message> newMessages;
-					std::cout << "Requesting 50 messages from channel " << channelID.value << "...\n";
+					std::cout << "Requesting 50 messages from channel " << channelID.value << "..." << std::endl;
 
 					client->httpAPI.GetMessagesInto(channelToOperateOn, newMessages);
 
-					std::cout << "Got " << newMessages.size() << " new messages.\n";
+					std::cout << "Got " << newMessages.size() << " new messages." << std::endl;
 					for(const auto& message : newMessages) {
 						tfm::printf("<%s> %s\n", message.author.username, message.content);
 					}
-					std::cout << "--------------------------\n";
+					std::cout << "--------------------------" << std::endl;
 				}
 			);
 
@@ -256,7 +274,7 @@ public:
 			client->privateChannelsVectorMutex.lock();
 			auto privateChannelsCopy = client->privateChannels;
 			client->privateChannelsVectorMutex.unlock();
-			std::cout << "Found " << privateChannelsCopy.size() << " private channels:\n";
+			std::cout << "Found " << privateChannelsCopy.size() << " private channels:" << std::endl;
 			for(Discord::Channel &chan : privateChannelsCopy) {
 				std::cout << "Type: " << chan.type << " | " << chan.name.value_or("(Noname)") << " | " << chan.id.value << std::endl;
 				std::cout << std::endl;
@@ -271,9 +289,9 @@ public:
 				for(Discord::Member &m : guild.members) {
 					std::cout << "\t" << m.user.username << std::endl;
 				}
-				std::cout << "\n";
+				std::cout << std::endl;
 			}
-			std::cout << "\n";
+			std::cout << std::endl;
 			
 		}
 		else if(command.rfind("switch", 0) == 0) {
@@ -320,13 +338,13 @@ public:
 				if(status == "online" || status == "idle" || status == "dnd") {
 						client->UpdatePresence(status);
 				} else {
-						std::cout << "This is not a valid status\n";
+						std::cout << "This is not a valid status" << std::endl;
 						return;
 				}
 		}
 		else{
 			UNKNOWN_COMMAND:
-			std::cout << "Unknown command: " << command << "\n";
+			std::cout << "Unknown command: " << command << std::endl;
 		}
 	}
 
@@ -376,17 +394,17 @@ int main(int argc, char *argv[]) {
 
 	//TODO: make ConsoleTest better and thread-safe, add "condition_variable"s etc
 	ConsoleTest console(client);
-	std::thread consoleThread(&ConsoleTest::run, &console);
+	//std::thread consoleThread(&ConsoleTest::run, &console);
 	
 	std::thread uiThread(&startImguiClient, client, clientThread);
 	
 	uiThread.join();
 	console.stop();
-	consoleThread.join();
+	//consoleThread.join();
 
-	client->Stop();
+	client->StopAndSaveSession();
 	clientThread->join();
 
-	std::cout << "Exiting main with code 0\n";
+	std::cout << "Exiting main with code 0" << std::endl;
 	return 0;
 }

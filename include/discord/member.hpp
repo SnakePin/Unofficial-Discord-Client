@@ -2,6 +2,7 @@
 
 #include "discord/snowflake.hpp"
 #include "discord/user.hpp"
+#include "discord/deserializable_serializable_class_type.hpp"
 
 #include <rapidjson/document.h>
 
@@ -10,7 +11,7 @@
 
 namespace Discord {
 
-	struct Member {
+	struct Member : Deserializable_Serializable_Class<Member> {
 		// https://discordapp.com/developers/docs/resources/guild#guild-member-object
 		
 		User user;
@@ -22,7 +23,7 @@ namespace Discord {
 		bool deaf;
 		bool mute;
 
-		static Member LoadFrom(rapidjson::Document &doc, std::string pointer = "");
+		static Member LoadFrom(rapidjson::Document& doc, std::string pointer = "");
 	};
 
 }

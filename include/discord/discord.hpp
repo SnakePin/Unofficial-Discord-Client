@@ -53,15 +53,23 @@ namespace Discord {
 		bool IsRunning();
 
 		// Websocket Gateway Events
+		// Note: These virtual functions are not pure virtual functions, we have declarations for them, they are meant to be overrided if user wants to
 		// OnHelloPacket's default behavior is to call SendIdentify().
-		virtual void OnHelloPacket() = 0;
-		virtual void OnReadyPacket(ReadyPacket packet) = 0;
-		virtual void OnGuildCreate(Guild guild) = 0;
-		virtual void OnGuildMemberListUpdate(GuildMemberListUpdatePacket packet) = 0;
-		virtual void OnMessageCreate(Message m) = 0;
-		virtual void OnTypingStart(TypingStartPacket p) = 0;
-		virtual void OnMessageReactionAdd(MessageReactionPacket p) = 0;
-		virtual void OnMessageReactionRemove(MessageReactionPacket p) = 0;
+		virtual void OnHelloPacket();
+		virtual void OnResumeFail();
+		virtual void OnResumeSuccess();
+		virtual void OnReadyPacket(ReadyPacket packet);
+		virtual void OnGuildCreate(Guild guild);
+		virtual void OnGuildMemberListUpdate(GuildMemberListUpdatePacket packet);
+		virtual void OnMessageCreate(Message m);
+		virtual void OnTypingStart(TypingStartPacket p);
+		virtual void OnMessageReactionAdd(MessageReactionPacket p);
+		virtual void OnMessageReactionRemove(MessageReactionPacket p);
+		virtual void OnWSSError(SimpleWeb::error_code errorCode);
+		virtual void OnWSSDisconnect(int statusCode, std::string reason);
+		virtual void OnWSSConnect();
+		virtual void OnHeartbeatAck();
+		virtual void OnReconnectPacket();
 		
 		// HTTP API instance and HTTP API class declaration
 		class HTTP_API_CLASS
@@ -120,8 +128,8 @@ namespace Discord {
 		// These functions call the gateway event methods above.
 		void ProcessHello(rapidjson::Document &document);
 		void ProcessReady(rapidjson::Document &document);
-		void ProcessGuildCreate(rapidjson::Document &document);
-		void ProcessMessageCreate(rapidjson::Document &document);
+		void ProcessDispatch(rapidjson::Document& document);
+		void ProcessReconnectPacket(rapidjson::Document& document);
 
 		void SendHeartbeatAndResetTimer(const asio::error_code& error);
 

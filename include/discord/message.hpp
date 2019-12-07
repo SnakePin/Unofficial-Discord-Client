@@ -5,6 +5,7 @@
 #include "discord/reaction.hpp"
 #include "discord/user.hpp"
 #include "discord/attachment.hpp"
+#include "discord/deserializable_serializable_class_type.hpp"
 
 #include <rapidjson/document.h>
 
@@ -12,7 +13,7 @@
 
 namespace Discord {
 	
-	struct Message {
+	struct Message : Deserializable_Serializable_Class<Message> {
 		// https://discordapp.com/developers/docs/resources/channel#message-object
 		Snowflake id;
 		Snowflake channelID;
@@ -42,7 +43,7 @@ namespace Discord {
 		// MessageActivityObject activity;
 		// MessageApplicationObject application;
 
-		static Message LoadFrom(rapidjson::Document &doc, std::string pointer = "");
+		static Message LoadFrom(rapidjson::Document& doc, std::string pointer = "");
 	};
 
 	struct CreateMessageParam {

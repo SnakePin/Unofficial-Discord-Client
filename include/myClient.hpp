@@ -11,6 +11,7 @@
 
 #include <vector>
 #include <mutex>
+#include <atomic>
 
 class MyClient : public Discord::Client {
 public:
@@ -21,8 +22,11 @@ public:
 	std::mutex privateChannelsVectorMutex;
 	std::vector<Discord::Channel> privateChannels;
 	std::time_t lastSessionUpdateTime;
+	std::atomic<bool> isIdentified = false;
 
 	MyClient(std::string& token, Discord::AuthTokenType tokenType);
+
+	void StopAndSaveSession();
 
 	// Writes the session ID, sequence number, and update time to session.json.
 	void UpdateSessionJson();
@@ -42,6 +46,10 @@ public:
 	void OnMessageReactionAdd(Discord::MessageReactionPacket p);
 
 	void OnMessageReactionRemove(Discord::MessageReactionPacket p);
+
+	void OnWSSError(SimpleWeb::error_code errorCode);
+
+	void OnWSSDisconnect(int statusCode, std::string reason);
 
 	// Reads the session_id and sequence number from session.json and sends a RESUME packet with the read information.
 	// This will do nothing if the session ID is too old.

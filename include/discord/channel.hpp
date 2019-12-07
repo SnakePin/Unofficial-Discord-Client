@@ -2,6 +2,7 @@
 
 #include "discord/snowflake.hpp"
 #include "discord/user.hpp"
+#include "discord/deserializable_serializable_class_type.hpp"
 
 #include <rapidjson/document.h>
 
@@ -10,7 +11,7 @@
 
 namespace Discord {
 	
-	struct Channel {
+	struct Channel : Deserializable_Serializable_Class<Channel> {
 		// https://discordapp.com/developers/docs/resources/channel#channel-object
 
 		Snowflake id;
@@ -37,7 +38,7 @@ namespace Discord {
 
 		std::optional<std::string> lastPinTimestamp;
 
-		static Channel LoadFrom(rapidjson::Document &doc, std::string pointer = "");
+		static Channel LoadFrom(rapidjson::Document& doc, std::string pointer = "");
 	};
 
 }

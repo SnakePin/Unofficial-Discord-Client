@@ -11,6 +11,9 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
 
+# Add our own CMake modules
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake_modules/")
+
 # This needs to be here, before any add_executable calls and after project
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/output/archive")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/output/lib")
@@ -57,12 +60,12 @@ set(BUILD_CPR_TESTS OFF)
 set(HTTP_ONLY ON)
 add_subdirectory(external/cpr)
 target_include_directories(Unofficial-Discord-Client SYSTEM PUBLIC ${CPR_INCLUDE_DIRS})
-target_link_libraries(Unofficial-Discord-Client ${CPR_LIBRARIES})
+target_link_libraries(Unofficial-Discord-Client PUBLIC ${CPR_LIBRARIES})
 
 # Add OpenSSL
 find_package(OpenSSL REQUIRED)
 target_include_directories(Unofficial-Discord-Client SYSTEM PRIVATE ${OPENSSL_INCLUDE_DIR})
-target_link_libraries(Unofficial-Discord-Client ${OPENSSL_LIBRARIES})
+target_link_libraries(Unofficial-Discord-Client PRIVATE ${OPENSSL_LIBRARIES})
 
 # Add libasio and use standalone asio
 target_compile_definitions(Unofficial-Discord-Client PRIVATE USE_STANDALONE_ASIO ASIO_STANDALONE)
@@ -78,36 +81,16 @@ set(TINYFORMAT_INCLUDE_PATH "${PROJECT_SOURCE_DIR}/external/tinyformat")
 target_include_directories(Unofficial-Discord-Client SYSTEM PUBLIC ${LIBASIO_INCLUDE_PATH} ${SWS_INCLUDE_PATH} ${TINYFORMAT_INCLUDE_PATH})
 
 # Add SDL2
-if (NOT WIN32)
-  find_package(SDL2 REQUIRED)
-else()
-  if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-    set(SDL2_LIB_PATH_PREFIX "x64")
-  else()
-    set(SDL2_LIB_PATH_PREFIX "x86")
-  endif()
-  if(MSVC)
-    set(SDL2_BASE_DIR "${PROJECT_SOURCE_DIR}/external/sdl2-precompiled/msvc")
-    set(SDL2_LIBRARIES "${SDL2_BASE_DIR}/libs/${SDL2_LIB_PATH_PREFIX}/SDL2.lib")
-  elseif(MINGW)
-    set(SDL2_BASE_DIR "${PROJECT_SOURCE_DIR}/external/sdl2-precompiled/mingw")
-    set(SDL2_LIBRARIES "${SDL2_BASE_DIR}/libs/${SDL2_LIB_PATH_PREFIX}/libSDL2.a")
-  else()
-    message(FATAL_ERROR "Compiler unsupported by SDL2.")
-  endif()
 
-  set(SDL2_LIBRARY_DIR "${SDL2_BASE_DIR}/libs/${SDL2_LIB_PATH_PREFIX}")
-  set(SDL2_INCLUDE_DIR "${SDL2_BASE_DIR}/include") #TODO: change this to include/SDL2
-  
-  file(GLOB_RECURSE SDL2_DLLS "${SDL2_LIBRARY_DIR}/*.dll")
-  foreach(DLL ${SDL2_DLLS})
-    add_custom_command(TARGET Unofficial-Discord-Client POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different ${DLL} $<TARGET_FILE_DIR:Unofficial-Discord-Client>)
-  endforeach()
+find_package(SDL2 REQUIRED)
+if(WIN32)
+	foreach(DLL ${SDL2_DLLS})
+		add_custom_command(TARGET Unofficial-Discord-Client POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different ${DLL} $<TARGET_FILE_DIR:Unofficial-Discord-Client>)
+	endforeach()
 endif()
-
-target_include_directories(Unofficial-Discord-Client SYSTEM PRIVATE ${SDL2_INCLUDE_DIR})
-target_link_libraries(Unofficial-Discord-Client ${SDL2_LIBRARIES})
+target_include_directories(Unofficial-Discord-Client SYSTEM PRIVATE ${SDL2_INCLUDE_DIRS})
+target_link_libraries(Unofficial-Discord-Client PRIVATE ${SDL2_LIBS})
 
 # Add OpenGL
 find_package(OpenGL REQUIRED)
-target_link_libraries(Unofficial-Discord-Client ${OPENGL_gl_LIBRARY})
+target_link_libraries(Unofficial-Discord-Client PRIVATE ${OPENGL_gl_LIBRARY})

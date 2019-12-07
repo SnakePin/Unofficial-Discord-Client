@@ -1,15 +1,15 @@
 #pragma once
 
 #include "discord/snowflake.hpp"
+#include "discord/deserializable_serializable_class_type.hpp"
 
 #include <string>
-
 #include <rapidjson/document.h>
 #include <rapidjson/pointer.h>
 
 namespace Discord {
 
-	struct Role {
+	struct Role : Deserializable_Serializable_Class<Role> {
 		// https://discordapp.com/developers/docs/resources/role#role-object
 		
 		Snowflake id;
@@ -23,6 +23,6 @@ namespace Discord {
 		bool managed;
 		bool mentionable;
 
-		static Role LoadFrom(rapidjson::Document &doc, std::string pointer = "");
+		static Role LoadFrom(rapidjson::Document& doc, std::string pointer = "");
 	};
 }

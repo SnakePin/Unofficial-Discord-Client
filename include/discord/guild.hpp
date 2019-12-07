@@ -5,6 +5,7 @@
 #include "discord/role.hpp"
 #include "discord/channel.hpp"
 #include "discord/member.hpp"
+#include "discord/deserializable_serializable_class_type.hpp"
 
 #include <vector>
 #include <string>
@@ -15,7 +16,7 @@
 
 namespace Discord {
 
-	struct Guild {
+	struct Guild : Deserializable_Serializable_Class<Guild> {
 		// https://discordapp.com/developers/docs/resources/guild#guild-object
 
 		Snowflake id;
@@ -69,8 +70,7 @@ namespace Discord {
 		std::string description;
 		std::string bannerHash;
 
-		static Guild LoadFrom(rapidjson::Document &doc, std::string pointer = "");
-
+		static Guild LoadFrom(rapidjson::Document& doc, std::string pointer = "");
 	};
 
 }

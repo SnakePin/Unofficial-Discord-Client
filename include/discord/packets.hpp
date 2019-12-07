@@ -4,6 +4,7 @@
 #include "discord/emoji.hpp"
 #include "discord/guild.hpp"
 #include "discord/channel.hpp"
+#include "discord/deserializable_serializable_class_type.hpp"
 
 #include <vector>
 #include <optional>
@@ -12,7 +13,7 @@
 
 namespace Discord {
 
-	struct GuildMemberListGroup {
+	struct GuildMemberListGroup : Deserializable_Serializable_Class<GuildMemberListGroup>  {
 		std::string id; // NOT a Snowflake
 		int32_t count;
 
@@ -30,7 +31,7 @@ namespace Discord {
 		}
 	};
 
-	struct GuildMemberListUpdateOperation {
+	struct GuildMemberListUpdateOperation : Deserializable_Serializable_Class<GuildMemberListUpdateOperation> {
 		std::pair<int32_t, int32_t> range;
 		std::string op;
 		std::vector< std::variant<GuildMemberListGroup, Member> > items;
@@ -67,7 +68,7 @@ namespace Discord {
 		}
 	};
 
-	struct GuildMemberListUpdatePacket {
+	struct GuildMemberListUpdatePacket : Deserializable_Serializable_Class<GuildMemberListUpdatePacket> {
 		std::vector<GuildMemberListUpdateOperation> operations;
 
 		std::string id; // NOT a Snowflake
@@ -99,7 +100,7 @@ namespace Discord {
 		}
 	};
 
-	struct ReadyPacket {
+	struct ReadyPacket : Deserializable_Serializable_Class<ReadyPacket> {
 		int32_t version;
 		User user;
 
@@ -109,10 +110,11 @@ namespace Discord {
 		// Used for sending Discord's "science" requests.
 		std::string analyticsToken; // note for future: This is one of the many things which do not exist for Bot accounts.
 
-		static ReadyPacket LoadFrom(rapidjson::Document &doc, std::string pointer = "");
+		static ReadyPacket LoadFrom(rapidjson::Document& doc, std::string pointer = "");
+
 	};
 
-	struct TypingStartPacket {
+	struct TypingStartPacket : Deserializable_Serializable_Class<TypingStartPacket> {
 		Snowflake userID;
 		std::optional<Snowflake> guildID;
 		Snowflake channelID;
@@ -120,21 +122,21 @@ namespace Discord {
 		std::optional<Member> member;
 
 		uint64_t timestamp;
-		
-		static TypingStartPacket LoadFrom(rapidjson::Document &doc, std::string pointer = "");
+
+		static TypingStartPacket LoadFrom(rapidjson::Document& doc, std::string pointer = "");
 	};
 
 	// Used for MESSAGE_REACTION_ADD and MESSAGE_REACTION_REMOVE events.
 	// Not used for MESSAGE_REACTION_REMOVE_ALL.
 	// https://discordapp.com/developers/docs/topics/gateway#message-reaction-add
-	struct MessageReactionPacket {
+	struct MessageReactionPacket : Deserializable_Serializable_Class<MessageReactionPacket> {
 		Snowflake userID;
 		Snowflake channelID;
 		Snowflake messageID;
 		std::optional<Snowflake> guildID;
 		Emoji emoji;
 
-		static MessageReactionPacket LoadFrom(rapidjson::Document &doc, std::string pointer = "");
+		static MessageReactionPacket LoadFrom(rapidjson::Document& doc, std::string pointer = "");
 	};
 
 }
