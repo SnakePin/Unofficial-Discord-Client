@@ -114,7 +114,6 @@ void Client::SendHeartbeatAndResetTimer(const asio::error_code& error) {
 }
 
 void Client::SendIdentify() {
-	std::cout << "Client: Sending identify packet." << std::endl;
 	ScheduleNewWSSPacket(GenerateIdentifyPacket());
 }
 
@@ -262,13 +261,13 @@ void Client::Run() {
 	};
 
 	websocket.on_close = [this](std::shared_ptr<WssClient::Connection> /*connection*/, int status, const std::string& reason) {
-		Stop();
 		OnWSSDisconnect(status, reason);
+		InternalStopNoWait();
 	};
 
 	websocket.on_error = [this](std::shared_ptr<WssClient::Connection> /*connection*/, const SimpleWeb::error_code& ec) {
-		Stop();
 		OnWSSError(ec);
+		InternalStopNoWait();
 	};
 
 	//Reset io_service if it is in stopped status
@@ -284,13 +283,19 @@ void Client::Run() {
 
 	//This line will make sure run() doesn't return when there are no tasks to do
 	//This way the run() will only return when stop() is called
-	asio::executor_work_guard<decltype(io_context->get_executor())> work{ io_context->get_executor() };
+	asio::io_context::work work(*io_context);
 
 	//Start the event loop
 	isRunning = true;
 	io_context->run();
 	isRunning = false;
 	eventLoopExit.notify_all();
+}
+
+void Client::InternalStopNoWait() {
+	heartbeatTimer->cancel();
+	websocket.stop();
+	io_context->stop();
 }
 
 //TODO: change this function to stop gracefully by letting event loop complete before exiting
@@ -300,9 +305,7 @@ void Client::Stop() {
 		return;
 	}
 
-	heartbeatTimer->cancel();
-	websocket.stop();
-	io_context->stop();
+	InternalStopNoWait();
 
 	std::unique_lock<std::mutex> lock(conditionVariableMutex);
 	eventLoopExit.wait(lock);

@@ -59,7 +59,6 @@ void MyClient::StopAndSaveSession() {
 	Stop();
 }
 
-
 void MyClient::OnWSSError(SimpleWeb::error_code errorCode) {
 	isIdentified = false;
 }
@@ -393,13 +392,13 @@ int main(int argc, char *argv[]) {
 	std::shared_ptr<std::thread> clientThread = std::make_shared<std::thread>(&Discord::Client::Run, &*client);
 
 	//TODO: make ConsoleTest better and thread-safe, add "condition_variable"s etc
-	ConsoleTest console(client);
+	//ConsoleTest console(client);
 	//std::thread consoleThread(&ConsoleTest::run, &console);
 	
 	std::thread uiThread(&startImguiClient, client, clientThread);
 	
 	uiThread.join();
-	console.stop();
+	//console.stop();
 	//consoleThread.join();
 
 	client->StopAndSaveSession();

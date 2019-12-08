@@ -50,6 +50,7 @@ const auto& SystemTimeNow = std::chrono::system_clock::now;
 
 static void ImGuiDisplayDiscordMessage(const Discord::Message& message);
 static void ImGuiDisplayDiscordMessageBoxAndSendButton(std::shared_ptr<MyClient> client, ChannelMessageCachingSystem& cache, const Discord::Snowflake& channelID, std::string& messageToSend);
+static ImVec4 RGBAToImVec4(unsigned char r, unsigned char g, unsigned char b, unsigned char a = 255);
 
 template<typename R>
 bool is_future_ready(std::future<R> const& f)
@@ -102,7 +103,7 @@ int startImguiClient(std::shared_ptr<MyClient> client, std::shared_ptr<std::thre
 	ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
 	ImGui_ImplOpenGL2_Init();
 
-	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+	ImVec4 clear_color = RGBAToImVec4(115, 140, 153);
 
 	ChannelMessageCachingSystem ourCache(client);
 	std::string messageToSend;
@@ -153,24 +154,34 @@ int startImguiClient(std::shared_ptr<MyClient> client, std::shared_ptr<std::thre
 		ImGui::Begin("Functions");
 		{
 			if (ImGui::Button("Identify")) {
+				std::cout << "GUI: Sending identify packet..." << std::endl;
 				client->SendIdentify();
 			}
 			if (ImGui::Button("Call MyClient::LoadAndSendResume")) {
+				std::cout << "GUI: Calling MyClient::LoadAndSendResume..." << std::endl;
 				client->LoadAndSendResume();
 			}
 			if (ImGui::Button("Call Client::Run on another thread")) {
+				std::cout << "GUI: Stopping client..." << std::endl;
 				client->Stop();
 
+				std::cout << "GUI: Joining client thread..." << std::endl;
 				//If we don't join the thread here, on the next assignment the thread's deconstructor will be called and it will throw error
 				clientThread->join();
+
+				std::cout << "GUI: Creating new client thread and deconstructing the old one..." << std::endl;
 				//TODO: use a thread-safe alternative to the line below
 				*clientThread = std::thread(&Discord::Client::Run, &*client);
 			}
 			if (ImGui::Button("Call Client::Stop")) {
+				std::cout << "GUI: Stopping client..." << std::endl;
 				client->Stop();
+				std::cout << "GUI: Stopped client." << std::endl;
 			}
 			if (ImGui::Button("Call MyClient::UpdateSessionJson")) {
+				std::cout << "GUI: Calling MyClient::UpdateSessionJson..." << std::endl;
 				client->UpdateSessionJson();
+				std::cout << "GUI: MyClient::UpdateSessionJson returned." << std::endl;
 			}
 		}
 		ImGui::End();
@@ -241,7 +252,7 @@ int startImguiClient(std::shared_ptr<MyClient> client, std::shared_ptr<std::thre
 			}
 			else {
 				if (currentuserFetchFailCount == 0) {
-					ImGui::TextColored(ImVec4(1, 1, 0, 1), "Fetching current user information...");
+					ImGui::TextColored(RGBAToImVec4(255, 255, 0), "Fetching current user information...");
 				}
 				else if (currentuserFetchFailCount <= 15) {
 					//Current user is not fetched yet so we check if the task is completed or not
@@ -253,10 +264,10 @@ int startImguiClient(std::shared_ptr<MyClient> client, std::shared_ptr<std::thre
 						});
 						currentuserFetchFailCount++;
 					}
-					ImGui::TextColored(ImVec4(1, 1, 0, 1), "Fetching user info failed, trying again. Try: %d", currentuserFetchFailCount);
+					ImGui::TextColored(RGBAToImVec4(255, 0, 0), "Fetching user info failed, trying again. Try: %d", currentuserFetchFailCount);
 				}
 				else {
-					ImGui::TextColored(ImVec4(1, 1, 0, 1), "Fetching user info failed 15 times, giving up, restart the client.", currentuserFetchFailCount);
+					ImGui::TextColored(RGBAToImVec4(255, 255, 0), "Fetching user info failed 15 times, giving up, restart the client.", currentuserFetchFailCount);
 				}
 			}
 		}
@@ -285,7 +296,7 @@ int startImguiClient(std::shared_ptr<MyClient> client, std::shared_ptr<std::thre
 										}
 
 										if (channel.type == 0 && ImGui::BeginTabItem(channel.name.value_or("Unnamed Channel").c_str())) {
-											
+
 											//TODO: implement the following comment in an actual way
 											/*client->OnMessageCreate = [&cache, &channel](Discord::Message m)
 											{
@@ -391,7 +402,7 @@ int startImguiClient(std::shared_ptr<MyClient> client, std::shared_ptr<std::thre
 			popupPos.y -= popupSize.y / 2;
 			ImGui::SetWindowPos(popupPos);
 
-			ImGui::TextColored(ImVec4(1, 0, 0, 1), "Discord API errors detected.");
+			ImGui::TextColored(RGBAToImVec4(255, 0, 0), "Discord API errors detected.");
 			ImGui::EndPopup();
 		}
 
@@ -421,6 +432,10 @@ CleanupAndExit:
 	return 0;
 }
 
+static ImVec4 RGBAToImVec4(unsigned char r, unsigned char g, unsigned char b, unsigned char a) {
+	return ImVec4(r / 255.f, g / 0.f, b / 0.f, a / 255.f);
+}
+
 static void ImGuiDisplayDiscordMessage(const Discord::Message& message) {
 	std::string textToShow;
 	if (message.type == 3) {
@@ -432,7 +447,7 @@ static void ImGuiDisplayDiscordMessage(const Discord::Message& message) {
 	ImGui::Text(textToShow.c_str());
 	for (const Discord::Attachment& attachment : message.attachments)
 	{
-		ImGui::Text("^ Attachment:");
+		ImGui::TextColored(RGBAToImVec4(255, 0, 0), "^ Attachment:");
 		ImGui::Text(("\tFilename: " + attachment.filename).c_str());
 		ImGui::Text(("\tSize: " + std::to_string(attachment.size) + " byte(s)").c_str());
 		ImGui::Text(("\tURL: " + attachment.url).c_str());

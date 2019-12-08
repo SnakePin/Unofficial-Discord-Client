@@ -124,6 +124,8 @@ namespace Discord {
 
 		std::shared_ptr<asio::io_context> io_context;
 
+		void InternalStopNoWait();
+
 		// Gateway Packet Processing
 		// These functions call the gateway event methods above.
 		void ProcessHello(rapidjson::Document &document);
