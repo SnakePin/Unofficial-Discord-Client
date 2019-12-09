@@ -6,7 +6,6 @@
 #include "imgui_impl_sdl.h"
 #include "imgui_impl_opengl2.h"
 #include "imgui_stdlib.h"
-
 #include "imgui_internal.h"
 
 #include <stdio.h>
@@ -51,6 +50,9 @@ const auto& SystemTimeNow = std::chrono::system_clock::now;
 static void ImGuiDisplayDiscordMessage(const Discord::Message& message);
 static void ImGuiDisplayDiscordMessageBoxAndSendButton(std::shared_ptr<MyClient> client, ChannelMessageCachingSystem& cache, const Discord::Snowflake& channelID, std::string& messageToSend);
 static ImVec4 RGBAToImVec4(unsigned char r, unsigned char g, unsigned char b, unsigned char a = 255);
+
+static void ImGuiTextNoFormat(const char* textStart, const char* textEnd = 0, ImGuiTextFlags_ flags = ImGuiTextFlags_NoWidthForLargeClippedText);
+static void ImGuiColoredTextNoFormat(const ImVec4& color, const char* textStart, const char* textEnd = 0, ImGuiTextFlags_ flags = ImGuiTextFlags_NoWidthForLargeClippedText);
 
 template<typename R>
 bool is_future_ready(std::future<R> const& f)
@@ -106,7 +108,6 @@ int startImguiClient(std::shared_ptr<MyClient> client, std::shared_ptr<std::thre
 	ImVec4 clear_color = RGBAToImVec4(115, 140, 153);
 
 	ChannelMessageCachingSystem ourCache(client);
-	std::string messageToSend;
 
 	Discord::User currentUser;
 	int currentuserFetchFailCount = 0;
@@ -183,6 +184,38 @@ int startImguiClient(std::shared_ptr<MyClient> client, std::shared_ptr<std::thre
 				client->UpdateSessionJson();
 				std::cout << "GUI: MyClient::UpdateSessionJson returned." << std::endl;
 			}
+
+			{
+				static std::string newToken;
+				static int tokenType = 0;
+				ImGui::Spacing();
+				if (ImGui::Button("Create a new client with the token below")) {
+					std::cout << "GUI: Stopping client..." << std::endl;
+					client->Stop();
+					clientThread->join();
+
+					std::cout << "GUI: Creating new client and thread..." << std::endl;
+					//TODO: use a thread-safe alternative to the lines below
+
+					*client = MyClient(newToken, (Discord::AuthTokenType)tokenType);
+					*clientThread = std::thread(&Discord::Client::Run, &*client);
+				}
+
+				ImGuiTextNoFormat("New token: "); ImGui::SameLine();
+				ImGui::InputText("##newtoken", &newToken);
+				ImGuiTextNoFormat("New token type: "); ImGui::SameLine();
+				ImGui::RadioButton("User token", &tokenType, 0); ImGui::SameLine();
+				ImGui::RadioButton("Bot token", &tokenType, 1);
+			}
+
+			ImGui::Spacing();
+			ImGuiTextNoFormat("Status:");
+			ImGui::Text("isIdentified: %d", client->isIdentified.load());
+			ImGui::Text("IsRunning(): %d", client->IsRunning());
+			ImGui::Text("heartbeatInterval: %d", client->heartbeatInterval);
+			ImGui::Text("sequenceNumber: %llu", client->sequenceNumber);
+			ImGui::Text("token.tokenType: %s", client->token.tokenType == Discord::AuthTokenType::USER ? "User" : "Bot");
+			ImGui::TextWrapped("token.value: %s", client->token.value.c_str());
 		}
 		ImGui::End();
 
@@ -190,7 +223,7 @@ int startImguiClient(std::shared_ptr<MyClient> client, std::shared_ptr<std::thre
 		{
 			if (currentUserFetched) {
 				auto displayInfoItem = [](std::string infoName, std::string infoContent) {
-					ImGui::Text((infoName + ": " + infoContent).c_str());
+					ImGuiTextNoFormat((infoName + ": " + infoContent).c_str());
 				};
 
 				displayInfoItem("Username", currentUser.username + "#" + currentUser.discriminator);
@@ -252,7 +285,7 @@ int startImguiClient(std::shared_ptr<MyClient> client, std::shared_ptr<std::thre
 			}
 			else {
 				if (currentuserFetchFailCount == 0) {
-					ImGui::TextColored(RGBAToImVec4(255, 255, 0), "Fetching current user information...");
+					ImGuiColoredTextNoFormat(RGBAToImVec4(255, 255, 0), "Fetching current user information...");
 				}
 				else if (currentuserFetchFailCount <= 15) {
 					//Current user is not fetched yet so we check if the task is completed or not
@@ -275,6 +308,8 @@ int startImguiClient(std::shared_ptr<MyClient> client, std::shared_ptr<std::thre
 
 		ImGui::Begin("Chats");
 		{
+			static std::string messageToSend;
+
 			if (ImGui::BeginTabBar("Discord")) {
 				if (ImGui::BeginTabItem("Guilds")) {
 					if (ImGui::BeginTabBar("Guilds", ImGuiTabBarFlags_::ImGuiTabBarFlags_FittingPolicyScroll)) {
@@ -402,7 +437,7 @@ int startImguiClient(std::shared_ptr<MyClient> client, std::shared_ptr<std::thre
 			popupPos.y -= popupSize.y / 2;
 			ImGui::SetWindowPos(popupPos);
 
-			ImGui::TextColored(RGBAToImVec4(255, 0, 0), "Discord API errors detected.");
+			ImGuiColoredTextNoFormat(RGBAToImVec4(255, 0, 0), "Discord API errors detected.");
 			ImGui::EndPopup();
 		}
 
@@ -444,15 +479,27 @@ static void ImGuiDisplayDiscordMessage(const Discord::Message& message) {
 	else if (message.type == 0) {
 		textToShow = message.author.username + "#" + message.author.discriminator + ": " + message.content;
 	}
-	ImGui::Text(textToShow.c_str());
+	ImGuiTextNoFormat(textToShow.c_str());
 	for (const Discord::Attachment& attachment : message.attachments)
 	{
-		ImGui::TextColored(RGBAToImVec4(255, 0, 0), "^ Attachment:");
-		ImGui::Text(("\tFilename: " + attachment.filename).c_str());
-		ImGui::Text(("\tSize: " + std::to_string(attachment.size) + " byte(s)").c_str());
-		ImGui::Text(("\tURL: " + attachment.url).c_str());
-		ImGui::Text(("\tProxy URL: " + attachment.proxy_url).c_str());
+		ImGuiColoredTextNoFormat(RGBAToImVec4(255, 0, 0), "^ Attachment:");
+		ImGuiTextNoFormat(("\tFilename: " + attachment.filename).c_str());
+		ImGuiTextNoFormat(("\tSize: " + std::to_string(attachment.size) + " byte(s)").c_str());
+		ImGuiTextNoFormat(("\tURL: " + attachment.url).c_str());
+		ImGuiTextNoFormat(("\tProxy URL: " + attachment.proxy_url).c_str());
 	}
+}
+
+void ImGuiColoredTextNoFormat(const ImVec4& color, const char* textStart, const char* textEnd, ImGuiTextFlags_ flags)
+{
+	ImGui::PushStyleColor(ImGuiCol_Text, color);
+	ImGuiTextNoFormat(textStart, textEnd, flags);
+	ImGui::PopStyleColor();
+}
+
+void ImGuiTextNoFormat(const char* textStart, const char* textEnd, ImGuiTextFlags_ flags)
+{
+	ImGui::TextEx(textStart, textEnd, flags);
 }
 
 void ImGuiDisplayDiscordMessageBoxAndSendButton(std::shared_ptr<MyClient> client, ChannelMessageCachingSystem& cache, const Discord::Snowflake& channelID, std::string& messageToSend)

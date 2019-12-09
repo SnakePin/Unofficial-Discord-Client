@@ -19,7 +19,7 @@
 using namespace Discord;
 using namespace Utils;
 
-Client::Client(std::string& token, AuthTokenType tokenType)
+Client::Client(const std::string& token, AuthTokenType tokenType)
 	: token(token, tokenType), //Make sure token is set before httpAPI is initialized
 	sessionID(""),
 	heartbeatInterval(40000),
@@ -160,54 +160,6 @@ void Client::ProcessDispatch(rapidjson::Document& document) {
 	}
 }
 
-void Client::OnHelloPacket() {
-	SendIdentify();
-}
-
-void Client::OnWSSDisconnect(int statusCode, std::string reason) {
-	std::cout << "Client: Closed connection with status code " << statusCode << " and the reason being \"" << reason << "\"" << std::endl;
-}
-void Client::OnWSSError(SimpleWeb::error_code errorCode) {
-	std::cout << "Client: Connection closed. Error: " << errorCode << ", error message: " << errorCode.message() << std::endl;
-}
-void Client::OnWSSConnect() {
-	std::cout << "Client: Opened connection to " << connection->remote_endpoint_address() << std::endl;
-}
-
-void Client::OnResumeFail() {
-	std::cout << "Client: OnResumeFail default impl." << std::endl;
-}
-void Client::OnResumeSuccess() {
-	std::cout << "Client: OnResumeSuccess default impl." << std::endl;
-}
-void Client::OnReadyPacket(Discord::ReadyPacket packet) {
-	std::cout << "Client: OnReadyPacket default impl. Session ID: " << packet.sessionID << std::endl;
-}
-void Client::OnGuildCreate(Guild guild) {
-	std::cout << "Client: OnGuildCreate default impl. Guild ID: " << guild.id.value << std::endl;
-}
-void Client::OnGuildMemberListUpdate(GuildMemberListUpdatePacket packet) {
-	std::cout << "Client: OnGuildMemberListUpdate default impl. Guild ID: " << packet.guildID.value << std::endl;
-}
-void Client::OnMessageCreate(Message m) {
-	std::cout << "Client: OnMessageCreate default impl. Message ID: " << m.id.value << std::endl;
-}
-void Client::OnTypingStart(TypingStartPacket p) {
-	std::cout << "Client: OnTypingStart default impl. User ID: " << p.userID.value << std::endl;
-}
-void Client::OnMessageReactionAdd(MessageReactionPacket p) {
-	std::cout << "Client: OnMessageReactionAdd default impl. User ID: " << p.userID.value << std::endl;
-}
-void Client::OnMessageReactionRemove(MessageReactionPacket p) {
-	std::cout << "Client: OnMessageReactionRemove default impl. User ID: " << p.userID.value << std::endl;
-}
-void Client::OnHeartbeatAck() {
-	std::cout << "Client: OnHeartbeatAck default impl." << std::endl;
-}
-void Client::OnReconnectPacket() {
-	std::cout << "Client: OnReconnectPacket default impl." << std::endl;
-}
-
 void Client::ProcessReady(rapidjson::Document& document) {
 	ReadyPacket packet = ReadyPacket::LoadFrom(document, "/d");
 	sessionID = packet.sessionID;
@@ -245,7 +197,7 @@ void Client::Run() {
 			OnResumeFail();
 		}
 		else if (opcode == GatewayOpcodes::HeartbeatAck) {
-			OnHeartbeatAck();
+			//ProcessHeartbeatAck();
 		}
 		else if (opcode == GatewayOpcodes::Reconnect) {
 			ProcessReconnectPacket(document);
@@ -262,12 +214,12 @@ void Client::Run() {
 
 	websocket.on_close = [this](std::shared_ptr<WssClient::Connection> /*connection*/, int status, const std::string& reason) {
 		OnWSSDisconnect(status, reason);
-		InternalStopNoWait();
+		InternalSignalStop();
 	};
 
 	websocket.on_error = [this](std::shared_ptr<WssClient::Connection> /*connection*/, const SimpleWeb::error_code& ec) {
 		OnWSSError(ec);
-		InternalStopNoWait();
+		InternalSignalStop();
 	};
 
 	//Reset io_service if it is in stopped status
@@ -292,7 +244,7 @@ void Client::Run() {
 	eventLoopExit.notify_all();
 }
 
-void Client::InternalStopNoWait() {
+void Client::InternalSignalStop() {
 	heartbeatTimer->cancel();
 	websocket.stop();
 	io_context->stop();
@@ -305,18 +257,34 @@ void Client::Stop() {
 		return;
 	}
 
-	InternalStopNoWait();
+	InternalSignalStop();
 
 	std::unique_lock<std::mutex> lock(conditionVariableMutex);
-	eventLoopExit.wait(lock);
+	eventLoopExit.wait(lock, [this]() { return !(isRunning.load()); });
+}
+
+Client::Client(const Client& other)
+	: Client(other.token.value, other.token.tokenType)
+{
+	*this = other;
 }
 
 Client::~Client() {
 	Stop();
 }
 
+Client& Client::operator=(const Client& other) {
+	Stop();
+	token = other.token;
+	sessionID = other.sessionID;
+	heartbeatInterval = other.heartbeatInterval;
+	sequenceNumber = other.sequenceNumber;
+
+	return *this;
+}
+
 bool Client::IsRunning() {
-	return isRunning;
+	return isRunning.load();
 }
 
 void Client::OpenGuildChannelView(const Snowflake& guild, const Snowflake& channel) {
@@ -361,3 +329,48 @@ void Client::ScheduleNewWSSPacket(std::string out_message_str, const std::functi
 		connection->send(out_message_str, callback, fin_rsv_opcode);
 		});
 }
+
+#pragma region Default OnEvent function implementations
+void Client::OnHelloPacket() {
+	SendIdentify();
+}
+void Client::OnWSSDisconnect(int statusCode, std::string reason) {
+	std::cout << "Client: Closed connection with status code " << statusCode << " and the reason being \"" << reason << "\"" << std::endl;
+}
+void Client::OnWSSError(SimpleWeb::error_code errorCode) {
+	std::cout << "Client: Connection closed. Error: " << errorCode << ", error message: " << errorCode.message() << std::endl;
+}
+void Client::OnWSSConnect() {
+	std::cout << "Client: Opened connection to " << connection->remote_endpoint_address() << std::endl;
+}
+void Client::OnResumeFail() {
+	std::cout << "Client: OnResumeFail default impl." << std::endl;
+}
+void Client::OnResumeSuccess() {
+	std::cout << "Client: OnResumeSuccess default impl." << std::endl;
+}
+void Client::OnReadyPacket(Discord::ReadyPacket packet) {
+	std::cout << "Client: OnReadyPacket default impl. Session ID: " << packet.sessionID << std::endl;
+}
+void Client::OnGuildCreate(Guild guild) {
+	std::cout << "Client: OnGuildCreate default impl. Guild ID: " << guild.id.value << std::endl;
+}
+void Client::OnGuildMemberListUpdate(GuildMemberListUpdatePacket packet) {
+	std::cout << "Client: OnGuildMemberListUpdate default impl. Guild ID: " << packet.guildID.value << std::endl;
+}
+void Client::OnMessageCreate(Message m) {
+	std::cout << "Client: OnMessageCreate default impl. Message ID: " << m.id.value << std::endl;
+}
+void Client::OnTypingStart(TypingStartPacket p) {
+	std::cout << "Client: OnTypingStart default impl. User ID: " << p.userID.value << std::endl;
+}
+void Client::OnMessageReactionAdd(MessageReactionPacket p) {
+	std::cout << "Client: OnMessageReactionAdd default impl. User ID: " << p.userID.value << std::endl;
+}
+void Client::OnMessageReactionRemove(MessageReactionPacket p) {
+	std::cout << "Client: OnMessageReactionRemove default impl. User ID: " << p.userID.value << std::endl;
+}
+void Client::OnReconnectPacket() {
+	std::cout << "Client: OnReconnectPacket default impl." << std::endl;
+}
+#pragma endregion

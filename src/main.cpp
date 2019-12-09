@@ -372,6 +372,9 @@ void showHelpMessage(char* firstArg)
 }
 
 int main(int argc, char *argv[]) {
+
+	//TODO: take parameter for GUI or CONSOLE mode and don't enforce token parameter on GUI
+
 	if(argc < 2) {
 		showHelpMessage(argv[0]);
 		return 1;

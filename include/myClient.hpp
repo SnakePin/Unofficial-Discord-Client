@@ -26,6 +26,28 @@ public:
 
 	MyClient(std::string& token, Discord::AuthTokenType tokenType);
 
+	MyClient(const MyClient& other)
+		: Discord::Client(other) // dispatch to base copy constructor
+	{
+		pool = other.pool;
+		guilds = other.guilds;
+		privateChannels = other.privateChannels;
+		privateChannels = other.privateChannels;
+		lastSessionUpdateTime = other.lastSessionUpdateTime;
+	}
+
+	MyClient& operator=(const MyClient& other)
+	{
+		Discord::Client::operator=(other);
+		pool = other.pool;
+		guilds = other.guilds;
+		privateChannels = other.privateChannels;
+		privateChannels = other.privateChannels;
+		lastSessionUpdateTime = other.lastSessionUpdateTime;
+
+		return *this;
+	}
+
 	void StopAndSaveSession();
 
 	// Writes the session ID, sequence number, and update time to session.json.

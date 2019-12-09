@@ -33,10 +33,13 @@ namespace Discord {
 
 		uint64_t sequenceNumber;
 
-		Client(std::string& token, AuthTokenType tokenType);
-
+		Client(const std::string& token, AuthTokenType tokenType);
+		Client(const Client& other);
 		~Client();
-		
+
+		//Warning: This function will stop the client.
+		Client& operator=(const Client& other);
+
 		// Generate and send an IDENTIFY packet
 		void SendIdentify();
 
@@ -68,7 +71,6 @@ namespace Discord {
 		virtual void OnWSSError(SimpleWeb::error_code errorCode);
 		virtual void OnWSSDisconnect(int statusCode, std::string reason);
 		virtual void OnWSSConnect();
-		virtual void OnHeartbeatAck();
 		virtual void OnReconnectPacket();
 		
 		// HTTP API instance and HTTP API class declaration
@@ -124,7 +126,7 @@ namespace Discord {
 
 		std::shared_ptr<asio::io_context> io_context;
 
-		void InternalStopNoWait();
+		void InternalSignalStop();
 
 		// Gateway Packet Processing
 		// These functions call the gateway event methods above.
