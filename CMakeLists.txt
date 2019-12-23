@@ -74,11 +74,14 @@ set(LIBASIO_INCLUDE_PATH "${PROJECT_SOURCE_DIR}/external/libasio/include")
 # Add SWS
 set(SWS_INCLUDE_PATH "${PROJECT_SOURCE_DIR}/external/sws")
 
+# Add TCLAP
+set(TCLAP_INCLUDE_PATH "${PROJECT_SOURCE_DIR}/external/tclap/include")
+
 # Add tinyformat
 set(TINYFORMAT_INCLUDE_PATH "${PROJECT_SOURCE_DIR}/external/tinyformat")
 
 # Add most of the include paths to project include path
-target_include_directories(Unofficial-Discord-Client SYSTEM PUBLIC ${LIBASIO_INCLUDE_PATH} ${SWS_INCLUDE_PATH} ${TINYFORMAT_INCLUDE_PATH})
+target_include_directories(Unofficial-Discord-Client SYSTEM PUBLIC ${LIBASIO_INCLUDE_PATH} ${SWS_INCLUDE_PATH} ${TINYFORMAT_INCLUDE_PATH} ${TCLAP_INCLUDE_PATH})
 
 # Add SDL2
 

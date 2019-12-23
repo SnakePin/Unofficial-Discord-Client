@@ -10,6 +10,9 @@
 #include "discord/snowflake.hpp"
 #include "discord/deserializers.hpp"
 
+#include <tclap/CmdLine.h>
+#include <string>
+
 #include <asio.hpp>
 #include <asio/thread_pool.hpp>
 
@@ -81,9 +84,9 @@ void MyClient::OnReadyPacket(Discord::ReadyPacket packet) {
 	{
 		guildsVectorMutex.lock();
 		std::vector<Discord::Snowflake> existing(guilds.size());
-		std::transform(guilds.begin(), guilds.end(), existing.begin(), [](const Discord::Guild& g){ return g.id; });
+		std::transform(guilds.begin(), guilds.end(), existing.begin(), [](const Discord::Guild& g) { return g.id; });
 
-		std::copy_if(packet.guilds.begin(), packet.guilds.end(), std::back_inserter(guilds), [&](const Discord::Guild& g){
+		std::copy_if(packet.guilds.begin(), packet.guilds.end(), std::back_inserter(guilds), [&](const Discord::Guild& g) {
 			return std::find(existing.begin(), existing.end(), g.id) == existing.end();
 		});
 		guildsVectorMutex.unlock();
@@ -93,9 +96,9 @@ void MyClient::OnReadyPacket(Discord::ReadyPacket packet) {
 	{
 		privateChannelsVectorMutex.lock();
 		std::vector<Discord::Snowflake> existing(privateChannels.size());
-		std::transform(privateChannels.begin(), privateChannels.end(), existing.begin(), [](const Discord::Channel& c){ return c.id; });
+		std::transform(privateChannels.begin(), privateChannels.end(), existing.begin(), [](const Discord::Channel& c) { return c.id; });
 
-		std::copy_if(packet.privateChannels.begin(), packet.privateChannels.end(), std::back_inserter(privateChannels), [&](const Discord::Channel& c){
+		std::copy_if(packet.privateChannels.begin(), packet.privateChannels.end(), std::back_inserter(privateChannels), [&](const Discord::Channel& c) {
 			return std::find(existing.begin(), existing.end(), c.id) == existing.end();
 		});
 		privateChannelsVectorMutex.unlock();
@@ -115,20 +118,21 @@ void MyClient::OnGuildMemberListUpdate(Discord::GuildMemberListUpdatePacket pack
 	using namespace Discord;
 	std::cout << "Received: GuildMemberListUpdatePacket\nGuild ID: " << packet.guildID.value << std::endl;
 	std::cout << "Groups: ";
-	for(const GuildMemberListGroup &group : packet.groups) std::cout << group.id << "(" << group.count << "), ";
+	for (const GuildMemberListGroup& group : packet.groups) std::cout << group.id << "(" << group.count << "), ";
 	std::cout << std::endl;
 
 	std::cout << "We have these operations:" << std::endl;
-	for(const GuildMemberListUpdateOperation& operation : packet.operations) {
+	for (const GuildMemberListUpdateOperation& operation : packet.operations) {
 		std::cout << "\t" << "OP: " << operation.op << std::endl;
 		std::cout << "\t" << "Range: " << operation.range.first << " - " << operation.range.second << std::endl;
 
-		for(const std::variant<GuildMemberListGroup, Member>& item : operation.items) {
-			if(std::holds_alternative<GuildMemberListGroup>(item)) {
+		for (const std::variant<GuildMemberListGroup, Member>& item : operation.items) {
+			if (std::holds_alternative<GuildMemberListGroup>(item)) {
 				GuildMemberListGroup group = std::get<GuildMemberListGroup>(item);
 				std::cout << "\t\t" << group.id << " - " << group.count << std::endl;
 
-			}else if(std::holds_alternative<Member>(item)) {
+			}
+			else if (std::holds_alternative<Member>(item)) {
 				Member member = std::get<Member>(item);
 				std::cout << "\t\t" << "  Member: " << member.user.username << std::endl;
 			}
@@ -137,7 +141,7 @@ void MyClient::OnGuildMemberListUpdate(Discord::GuildMemberListUpdatePacket pack
 }
 
 void MyClient::OnTypingStart(Discord::TypingStartPacket packet) {
-	if(packet.member)
+	if (packet.member)
 		std::cout << packet.member.value().user.username << " is typing..." << std::endl;
 }
 
@@ -146,11 +150,26 @@ void MyClient::OnMessageCreate(Discord::Message m) {
 }
 
 void MyClient::OnMessageReactionAdd(Discord::MessageReactionPacket p) {
-	std::cout << p.messageID.value << " User " << p.userID.value << " added reaction " << p.emoji.name << std::endl;
+
+	std::cout << p.messageID.value << " User " << p.userID.value << " added reaction ";
+
+	if (p.emoji.name.has_value()) {
+		std::cout << p.emoji.name.value() << std::endl;
+	}
+	else {
+		std::cout << "(Unnamed emoji)" << std::endl;
+	}
 }
 
 void MyClient::OnMessageReactionRemove(Discord::MessageReactionPacket p) {
-	std::cout << p.messageID.value << " User " << p.userID.value << " removed reaction " << p.emoji.name << std::endl;
+	std::cout << p.messageID.value << " User " << p.userID.value << " removed reaction ";
+
+	if (p.emoji.name.has_value()) {
+		std::cout << p.emoji.name.value() << std::endl;
+	}
+	else {
+		std::cout << "(Unnamed emoji)" << std::endl;
+	}
 }
 
 void MyClient::LoadAndSendResume() {
@@ -162,14 +181,15 @@ void MyClient::LoadAndSendResume() {
 	std::time_t sessionTime = document["session_time"].GetInt();
 	std::time_t currentTime = std::time(nullptr);
 
-	if(currentTime - sessionTime < 10*60) {
+	if (currentTime - sessionTime < 10 * 60) {
 		std::string sessionID = document["session_id"].GetString();
 		int32_t sequence = document["seq"].GetInt();
 		std::cout << "Resuming session with seq: " << sequence << std::endl;
 		SendResume(sessionID, sequence);
 		//JsonTypeToStructType(document, "guilds", guilds);
 		//JsonTypeToStructType(document, "private_channels", privateChannels);
-	}else {
+	}
+	else {
 		std::cout << "The session has (possibly) expired. No resume was sent." << std::endl;
 	}
 }
@@ -178,7 +198,7 @@ class ConsoleTest {
 private:
 
 	std::shared_ptr<MyClient> client;
-	bool running;
+	std::atomic<bool> running;
 	Discord::Snowflake channelToOperateOn;
 
 public:
@@ -189,51 +209,53 @@ public:
 	}
 
 	void processCommand(std::string command) {
-		if(command == "quit") {
+		if (command == "quit") {
 			std::cout << "Stopping..." << std::endl;
 			client->StopAndSaveSession();
-			std::cout << "Stopped." << std::endl;
 			running = false;
 		}
-		else if(command == "identify") {
+		else if (command == "help" || command == "?") {
+			std::cout << "List of available commands: quit, help, ?, identify, resume, sendmsg, messages, delaymsg, guilds, members, switch, setstatus." << std::endl;
+		}
+		else if (command == "identify") {
 			std::cout << "Sending identify..." << std::endl;
 			client->SendIdentify();
 		}
-		else if(command == "resume") {
+		else if (command == "resume") {
 			std::cout << "Sending resume..." << std::endl;
 			client->LoadAndSendResume();
 		}
-		else if(command.rfind("sendmsg", 0) == 0) {
+		else if (command.rfind("sendmsg", 0) == 0) {
 			Discord::CreateMessageParam messageToSend;
 			messageToSend.content = command.substr(command.find(' '));
 			messageToSend.tts = false;
 
-			asio::post(*client->pool, 
+			asio::post(*client->pool,
 				[this, messageToSend] {
-					client->httpAPI.CreateMessage(channelToOperateOn, messageToSend);
-				}
+				client->httpAPI.CreateMessage(channelToOperateOn, messageToSend);
+			}
 			);
 		}
-		else if(command.rfind("messages", 0) == 0) {
+		else if (command.rfind("messages", 0) == 0) {
 			Discord::Snowflake channelID(command.substr(command.find(' ')));
 
-			asio::post(*client->pool, 
+			asio::post(*client->pool,
 				[this, channelID] {
-					std::vector<Discord::Message> newMessages;
-					std::cout << "Requesting 50 messages from channel " << channelID.value << "..." << std::endl;
+				std::vector<Discord::Message> newMessages;
+				std::cout << "Requesting 50 messages from channel " << channelID.value << "..." << std::endl;
 
-					client->httpAPI.GetMessagesInto(channelToOperateOn, newMessages);
+				client->httpAPI.GetMessagesInto(channelToOperateOn, newMessages);
 
-					std::cout << "Got " << newMessages.size() << " new messages." << std::endl;
-					for(const auto& message : newMessages) {
-						tfm::printf("<%s> %s\n", message.author.username, message.content);
-					}
-					std::cout << "--------------------------" << std::endl;
+				std::cout << "Got " << newMessages.size() << " new messages." << std::endl;
+				for (const auto& message : newMessages) {
+					tfm::printf("<%s> %s\n", message.author.username, message.content);
 				}
+				std::cout << "--------------------------" << std::endl;
+			}
 			);
 
 		}
-		else if(command.rfind("delaymsg", 0) == 0) {
+		else if (command.rfind("delaymsg", 0) == 0) {
 			// Sends a 'typing' signal, then the message after a 5 second delay.
 			Discord::CreateMessageParam messageToSend;
 			messageToSend.content = command.substr(command.find(' '));
@@ -241,23 +263,23 @@ public:
 
 			asio::post(*client->pool,
 				[this, messageToSend] {
-					client->httpAPI.TriggerTypingIndicator(channelToOperateOn);
-					std::this_thread::sleep_for(std::chrono::seconds(5));
-					client->httpAPI.CreateMessage(channelToOperateOn, messageToSend);
-				}
+				client->httpAPI.TriggerTypingIndicator(channelToOperateOn);
+				std::this_thread::sleep_for(std::chrono::seconds(5));
+				client->httpAPI.CreateMessage(channelToOperateOn, messageToSend);
+			}
 			);
 
 		}
-		else if(command == "guilds") {
+		else if (command == "guilds") {
 			// Loop through all the guilds and print their names
 
 			client->guildsVectorMutex.lock();
 			auto guildsVectorCopy = client->guilds;
 			client->guildsVectorMutex.unlock();
 			std::cout << "Found " << guildsVectorCopy.size() << " guilds:\n\t";
-			for(Discord::Guild &guild : guildsVectorCopy) {
+			for (Discord::Guild& guild : guildsVectorCopy) {
 				std::cout << guild.name << " | " << guild.id.value << std::endl;
-				for(Discord::Channel &channel : guild.channels) {
+				for (Discord::Channel& channel : guild.channels) {
 					std::cout << "\tType " << channel.type << " | " << channel.name.value_or("(Channel name?)") << " | " << channel.id.value << std::endl;
 				}
 				std::cout << std::endl;
@@ -268,47 +290,47 @@ public:
 			auto privateChannelsCopy = client->privateChannels;
 			client->privateChannelsVectorMutex.unlock();
 			std::cout << "Found " << privateChannelsCopy.size() << " private channels:" << std::endl;
-			for(Discord::Channel &chan : privateChannelsCopy) {
+			for (Discord::Channel& chan : privateChannelsCopy) {
 				std::cout << "Type: " << chan.type << " | " << chan.name.value_or("(Noname)") << " | " << chan.id.value << std::endl;
 				std::cout << std::endl;
 			}
-			
+
 		}
-		else if(command == "members") {
+		else if (command == "members") {
 			// Loop through all the guilds and print their names
 
-			for(Discord::Guild &guild : client->guilds) {
+			for (Discord::Guild& guild : client->guilds) {
 				std::cout << guild.name << " has " << guild.members.size() << " members." << std::endl;
-				for(Discord::Member &m : guild.members) {
+				for (Discord::Member& m : guild.members) {
 					std::cout << "\t" << m.user.username << std::endl;
 				}
 				std::cout << std::endl;
 			}
 			std::cout << std::endl;
-			
+
 		}
-		else if(command.rfind("switch", 0) == 0) {
+		else if (command.rfind("switch", 0) == 0) {
 
 			static std::regex singleArgument("^switch \\d+$");
 			static std::regex doubleArgument("^switch \\d+ \\d+$");
 
 			// Single argument indicates switching to a private message channel
-			if(std::regex_match(command, singleArgument)) {
+			if (std::regex_match(command, singleArgument)) {
 				std::smatch match;
 				std::regex_search(command, match, std::regex("\\d+"));
 				Discord::Snowflake channelID(match.str());
 
 				std::cout << "Switching to private channel: " << channelID.value << " (OP13) ..." << std::endl;
 				channelToOperateOn = channelID;
-				
+
 				// TODO this is non functional (!??!!)
 				// client->OpenPrivateChannelView(channelID);
 
 			}
 			// Two argument indicates switching to a GUILD and CHANNEL
-			else if(std::regex_match(command, doubleArgument)) {
+			else if (std::regex_match(command, doubleArgument)) {
 				std::smatch match;
-				
+
 				std::regex_search(command, match, std::regex("\\d+"));
 				Discord::Snowflake guildID(match.str());
 				command = match.suffix().str();
@@ -326,77 +348,107 @@ public:
 			}
 
 		}
-		else if(command.rfind("setstatus", 0) == 0) {
-				std::string status = command.substr(command.find(' '));
-				if(status == "online" || status == "idle" || status == "dnd") {
-						client->UpdatePresence(status);
-				} else {
-						std::cout << "This is not a valid status" << std::endl;
-						return;
-				}
+		else if (command.rfind("setstatus", 0) == 0) {
+			std::string status = command.substr(command.find(' '));
+			if (status == "online" || status == "idle" || status == "dnd") {
+				client->UpdatePresence(status);
+			}
+			else {
+				std::cout << "This is not a valid status, valid statuses are \"online\", \"idle\" and \"dnd\"" << std::endl;
+				return;
+			}
 		}
-		else{
-			UNKNOWN_COMMAND:
-			std::cout << "Unknown command: " << command << std::endl;
+		else {
+		UNKNOWN_COMMAND:
+			std::cout << "Unknown command: \"" << command << "\". Type \"help\" or \"?\" to get a list of available commands." << std::endl;
 		}
 	}
 
-	void stop() {
+	void Stop() {
 		running = false;
 	}
 
-	void run() {
+	void Run() {
+		if(running) {
+			return;
+		}
+
 		running = true;
 
-		while(running) {
+		while (running) {
 			std::string command;
 			std::cout << ">> ";
-			if (!running) { break; }
 			std::getline(std::cin, command);
 			processCommand(command);
 		}
 	}
 };
 
-void showHelpMessage(char* firstArg)
-{
-	std::cout << "Usage: " << std::endl
-	<< firstArg << " <Discord token> [token type]" << std::endl
-	<< "Info: Token type can be either \"USER\" or \"BOT\", it defaults to \"USER\" if not specified.";
-}
+int main(int argc, char* argv[]) {
 
-int main(int argc, char *argv[]) {
+	//TODO: don't enforce token parameter on GUI
 
-	//TODO: take parameter for GUI or CONSOLE mode and don't enforce token parameter on GUI
+	TCLAP::CmdLine cmd("Unofficial Discord Client (UDC)");
 
-	if(argc < 2) {
-		showHelpMessage(argv[0]);
+	TCLAP::ValueArg<std::string> discordTokenArg("t", "token", "Discord token", true, "xyz12345", "discord token");
+	TCLAP::SwitchArg showGUIArg("g", "gui", "Show GUI", false);
+	TCLAP::SwitchArg showConsoleArg("c", "console", "Show console", false);
+	TCLAP::ValueArg<std::string> discordTokenTypeArg("", "tokentype", "The type of the discord token, can be either \"user\" or \"bot\".", false, "user", "discord token type");
+	cmd.add(showGUIArg);
+	cmd.add(showConsoleArg);
+	cmd.add(discordTokenArg);
+	cmd.add(discordTokenTypeArg);
+
+	try {
+		cmd.parse(argc, argv);
+	}
+	catch (TCLAP::ArgException & e) {
+		std::cerr << "Error: " << e.error() << " for arg " << e.argId() << std::endl;
+		return 1;
+	}
+
+	if (!showGUIArg.getValue() && !showConsoleArg.getValue()) {
+		std::cerr << "Error: specify either console or GUI" << std::endl;
 		return 1;
 	}
 
 	Discord::AuthTokenType tokenType = Discord::AuthTokenType::USER;
-	if(argc >= 3) {
-		if(strcmp(argv[2], "USER") == 0) {
+	if (discordTokenTypeArg.isSet()) {
+		if (discordTokenTypeArg.getValue() == "user") {
 			tokenType = Discord::AuthTokenType::USER;
-		} else if(strcmp(argv[2], "BOT") == 0) {
+		}
+		else if (discordTokenTypeArg.getValue() == "bot") {
 			tokenType = Discord::AuthTokenType::BOT;
 		}
 	}
 
-	std::string tokenString(argv[1]);
+	std::string tokenString(discordTokenArg.getValue());
 
 	std::shared_ptr<MyClient> client = std::make_shared<MyClient>(tokenString, tokenType);
 	std::shared_ptr<std::thread> clientThread = std::make_shared<std::thread>(&Discord::Client::Run, &*client);
 
 	//TODO: make ConsoleTest better and thread-safe
-	//ConsoleTest console(client);
-	//std::thread consoleThread(&ConsoleTest::run, &console);
-	
-	std::thread uiThread(&startImguiClient, client, clientThread);
-	
-	uiThread.join();
-	//console.stop();
-	//consoleThread.join();
+
+	std::optional<std::thread> consoleThread;
+	std::optional<std::thread> uiThread;
+
+	if (showConsoleArg.getValue()) {
+		std::cout << "Starting console client." << std::endl;
+		ConsoleTest console(client);
+		consoleThread = std::thread(&ConsoleTest::Run, &console);
+	}
+
+	if (showGUIArg.getValue()) {
+		std::cout << "Starting GUI client." << std::endl;
+		uiThread = std::thread(&startImguiClient, client, clientThread);
+	}
+
+	if (consoleThread.has_value()) {
+		consoleThread.value().join();
+	}
+	if (uiThread.has_value()) {
+		uiThread.value().join();
+	}
 
 	client->StopAndSaveSession();
 	clientThread->join();
