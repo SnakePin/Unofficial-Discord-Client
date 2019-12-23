@@ -6,14 +6,14 @@
 
 namespace Discord {
 	
-	struct Reaction : Deserializable_Serializable_Class<Reaction> {
+	struct Reaction : JsonDeSerializable {
 		// https://discordapp.com/developers/docs/resources/channel#reaction-object
 
 		int32_t count;
 		bool me;
 		Emoji emoji;
 
-		static Reaction LoadFrom(rapidjson::Document& doc, std::string pointer = "");
+		bool LoadFrom(rapidjson::Document& doc, std::string pointer = "");
 	};
 
 }

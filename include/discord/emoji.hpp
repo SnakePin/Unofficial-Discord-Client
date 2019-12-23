@@ -8,12 +8,11 @@
 
 namespace Discord {
 
-	struct Emoji : Deserializable_Serializable_Class<Emoji> {
+	struct Emoji : JsonDeSerializable {
 		// https://discordapp.com/developers/docs/resources/emoji#emoji-object
-
-		//TODO: make these two fields below nullable
-		Snowflake id;
-		std::string name;
+		
+		std::optional<Snowflake> id;
+		std::optional<std::string> name;
 
 		// roles[]
 		// User creator;
@@ -22,7 +21,7 @@ namespace Discord {
 		std::optional<bool> managed;
 		std::optional<bool> animated;
 
-		static Emoji LoadFrom(rapidjson::Document& doc, std::string pointer = "");
+		bool LoadFrom(rapidjson::Document& doc, std::string pointer = "");
 	};
 
 }

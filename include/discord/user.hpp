@@ -9,7 +9,7 @@
 
 namespace Discord {
 
-	struct User : Deserializable_Serializable_Class<User> {
+	struct User : JsonDeSerializable {
 		// https://discordapp.com/developers/docs/resources/user#user-object
 		
 		Snowflake id;
@@ -25,7 +25,7 @@ namespace Discord {
 		std::optional<UserFlags> flags;
 		std::optional<int32_t> premiumType;
 
-		static User LoadFrom(rapidjson::Document& doc, std::string pointer = "");
+		bool LoadFrom(rapidjson::Document& doc, std::string pointer = "");
 	};
 
 }

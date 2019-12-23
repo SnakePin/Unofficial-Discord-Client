@@ -11,7 +11,7 @@
 
 namespace Discord {
 
-	struct Member : Deserializable_Serializable_Class<Member> {
+	struct Member : JsonDeSerializable {
 		// https://discordapp.com/developers/docs/resources/guild#guild-member-object
 		
 		User user;
@@ -23,7 +23,7 @@ namespace Discord {
 		bool deaf;
 		bool mute;
 
-		static Member LoadFrom(rapidjson::Document& doc, std::string pointer = "");
+		bool LoadFrom(rapidjson::Document& doc, std::string pointer = "");
 	};
 
 }

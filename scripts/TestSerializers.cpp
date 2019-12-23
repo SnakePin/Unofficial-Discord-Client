@@ -33,7 +33,8 @@ void testGuildCreate() {
 	doc.Parse(json);
 	delete[] json;
 
-	Guild g = Guild::LoadFrom(doc, "/d");
+	Guild g;
+	g.LoadFrom(doc, "/d");
 
 	std::cout << "Guild name: " << g.name << "\n";
 	std::cout << "Guild region: " << g.region << "\n";
@@ -75,7 +76,8 @@ void testMessageCreate() {
 	doc.Parse(json);
 	delete[] json;
 
-	Message m = Message::LoadFrom(doc, "/d");
+	Message m;
+	m.LoadFrom(doc, "/d");
 
 	std::cout << "Message: " << m.content << "\n";
 	std::cout << "Author: " << m.author.username << "\n";
@@ -93,7 +95,8 @@ void testTypingStart() {
 	doc.Parse(json);
 	delete[] json;
 
-	TypingStartPacket p = TypingStartPacket::LoadFrom(doc, "/d");
+	TypingStartPacket p;
+	p.LoadFrom(doc, "/d");
 
 	std::cout << "User: " << p.userID.value << "\n";
 	std::cout << "Channel: " << p.channelID.value << "\n";
@@ -111,7 +114,8 @@ void testReactionAdd() {
 	doc.Parse(json);
 	delete[] json;
 
-	MessageReactionPacket p = MessageReactionPacket::LoadFrom(doc, "/d");
+	MessageReactionPacket p;
+	p.LoadFrom(doc, "/d");
 	Emoji &emote = p.emoji;
 
 	std::cout << "User: " << p.userID.value << "\n";
@@ -131,7 +135,8 @@ void testGuildMemberListUpdate() {
 	doc.Parse(json);
 	delete[] json;
 
-	GuildMemberListUpdatePacket packet = GuildMemberListUpdatePacket::LoadFrom(doc, "/d");
+	GuildMemberListUpdatePacket packet;
+	packet.LoadFrom(doc, "/d");
 	std::cout << "GuildMemberListUpdatePacket\nGuild ID: " << packet.guildID.value << std::endl;
 	std::cout << "We have these groups: ";
 	for(const GuildMemberListGroup &group : packet.groups) std::cout << group.id << "(" << group.count << "), ";

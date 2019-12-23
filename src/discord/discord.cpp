@@ -142,13 +142,13 @@ void Client::ProcessDispatch(rapidjson::Document& document) {
 
 	const std::map<std::string, std::function<void(void)>> dispatchEventHandlers
 	{
-		{ "GUILD_CREATE", [this, &document]() { OnGuildCreate(Guild::LoadFrom(document, "/d")); }},
+		{ "GUILD_CREATE", [this, &document]() { Guild tmpVar; tmpVar.LoadFrom(document, "/d"); OnGuildCreate(tmpVar); }},
 		{ "READY", [this, &document]() { ProcessReady(document); }},
-		{ "MESSAGE_CREATE", [this, &document]() { OnMessageCreate(Message::LoadFrom(document, "/d")); }},
-		{ "MESSAGE_REACTION_ADD", [this, &document]() { OnMessageReactionAdd(MessageReactionPacket::LoadFrom(document, "/d")); }},
-		{ "MESSAGE_REACTION_REMOVE", [this, &document]() { OnMessageReactionRemove(MessageReactionPacket::LoadFrom(document, "/d")); }},
-		{ "TYPING_START", [this, &document]() { OnTypingStart(TypingStartPacket::LoadFrom(document, "/d")); }},
-		{ "GUILD_MEMBER_LIST_UPDATE", [this, &document]() { OnGuildMemberListUpdate(GuildMemberListUpdatePacket::LoadFrom(document, "/d")); }},
+		{ "MESSAGE_CREATE", [this, &document]() { Message tmpVar; tmpVar.LoadFrom(document, "/d"); OnMessageCreate(tmpVar); }},
+		{ "MESSAGE_REACTION_ADD", [this, &document]() { MessageReactionPacket tmpVar; tmpVar.LoadFrom(document, "/d"); OnMessageReactionAdd(tmpVar); }},
+		{ "MESSAGE_REACTION_REMOVE", [this, &document]() { MessageReactionPacket tmpVar; tmpVar.LoadFrom(document, "/d"); OnMessageReactionRemove(tmpVar); }},
+		{ "TYPING_START", [this, &document]() { TypingStartPacket tmpVar; tmpVar.LoadFrom(document, "/d"); OnTypingStart(tmpVar); }},
+		{ "GUILD_MEMBER_LIST_UPDATE", [this, &document]() { GuildMemberListUpdatePacket tmpVar; tmpVar.LoadFrom(document, "/d"); OnGuildMemberListUpdate(tmpVar); }},
 		{ "RESUMED", [this]() { OnResumeSuccess(); }},
 	};
 
@@ -161,7 +161,8 @@ void Client::ProcessDispatch(rapidjson::Document& document) {
 }
 
 void Client::ProcessReady(rapidjson::Document& document) {
-	ReadyPacket packet = ReadyPacket::LoadFrom(document, "/d");
+	ReadyPacket packet;
+	packet.LoadFrom(document, "/d");
 	sessionID = packet.sessionID;
 	OnReadyPacket(packet);
 }
@@ -250,7 +251,6 @@ void Client::InternalSignalStop() {
 	io_context->stop();
 }
 
-//TODO: change this function to stop gracefully by letting event loop complete before exiting
 void Client::Stop() {
 	//Return if not running or else the eventLoopExit condition_variable will create deadlock
 	if (!isRunning) {

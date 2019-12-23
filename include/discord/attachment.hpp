@@ -8,7 +8,7 @@
 
 namespace Discord {
 
-	struct Attachment : Deserializable_Serializable_Class<Attachment> {
+	struct Attachment : JsonDeSerializable {
 		// https://discordapp.com/developers/docs/resources/channel#attachment-object
 		Snowflake id;
 		std::string filename;
@@ -18,7 +18,7 @@ namespace Discord {
 		std::optional<int32_t> height;
 		std::optional<int32_t> width;
 
-		static Attachment LoadFrom(rapidjson::Document& doc, std::string pointer = "");
+		bool LoadFrom(rapidjson::Document& doc, std::string pointer = "");
 	};
 
 }

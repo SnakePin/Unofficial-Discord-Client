@@ -107,8 +107,10 @@ bool Client::HTTP_API_CLASS::GetMessagesInto(const Snowflake &channelID, std::ve
 		if(!document.IsArray()) return false;
 
 		for(rapidjson::SizeType i=0; i<document.GetArray().Size(); i++) {
+			Message tmpVar;
+			tmpVar.LoadFrom(document, tfm::format("/%d", i));
 			messages.push_back(
-				Message::LoadFrom(document, tfm::format("/%d", i))
+				tmpVar
 			);
 		}
 
@@ -133,7 +135,7 @@ bool Client::HTTP_API_CLASS::GetChannel(const Snowflake &channelID, Channel& cha
 		rapidjson::Document document;
 		document.Parse(response.text.c_str());
 
-		channel = Channel::LoadFrom(document);
+		channel.LoadFrom(document);
 
 		return true;
 	}
@@ -156,7 +158,7 @@ bool Client::HTTP_API_CLASS::GetChannelMessage(const Snowflake &channelID, const
 		rapidjson::Document document;
 		document.Parse(response.text.c_str());
 
-		message = Message::LoadFrom(document);
+		message.LoadFrom(document);
 
 		return true;
 	}
@@ -182,8 +184,10 @@ bool Client::HTTP_API_CLASS::GetPinnedMessages(const Snowflake &channelID, std::
 		if(!document.IsArray()) return false;
 
 		for(rapidjson::SizeType i=0; i<document.GetArray().Size(); i++) {
+			Message tmpVar;
+			tmpVar.LoadFrom(document, tfm::format("/%d", i));
 			messages.push_back(
-				Message::LoadFrom(document, tfm::format("/%d", i))
+				tmpVar
 			);
 		}
 
@@ -219,7 +223,7 @@ bool Client::HTTP_API_CLASS::GetCurrentUser(User &user) {
 		rapidjson::Document document;
 		document.Parse(response.text.c_str());
 
-		user = User::LoadFrom(document);
+		user.LoadFrom(document);
 
 		return true;
 	}
@@ -242,7 +246,7 @@ bool Client::HTTP_API_CLASS::GetUserByID(User &user, const Snowflake &userID) {
 		rapidjson::Document document;
 		document.Parse(response.text.c_str());
 
-		user = User::LoadFrom(document);
+		user.LoadFrom(document);
 
 		return true;
 	}

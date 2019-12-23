@@ -16,7 +16,7 @@
 
 namespace Discord {
 
-	struct Guild : Deserializable_Serializable_Class<Guild> {
+	struct Guild : JsonDeSerializable {
 		// https://discordapp.com/developers/docs/resources/guild#guild-object
 
 		Snowflake id;
@@ -70,7 +70,7 @@ namespace Discord {
 		std::string description;
 		std::string bannerHash;
 
-		static Guild LoadFrom(rapidjson::Document& doc, std::string pointer = "");
+		bool LoadFrom(rapidjson::Document& doc, std::string pointer = "");
 	};
 
 }

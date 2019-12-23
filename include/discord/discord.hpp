@@ -33,6 +33,10 @@ namespace Discord {
 
 		uint64_t sequenceNumber;
 
+		//User agent string to use in gateway connection
+		//TODO: give user ability to change this value
+		const std::string userAgent;
+
 		Client(const std::string& token, AuthTokenType tokenType);
 		Client(const Client& other);
 		~Client();
@@ -151,9 +155,6 @@ namespace Discord {
 		//Note: callback function must not reference any local variables as it would possibly be called when your function exits
 		void ScheduleNewWSSPacket(std::string out_message_str, const std::function<void(const std::error_code &)> callback = nullptr, unsigned char fin_rsv_opcode = 129);
 
-		//User agent string to use in gateway connection
-		//TODO: give user ability to change this value
-		const std::string userAgent;
 	public:
 
 		// Sends an OP 14 signal.

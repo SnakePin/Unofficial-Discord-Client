@@ -13,7 +13,7 @@
 
 namespace Discord {
 	
-	struct Message : Deserializable_Serializable_Class<Message> {
+	struct Message : JsonDeSerializable {
 		// https://discordapp.com/developers/docs/resources/channel#message-object
 		Snowflake id;
 		Snowflake channelID;
@@ -43,7 +43,7 @@ namespace Discord {
 		// MessageActivityObject activity;
 		// MessageApplicationObject application;
 
-		static Message LoadFrom(rapidjson::Document& doc, std::string pointer = "");
+		bool LoadFrom(rapidjson::Document& doc, std::string pointer = "");
 	};
 
 	struct CreateMessageParam {

@@ -8,7 +8,7 @@
 
 namespace Discord {
 
-	struct UserFlags : Deserializable_Serializable_Class<UserFlags> {
+	struct UserFlags : JsonDeSerializable {
 		// https://discordapp.com/developers/docs/resources/user#user-object-user-flags
 
 		int16_t flags;
@@ -48,7 +48,7 @@ namespace Discord {
 			return (flags << 12) & 1;
 		}
 
-		static UserFlags LoadFrom(rapidjson::Document& doc, std::string pointer = "");
+		bool LoadFrom(rapidjson::Document& doc, std::string pointer = "");
 	};
 
 }

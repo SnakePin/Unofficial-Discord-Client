@@ -1,6 +1,8 @@
 # There is a good way to generate C++ code using a Python script.
 # But you will not find it here.
 
+# Warning: This script is deprecated and is no longer used.
+
 import sys, string, time
 
 structnames = ['User', 'Member', 'Channel']
@@ -67,6 +69,7 @@ def generate_loader(lines, structname):
 
 if __name__ == "__main__":
 	if len(sys.argv) != 2:
+		print('Warning: This script is deprecated and is no longer used.')
 		print('Usage:', sys.argv[0], '[header file path]')
 		print()
 		print('Generates rapidjson (de)serializer functions for Discord objects.')

@@ -21,10 +21,8 @@ bool JsonTypeToStructType(rapidjson::Document& doc, std::string pointer, float& 
 bool JsonTypeToStructType(rapidjson::Document& doc, std::string pointer, double& structFieldRef);
 
 //Warning: This function has no error checking, it will return true even if json field was not found
-//This function will get called if structFieldRef is a reference to a class that implements Discord::Deserializable_Serializable_Class<T>.
-//The template will be deduced from the derived class.
-template <typename T>
-bool JsonTypeToStructType(rapidjson::Document& doc, std::string pointer, Discord::Deserializable_Serializable_Class<T>& structFieldRef);
+//This function will get called if structFieldRef is a reference to a class that implements Discord::JsonDeSerializable.
+bool JsonTypeToStructType(rapidjson::Document& doc, std::string pointer, Discord::JsonDeSerializable& structFieldRef);
 
 bool JsonTypeToStructType(rapidjson::Document& doc, std::string pointer, Discord::Snowflake& structFieldRef);
 template <typename T>

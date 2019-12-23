@@ -9,7 +9,7 @@
 
 namespace Discord {
 
-	struct Role : Deserializable_Serializable_Class<Role> {
+	struct Role : JsonDeSerializable {
 		// https://discordapp.com/developers/docs/resources/role#role-object
 		
 		Snowflake id;
@@ -23,6 +23,6 @@ namespace Discord {
 		bool managed;
 		bool mentionable;
 
-		static Role LoadFrom(rapidjson::Document& doc, std::string pointer = "");
+		bool LoadFrom(rapidjson::Document& doc, std::string pointer = "");
 	};
 }

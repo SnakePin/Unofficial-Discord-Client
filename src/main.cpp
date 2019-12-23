@@ -194,31 +194,25 @@ public:
 			client->StopAndSaveSession();
 			std::cout << "Stopped." << std::endl;
 			running = false;
-
 		}
 		else if(command == "identify") {
 			std::cout << "Sending identify..." << std::endl;
 			client->SendIdentify();
-
 		}
 		else if(command == "resume") {
 			std::cout << "Sending resume..." << std::endl;
 			client->LoadAndSendResume();
-
 		}
 		else if(command.rfind("sendmsg", 0) == 0) {
 			Discord::CreateMessageParam messageToSend;
 			messageToSend.content = command.substr(command.find(' '));
 			messageToSend.tts = false;
 
-			//This channel ID is channel ID of test discord guild's general channel's ID
-			//TODO: remove this id
 			asio::post(*client->pool, 
 				[this, messageToSend] {
 					client->httpAPI.CreateMessage(channelToOperateOn, messageToSend);
 				}
 			);
-			
 		}
 		else if(command.rfind("messages", 0) == 0) {
 			Discord::Snowflake channelID(command.substr(command.find(' ')));
@@ -394,7 +388,7 @@ int main(int argc, char *argv[]) {
 	std::shared_ptr<MyClient> client = std::make_shared<MyClient>(tokenString, tokenType);
 	std::shared_ptr<std::thread> clientThread = std::make_shared<std::thread>(&Discord::Client::Run, &*client);
 
-	//TODO: make ConsoleTest better and thread-safe, add "condition_variable"s etc
+	//TODO: make ConsoleTest better and thread-safe
 	//ConsoleTest console(client);
 	//std::thread consoleThread(&ConsoleTest::run, &console);
 	
