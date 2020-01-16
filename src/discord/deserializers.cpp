@@ -366,7 +366,7 @@ bool JsonTypeToStructType(rapidjson::Document &doc, std::string pointer, uint64_
 }
 bool JsonTypeToStructType(rapidjson::Document &doc, std::string pointer, uint8_t &structFieldRef)
 {
-	int32_t tempVar;
+	uint32_t tempVar;
 	bool retVal = JsonTypeToStructType(doc, pointer, tempVar);
 	structFieldRef = (uint8_t)tempVar;
 	return retVal;
@@ -380,7 +380,7 @@ bool JsonTypeToStructType(rapidjson::Document &doc, std::string pointer, int8_t 
 }
 bool JsonTypeToStructType(rapidjson::Document &doc, std::string pointer, uint16_t &structFieldRef)
 {
-	int32_t tempVar;
+	uint32_t tempVar;
 	bool retVal = JsonTypeToStructType(doc, pointer, tempVar);
 	structFieldRef = (uint16_t)tempVar;
 	return retVal;
@@ -390,7 +390,7 @@ bool JsonTypeToStructType(rapidjson::Document &doc, std::string pointer, int16_t
 	int32_t tempVar;
 	bool retVal = JsonTypeToStructType(doc, pointer, tempVar);
 	structFieldRef = (int16_t)tempVar;
-	return retVal;
+	return JsonTypeToStructType(doc, pointer, tempVar);
 }
 bool JsonTypeToStructType(rapidjson::Document &doc, std::string pointer, bool &structFieldRef)
 {

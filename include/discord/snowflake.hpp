@@ -15,7 +15,7 @@ namespace Discord {
 			value = other.value;
 		}
 
-		Snowflake(std::string s) : value(0) {
+		Snowflake(std::string s) : Snowflake() {
 			std::istringstream iss(s);
 			iss >> value;
 		}
@@ -23,26 +23,29 @@ namespace Discord {
 		Snowflake(uint64_t v) : value(v) {}
 
 		// Unix epoch in milliseconds
-		inline uint64_t GetUnixEpoch() {
+		uint64_t GetUnixEpoch() const {
 			return (value >> 22) + 1420070400000;
 		}
-		inline uint8_t GetInternalWorkerID() {
-			return (value & 0x3E0000) >> 17;
+		uint8_t GetInternalWorkerID() const {
+			return (uint8_t)((value & 0x3E0000) >> 17);
 		}
-		inline uint8_t GetInternalProcessID() {
-			return (value & 0x1F000) >> 12;
+		uint8_t GetInternalProcessID() const {
+			return (uint8_t)((value & 0x1F000) >> 12);
 		}
-		inline uint16_t GetIncrement() {
+		uint16_t GetIncrement() const {
 			return value & 0xFFF;
 		}
 
-		inline bool operator==(const Snowflake &other) {
-			return other.value == value;
+		inline bool operator==(const Snowflake &rhs) const {
+			return rhs.value == value;
 		}
 
-		inline bool operator!=(const Snowflake &other) {
-			return other.value != value;
+		inline bool operator!=(const Snowflake &rhs) const {
+			return rhs.value != value;
 		}
+		inline operator uint64_t() const {
+			return value;
+		} 
 	};
 
 }

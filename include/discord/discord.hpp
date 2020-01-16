@@ -76,6 +76,7 @@ namespace Discord {
 		virtual void OnWSSDisconnect(int statusCode, std::string reason);
 		virtual void OnWSSConnect();
 		virtual void OnReconnectPacket();
+		virtual void OnStop();
 		
 		// HTTP API instance and HTTP API class declaration
 		class HTTP_API_CLASS

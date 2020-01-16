@@ -62,12 +62,12 @@ void MyClient::StopAndSaveSession() {
 	Stop();
 }
 
-void MyClient::OnWSSError(SimpleWeb::error_code errorCode) {
+void MyClient::OnStop() {
 	isIdentified = false;
 }
 
-void MyClient::OnWSSDisconnect(int statusCode, std::string reason) {
-	isIdentified = false;
+void MyClient::OnResumeSuccess() {
+	isIdentified = true;
 }
 
 void MyClient::OnHelloPacket() {
@@ -76,7 +76,11 @@ void MyClient::OnHelloPacket() {
 }
 
 void MyClient::OnReadyPacket(Discord::ReadyPacket packet) {
-	std::cout << "Received ready packet: " << packet.version << " " << packet.sessionID << " " << packet.user.username << std::endl;
+	std::cout << "Received ready packet:" << std::endl <<
+		"\tpacket.version: " << packet.version <<
+		"\tpacket.sessionID: " << packet.sessionID <<
+		"\tpacket.user.username: " << packet.user.username <<
+		"\tpacket.user.discriminator: " << packet.user.discriminator << std::endl;
 	isIdentified = true;
 	// TODO shorten this
 

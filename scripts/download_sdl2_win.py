@@ -30,16 +30,7 @@ def download_file(url, local_filename):
 					# f.flush()
 	return local_filename
 
-if len(sys.argv) != 2:
-	compiler = input('MSVC or MinGW? ').lower()
-else:
-	compiler = sys.argv[1]
-
-if not compiler in ['msvc', 'mingw']:
-	print('Please enter "msvc" or "mingw"')
-	sys.exit(1)
-
-if compiler == 'msvc':
+def msvc_procedure():
 	download_file(msvc_url, msvc_filename)
 	
 	try:
@@ -59,10 +50,8 @@ if compiler == 'msvc':
 		shutil.rmtree(exfolder)
 	except FileNotFoundError:
 		pass
-	
-	print('Done!')
-	
-elif compiler == 'mingw':
+
+def mingw_procedure():
 	download_file(mingw_url, mingw_filename)
 	
 	try:
@@ -83,5 +72,21 @@ elif compiler == 'mingw':
 		shutil.rmtree(exfolder)
 	except FileNotFoundError:
 		pass
-	
-	print('Done!')
+
+if len(sys.argv) != 2:
+	compiler = input('MSVC or MinGW? ').lower()
+else:
+	compiler = sys.argv[1]
+
+if not compiler in ['msvc', 'mingw']:
+	print('Please enter "msvc" or "mingw"')
+	sys.exit(1)
+
+if compiler == 'msvc':
+	msvc_procedure()
+elif compiler == 'mingw':
+	# Important note: MSVC files are required even if the compiler is mingw because mingw releases doesn't provide a DLL for dynamic linking
+	msvc_procedure()
+	mingw_procedure()
+
+print('Done!')

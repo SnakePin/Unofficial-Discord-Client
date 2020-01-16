@@ -13,6 +13,7 @@
 #include <SDL2/SDL_opengl.h>
 
 #include "discord/userFlags.hpp"
+#include "discord/snowflake.hpp"
 
 #include <unordered_map>
 #include <tuple>
@@ -22,7 +23,7 @@
 
 class ChannelMessageCachingSystem {
 	using ChannelMessageCacheItemType = std::tuple<std::chrono::time_point<std::chrono::system_clock>, std::vector<Discord::Message>>;
-	using ChannelMessageCacheType = std::unordered_map<uint64_t, ChannelMessageCacheItemType>;
+	using ChannelMessageCacheType = std::unordered_map<decltype(Discord::Snowflake::value), ChannelMessageCacheItemType>;
 public:
 	ChannelMessageCachingSystem(std::shared_ptr<MyClient> _client) :
 		client(_client)
@@ -162,7 +163,7 @@ int startImguiClient(std::shared_ptr<MyClient> client, std::shared_ptr<std::thre
 				std::cout << "GUI: Calling MyClient::LoadAndSendResume..." << std::endl;
 				client->LoadAndSendResume();
 			}
-			if (ImGui::Button("Call Client::Run on another thread")) {
+			if (ImGui::Button("Create a new thread and call Client::Run in it")) {
 				std::cout << "GUI: Stopping client..." << std::endl;
 				client->Stop();
 
@@ -177,12 +178,10 @@ int startImguiClient(std::shared_ptr<MyClient> client, std::shared_ptr<std::thre
 			if (ImGui::Button("Call Client::Stop")) {
 				std::cout << "GUI: Stopping client..." << std::endl;
 				client->Stop();
-				std::cout << "GUI: Stopped client." << std::endl;
 			}
 			if (ImGui::Button("Call MyClient::UpdateSessionJson")) {
 				std::cout << "GUI: Calling MyClient::UpdateSessionJson..." << std::endl;
 				client->UpdateSessionJson();
-				std::cout << "GUI: MyClient::UpdateSessionJson returned." << std::endl;
 			}
 
 			{
@@ -250,7 +249,7 @@ int startImguiClient(std::shared_ptr<MyClient> client, std::shared_ptr<std::thre
 				}
 
 				displayInfoItem("Is Bot", (currentUser.bot.has_value() && currentUser.bot.value() == true) ? "Yes" : "No");
-
+				
 				if (currentUser.flags.has_value()) {
 					Discord::UserFlags& userFlags = currentUser.flags.value();
 					if (!userFlags.IsNone()) {

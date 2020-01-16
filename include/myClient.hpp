@@ -54,24 +54,15 @@ public:
 	void UpdateSessionJson();
 
 	void OnHelloPacket();
-
 	void OnReadyPacket(Discord::ReadyPacket packet);
-
 	void OnGuildCreate(Discord::Guild g);
-
 	void OnGuildMemberListUpdate(Discord::GuildMemberListUpdatePacket packet);
-
 	void OnTypingStart(Discord::TypingStartPacket packet);
-
 	void OnMessageCreate(Discord::Message m);
-
 	void OnMessageReactionAdd(Discord::MessageReactionPacket p);
-
 	void OnMessageReactionRemove(Discord::MessageReactionPacket p);
-
-	void OnWSSError(SimpleWeb::error_code errorCode);
-
-	void OnWSSDisconnect(int statusCode, std::string reason);
+	void OnStop();
+	void OnResumeSuccess();
 
 	// Reads the session_id and sequence number from session.json and sends a RESUME packet with the read information.
 	// This will do nothing if the session ID is too old.

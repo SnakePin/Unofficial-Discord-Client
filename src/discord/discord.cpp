@@ -12,6 +12,8 @@
 #include <atomic>
 #include <memory>
 #include <map>
+#include <mutex>
+#include <condition_variable>
 #include <algorithm>
 #include <functional>
 #include <string_view>
@@ -261,6 +263,8 @@ void Client::Stop() {
 
 	std::unique_lock<std::mutex> lock(conditionVariableMutex);
 	eventLoopExit.wait(lock, [this]() { return !(isRunning.load()); });
+
+	OnStop();
 }
 
 Client::Client(const Client& other)
@@ -372,5 +376,8 @@ void Client::OnMessageReactionRemove(MessageReactionPacket p) {
 }
 void Client::OnReconnectPacket() {
 	std::cout << "Client: OnReconnectPacket default impl." << std::endl;
+}
+void Client::OnStop() {
+	std::cout << "Client: OnStop default impl." << std::endl;
 }
 #pragma endregion

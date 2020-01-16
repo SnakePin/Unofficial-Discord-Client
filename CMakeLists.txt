@@ -46,7 +46,6 @@ else()
   target_compile_options(Unofficial-Discord-Client PRIVATE "$<$<CONFIG:RELEASE>:-O3>")
 endif()
 
-
 target_include_directories(Unofficial-Discord-Client PUBLIC "${PROJECT_SOURCE_DIR}/include")
 
 # rapidjson include path
@@ -62,38 +61,28 @@ add_subdirectory(external/cpr)
 target_include_directories(Unofficial-Discord-Client SYSTEM PUBLIC ${CPR_INCLUDE_DIRS})
 target_link_libraries(Unofficial-Discord-Client PUBLIC ${CPR_LIBRARIES})
 
-# Add OpenSSL
+# Set path variables for OpenSSL, OpenGL and SDL2 libraries
 find_package(OpenSSL REQUIRED)
-target_include_directories(Unofficial-Discord-Client SYSTEM PRIVATE ${OPENSSL_INCLUDE_DIR})
-target_link_libraries(Unofficial-Discord-Client PRIVATE ${OPENSSL_LIBRARIES})
-
-# Add libasio and use standalone asio
-target_compile_definitions(Unofficial-Discord-Client PRIVATE USE_STANDALONE_ASIO ASIO_STANDALONE)
-set(LIBASIO_INCLUDE_PATH "${PROJECT_SOURCE_DIR}/external/libasio/include")
-
-# Add SWS
-set(SWS_INCLUDE_PATH "${PROJECT_SOURCE_DIR}/external/sws")
-
-# Add TCLAP
-set(TCLAP_INCLUDE_PATH "${PROJECT_SOURCE_DIR}/external/tclap/include")
-
-# Add tinyformat
-set(TINYFORMAT_INCLUDE_PATH "${PROJECT_SOURCE_DIR}/external/tinyformat")
-
-# Add most of the include paths to project include path
-target_include_directories(Unofficial-Discord-Client SYSTEM PUBLIC ${LIBASIO_INCLUDE_PATH} ${SWS_INCLUDE_PATH} ${TINYFORMAT_INCLUDE_PATH} ${TCLAP_INCLUDE_PATH})
-
-# Add SDL2
-
+find_package(OpenGL REQUIRED)
 find_package(SDL2 REQUIRED)
 if(WIN32)
 	foreach(DLL ${SDL2_DLLS})
 		add_custom_command(TARGET Unofficial-Discord-Client POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different ${DLL} $<TARGET_FILE_DIR:Unofficial-Discord-Client>)
 	endforeach()
 endif()
-target_include_directories(Unofficial-Discord-Client SYSTEM PRIVATE ${SDL2_INCLUDE_DIRS})
-target_link_libraries(Unofficial-Discord-Client PRIVATE ${SDL2_LIBS})
+set(LIBASIO_INCLUDE_PATH "${PROJECT_SOURCE_DIR}/external/libasio/include")
+set(SWS_INCLUDE_PATH "${PROJECT_SOURCE_DIR}/external/sws")
+set(TCLAP_INCLUDE_PATH "${PROJECT_SOURCE_DIR}/external/tclap/include")
+set(TINYFORMAT_INCLUDE_PATH "${PROJECT_SOURCE_DIR}/external/tinyformat")
 
-# Add OpenGL
-find_package(OpenGL REQUIRED)
-target_link_libraries(Unofficial-Discord-Client PRIVATE ${OPENGL_gl_LIBRARY})
+# Use standalone asio
+target_compile_definitions(Unofficial-Discord-Client PRIVATE USE_STANDALONE_ASIO ASIO_STANDALONE)
+
+# Add SWS and libasio includes as public
+target_include_directories(Unofficial-Discord-Client SYSTEM PUBLIC ${LIBASIO_INCLUDE_PATH} ${SWS_INCLUDE_PATH})
+
+# Add TCLAP, tinyformat, SDL2 and OpenSSL includes as private
+target_include_directories(Unofficial-Discord-Client SYSTEM PRIVATE ${TINYFORMAT_INCLUDE_PATH} ${TCLAP_INCLUDE_PATH} ${SDL2_INCLUDE_DIRS} ${OPENSSL_INCLUDE_DIR})
+
+# Add SDL2, OpenGL and OpenSSL link libraries as private
+target_link_libraries(Unofficial-Discord-Client PRIVATE ${SDL2_LIBS} ${OPENGL_LIBRARY} ${OPENSSL_LIBRARIES})
