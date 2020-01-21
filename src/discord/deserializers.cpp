@@ -14,7 +14,7 @@
 #include "discord/attachment.hpp"
 #include "discord/deserializable_serializable_class_type.hpp"
 #include "discord/deserializers.hpp"
-#include "discord/utils.hpp"
+#include "discord/InternalUtils.hpp"
 
 /*
 	This file contains functions for

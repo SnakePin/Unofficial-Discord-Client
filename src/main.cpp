@@ -23,6 +23,7 @@
 #include <rapidjson/ostreamwrapper.h>
 #include <rapidjson/istreamwrapper.h>
 #include <fstream>
+#include <filesystem>
 
 #include <tinyformat.h>
 
@@ -62,7 +63,8 @@ void MyClient::StopAndSaveSession() {
 	Stop();
 }
 
-void MyClient::OnStop() {
+void MyClient::OnPostStop() {
+	UpdateSessionJson();
 	isIdentified = false;
 }
 
@@ -77,9 +79,9 @@ void MyClient::OnHelloPacket() {
 
 void MyClient::OnReadyPacket(Discord::ReadyPacket packet) {
 	std::cout << "Received ready packet:" << std::endl <<
-		"\tpacket.version: " << packet.version <<
-		"\tpacket.sessionID: " << packet.sessionID <<
-		"\tpacket.user.username: " << packet.user.username <<
+		"\tpacket.version: " << packet.version << std::endl <<
+		"\tpacket.sessionID: " << packet.sessionID << std::endl <<
+		"\tpacket.user.username: " << packet.user.username << std::endl <<
 		"\tpacket.user.discriminator: " << packet.user.discriminator << std::endl;
 	isIdentified = true;
 	// TODO shorten this
@@ -177,7 +179,13 @@ void MyClient::OnMessageReactionRemove(Discord::MessageReactionPacket p) {
 }
 
 void MyClient::LoadAndSendResume() {
+	if (!std::filesystem::exists("session.json")) {
+		std::cout << "session.json doesn't exist!" << std::endl;
+		return;
+	}
+
 	std::ifstream jsonFile("session.json");
+
 	rapidjson::IStreamWrapper iswrapper(jsonFile);
 	rapidjson::Document document;
 	document.ParseStream(iswrapper);
@@ -429,7 +437,8 @@ int main(int argc, char* argv[]) {
 	std::string tokenString(discordTokenArg.getValue());
 
 	std::shared_ptr<MyClient> client = std::make_shared<MyClient>(tokenString, tokenType);
-	std::shared_ptr<std::thread> clientThread = std::make_shared<std::thread>(&Discord::Client::Run, &*client);
+	
+	client->Run();
 
 	//TODO: make ConsoleTest better and thread-safe
 
@@ -444,7 +453,7 @@ int main(int argc, char* argv[]) {
 
 	if (showGUIArg.getValue()) {
 		std::cout << "Starting GUI client." << std::endl;
-		uiThread = std::thread(&startImguiClient, client, clientThread);
+		uiThread = std::thread(&startImguiClient, client);
 	}
 
 	if (consoleThread.has_value()) {
@@ -455,7 +464,6 @@ int main(int argc, char* argv[]) {
 	}
 
 	client->StopAndSaveSession();
-	clientThread->join();
 
 	std::cout << "Exiting main with code 0" << std::endl;
 	return 0;

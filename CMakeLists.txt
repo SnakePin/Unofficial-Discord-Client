@@ -3,12 +3,17 @@
 # $ cmake --version
 cmake_minimum_required(VERSION 3.8)
 
-# Set the project name and make rest of the file a project, this enables more CMake features
-project (Unofficial-Discord-Client)
+# Set the project name
+project(Unofficial-Discord-Client)
 
 # If build type is not specified then fallback to Release config
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
+endif()
+
+# Prevent in-source builds
+if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
+    message(FATAL_ERROR "In-source builds not allowed. Please make a new directory (called a build directory) named \"build\" and run CMake from there. You may need to remove CMakeCache.txt.")
 endif()
 
 # Add our own CMake modules
@@ -20,69 +25,59 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/output/lib")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/output/bin")
 
 # Add all files
-file(GLOB_RECURSE SOURCES
-  "include/*.h"
-  "include/*.hpp"
-  "src/*.c"
-  "src/*.cpp"
-)
+file(GLOB_RECURSE SOURCES "src/*.c" "src/*.cpp")
+file(GLOB_RECURSE HEADERS "include/*.h" "include/*.hpp")
 
 # Add an executable with the above sources
-add_executable(Unofficial-Discord-Client ${SOURCES})
+add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 
 # Set required C++ version, this needs to be here, after the add_executable call
-target_compile_features(Unofficial-Discord-Client PUBLIC cxx_std_17)
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 
-# Only add debug linker option to this project because we only need debug information for this project
+# Add the required flags to compiler and linker
 if (WIN32 AND MSVC OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
-  target_compile_options(Unofficial-Discord-Client PRIVATE "/W4")
-  target_compile_options(Unofficial-Discord-Client PRIVATE "$<$<CONFIG:RELEASE>:/O2>")
-  if(CMAKE_BUILD_TYPE EQUAL Debug OR CMAKE_BUILD_TYPE EQUAL RelWithDebInfo)
-    set_target_properties(Unofficial-Discord-Client PROPERTIES LINK_FLAGS "/DEBUG:FULL")
-  endif()
+  target_compile_options(${PROJECT_NAME} PRIVATE "/W4")
+  target_compile_options(${PROJECT_NAME} PRIVATE "$<$<CONFIG:RELEASE>:/O2>")
+  
+  # Set Windows SDK version to Windows XP
+  target_compile_definitions(${PROJECT_NAME} PRIVATE "_WIN32_WINNT=0x0501")
 else()
-  target_compile_options(Unofficial-Discord-Client PRIVATE "-Wall" "-Wextra")
-  target_compile_options(Unofficial-Discord-Client PRIVATE "$<$<CONFIG:DEBUG>:-g>")
-  target_compile_options(Unofficial-Discord-Client PRIVATE "$<$<CONFIG:RELEASE>:-O3>")
+  target_compile_options(${PROJECT_NAME} PRIVATE "-Wall" "-Wextra")
+  target_compile_options(${PROJECT_NAME} PRIVATE "$<$<CONFIG:DEBUG>:-g>")
+  target_compile_options(${PROJECT_NAME} PRIVATE "$<$<CONFIG:RELEASE>:-O3>")
 endif()
 
-target_include_directories(Unofficial-Discord-Client PUBLIC "${PROJECT_SOURCE_DIR}/include")
+target_include_directories(${PROJECT_NAME} PUBLIC "${PROJECT_SOURCE_DIR}/include")
 
-# rapidjson include path
-set(RAPIDJSON_INCLUDE_PATH "${PROJECT_SOURCE_DIR}/external/rapidjson/include")
-target_include_directories(Unofficial-Discord-Client SYSTEM PUBLIC ${RAPIDJSON_INCLUDE_PATH})
+# Add cpprestsdk
+find_package(cpprestsdk CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE cpprestsdk::cpprest)
+target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE cpprestsdk:cpprest)
 
-# Add CPR
-# Go away tests, go away!
-set(BUILD_CPR_TESTS OFF)
-# Only enable HTTP support in libcurl
-set(HTTP_ONLY ON)
-add_subdirectory(external/cpr)
-target_include_directories(Unofficial-Discord-Client SYSTEM PUBLIC ${CPR_INCLUDE_DIRS})
-target_link_libraries(Unofficial-Discord-Client PUBLIC ${CPR_LIBRARIES})
+# Add ASIO
+find_package(asio CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE asio::asio)
+target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE asio::asio)
 
-# Set path variables for OpenSSL, OpenGL and SDL2 libraries
-find_package(OpenSSL REQUIRED)
+# Add SDL2
+find_package(SDL2 CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE SDL2::SDL2)
+target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE SDL2::SDL2)
+
+# Add OpenGL (for imgui OpenGL implementation)
 find_package(OpenGL REQUIRED)
-find_package(SDL2 REQUIRED)
-if(WIN32)
-	foreach(DLL ${SDL2_DLLS})
-		add_custom_command(TARGET Unofficial-Discord-Client POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different ${DLL} $<TARGET_FILE_DIR:Unofficial-Discord-Client>)
-	endforeach()
-endif()
-set(LIBASIO_INCLUDE_PATH "${PROJECT_SOURCE_DIR}/external/libasio/include")
-set(SWS_INCLUDE_PATH "${PROJECT_SOURCE_DIR}/external/sws")
-set(TCLAP_INCLUDE_PATH "${PROJECT_SOURCE_DIR}/external/tclap/include")
-set(TINYFORMAT_INCLUDE_PATH "${PROJECT_SOURCE_DIR}/external/tinyformat")
+target_link_libraries(${PROJECT_NAME} PRIVATE OpenGL::GL)
+target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE OpenGL::GL)
 
-# Use standalone asio
-target_compile_definitions(Unofficial-Discord-Client PRIVATE USE_STANDALONE_ASIO ASIO_STANDALONE)
+# Add RapidJSON (header only lib)
+# This one has QUIET flag because it generates CMake messages
+find_package(RapidJSON CONFIG REQUIRED)
+target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${RAPIDJSON_INCLUDE_DIR})
 
-# Add SWS and libasio includes as public
-target_include_directories(Unofficial-Discord-Client SYSTEM PUBLIC ${LIBASIO_INCLUDE_PATH} ${SWS_INCLUDE_PATH})
+# Add TCLAP (has no CMake integration) (header only lib)
+find_path(TCLAP_INCLUDE_DIR "tclap/CmdLine.h")
+target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${TCLAP_INCLUDE_DIR})
 
-# Add TCLAP, tinyformat, SDL2 and OpenSSL includes as private
-target_include_directories(Unofficial-Discord-Client SYSTEM PRIVATE ${TINYFORMAT_INCLUDE_PATH} ${TCLAP_INCLUDE_PATH} ${SDL2_INCLUDE_DIRS} ${OPENSSL_INCLUDE_DIR})
-
-# Add SDL2, OpenGL and OpenSSL link libraries as private
-target_link_libraries(Unofficial-Discord-Client PRIVATE ${SDL2_LIBS} ${OPENGL_LIBRARY} ${OPENSSL_LIBRARIES})
+# Add tinyformat (has no CMake integration) (header only lib)
+set(TINYFORMAT_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/external/tinyformat")
+target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${TINYFORMAT_INCLUDE_DIR})

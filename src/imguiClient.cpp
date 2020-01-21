@@ -61,7 +61,7 @@ bool is_future_ready(std::future<R> const& f)
 	return f.wait_for(std::chrono::seconds(0)) == std::future_status::ready;
 }
 
-int startImguiClient(std::shared_ptr<MyClient> client, std::shared_ptr<std::thread> clientThread) {
+int startImguiClient(std::shared_ptr<MyClient> client) {
 	std::cout << "Starting SDL2..." << std::endl;
 
 	const int defaultWindowWidth = 1280;
@@ -163,17 +163,12 @@ int startImguiClient(std::shared_ptr<MyClient> client, std::shared_ptr<std::thre
 				std::cout << "GUI: Calling MyClient::LoadAndSendResume..." << std::endl;
 				client->LoadAndSendResume();
 			}
-			if (ImGui::Button("Create a new thread and call Client::Run in it")) {
+			if (ImGui::Button("Call Client::Run")) {
 				std::cout << "GUI: Stopping client..." << std::endl;
 				client->Stop();
 
-				std::cout << "GUI: Joining client thread..." << std::endl;
-				//If we don't join the thread here, on the next assignment the thread's deconstructor will be called and it will throw error
-				clientThread->join();
-
-				std::cout << "GUI: Creating new client thread and deconstructing the old one..." << std::endl;
-				//TODO: use a thread-safe alternative to the line below
-				*clientThread = std::thread(&Discord::Client::Run, &*client);
+				std::cout << "GUI: Starting client..." << std::endl;
+				client->Run();
 			}
 			if (ImGui::Button("Call Client::Stop")) {
 				std::cout << "GUI: Stopping client..." << std::endl;
@@ -191,13 +186,10 @@ int startImguiClient(std::shared_ptr<MyClient> client, std::shared_ptr<std::thre
 				if (ImGui::Button("Create a new client with the token below")) {
 					std::cout << "GUI: Stopping client..." << std::endl;
 					client->Stop();
-					clientThread->join();
 
-					std::cout << "GUI: Creating new client and thread..." << std::endl;
-					//TODO: use a thread-safe alternative to the lines below
-
+					std::cout << "GUI: Creating new client..." << std::endl;
+					//TODO: use a thread-safe alternative to the line below
 					*client = MyClient(newToken, (Discord::AuthTokenType)tokenType);
-					*clientThread = std::thread(&Discord::Client::Run, &*client);
 				}
 
 				ImGuiTextNoFormat("New token: "); ImGui::SameLine();
@@ -466,8 +458,8 @@ CleanupAndExit:
 	return 0;
 }
 
-static ImVec4 RGBAToImVec4(unsigned char r, unsigned char g, unsigned char b, unsigned char a) {
-	return ImVec4(r / 255.f, g / 0.f, b / 0.f, a / 255.f);
+static ImVec4 RGBAToImVec4(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+	return ImVec4(r / 255.f, g / 255.f, b / 255.f, a / 255.f);
 }
 
 static void ImGuiDisplayDiscordMessage(const Discord::Message& message) {

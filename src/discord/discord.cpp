@@ -2,9 +2,9 @@
 #include "discord/token.hpp"
 #include "discord/packets.hpp"
 #include "discord/gateway_opcodes.hpp"
-#include "discord/utils.hpp"
+#include "discord/InternalUtils.hpp"
 
-#include "sws/client_wss.hpp"
+#include <cpprest/ws_client.h>
 
 #include <rapidjson/document.h>
 #include <rapidjson/pointer.h>
@@ -16,25 +16,31 @@
 #include <condition_variable>
 #include <algorithm>
 #include <functional>
-#include <string_view>
+#include <string>
+
+#undef GetObject
 
 using namespace Discord;
-using namespace Utils;
+using namespace InternalUtils;
+
+using utility::conversions::to_string_t;
+using utility::conversions::to_utf8string;
+using web::web_sockets::client::websocket_incoming_message;
+using web::web_sockets::client::websocket_outgoing_message;
+using web::web_sockets::client::websocket_close_status;
+
+static Concurrency::task<void> CasabalancaWebSocketSendUtf8StringAsync(Discord::WssClient& wsclient, const std::string& str);
 
 Client::Client(const std::string& token, AuthTokenType tokenType)
 	: token(token, tokenType), //Make sure token is set before httpAPI is initialized
-	sessionID(""),
 	heartbeatInterval(40000),
-	websocket("gateway.discord.gg/?v=6&encoding=json", false),
-	sequenceNumber(0),
 	userAgent(DefaultUserAgentString),
 
 	// When we pass *this to HTTP_API_CLASS's constructor it will call the Client::HTTP_API_CLASS::HTTP_API_CLASS(const Client& clientObj)
 	// This means HTTP_API_CLASS will have reference to the outer class to allow it to access things like token
 	httpAPI(*this)
 {
-	io_context = std::make_shared<asio::io_context>();
-	heartbeatTimer = std::make_unique<asio::steady_timer>(*io_context);
+
 }
 
 std::string Client::GenerateIdentifyPacket(bool compress) {
@@ -47,7 +53,7 @@ std::string Client::GenerateIdentifyPacket(bool compress) {
 	rapidjson::Pointer("/d/properties/os").Set(document, "Linux");
 	rapidjson::Pointer("/d/properties/browser").Set(document, "Chrome");
 	rapidjson::Pointer("/d/properties/device").Set(document, "");
-	rapidjson::Pointer("/d/properties/browser_user_agent").Set(document, userAgent.c_str());
+	rapidjson::Pointer("/d/properties/browser_user_agent").Set(document, to_utf8string(userAgent).c_str());
 	rapidjson::Pointer("/d/properties/browser_version").Set(document, "");
 	rapidjson::Pointer("/d/properties/os_version").Set(document, "");
 	rapidjson::Pointer("/d/properties/referrer").Set(document, "");
@@ -105,35 +111,35 @@ std::string Client::GenerateGuildChannelViewPacket(const Snowflake& guild, const
 	return JsonDocumentToJsonString(document);
 }
 
-void Client::SendHeartbeatAndResetTimer(const asio::error_code& error) {
-	if (!error) {
-		connection->send("{\"op\":1,\"d\":" + std::to_string(sequenceNumber) + "}");
-		std::cout << "Client: Sending heartbeat." << std::endl;
+void Client::SendHeartbeatAndResetTimer() {
+	CasabalancaWebSocketSendUtf8StringAsync(websocket, "{\"op\":1,\"d\":" + std::to_string(sequenceNumber) + "}").wait();
+	std::cout << "Client: Sending heartbeat." << std::endl;
 
-		heartbeatTimer->expires_from_now(std::chrono::milliseconds(heartbeatInterval - 2000));
-		heartbeatTimer->async_wait(std::bind(&Client::SendHeartbeatAndResetTimer, this, std::placeholders::_1));
-	}
+	heartbeatTimer.doLater(heartbeatInterval - 2000, [this]() {
+		SendHeartbeatAndResetTimer();
+	});
 }
 
 void Client::SendIdentify() {
-	ScheduleNewWSSPacket(GenerateIdentifyPacket());
+	CasabalancaWebSocketSendUtf8StringAsync(websocket, GenerateIdentifyPacket()).wait();
 }
 
 void Client::SendResume(std::string& sessionID, uint32_t sequenceNumber) {
 	this->sessionID = sessionID;
-	ScheduleNewWSSPacket(GenerateResumePacket(sessionID, sequenceNumber));
+	CasabalancaWebSocketSendUtf8StringAsync(websocket, GenerateResumePacket(sessionID, sequenceNumber)).wait();
 }
 
 void Client::ProcessHello(rapidjson::Document& document) {
 	rapidjson::Value eventData = document["d"].GetObject();
 	heartbeatInterval = eventData["heartbeat_interval"].GetInt();
 
-	heartbeatTimer->expires_from_now(std::chrono::milliseconds(heartbeatInterval - 2000));
-	heartbeatTimer->async_wait(std::bind(&Client::SendHeartbeatAndResetTimer, this, std::placeholders::_1));
+	heartbeatTimer.doLater(heartbeatInterval - 2000, [this]() {
+		SendHeartbeatAndResetTimer();
+	});
 
 	std::cout << "Client: Received HELLO packet. Heartbeat interval: " << heartbeatInterval << std::endl;
 
-	OnHelloPacket();
+	CallFunctionAsynchronouslyAndForget(std::bind(&Client::OnHelloPacket, this));
 }
 
 void Client::ProcessDispatch(rapidjson::Document& document) {
@@ -144,14 +150,42 @@ void Client::ProcessDispatch(rapidjson::Document& document) {
 
 	const std::map<std::string, std::function<void(void)>> dispatchEventHandlers
 	{
-		{ "GUILD_CREATE", [this, &document]() { Guild tmpVar; tmpVar.LoadFrom(document, "/d"); OnGuildCreate(tmpVar); }},
-		{ "READY", [this, &document]() { ProcessReady(document); }},
-		{ "MESSAGE_CREATE", [this, &document]() { Message tmpVar; tmpVar.LoadFrom(document, "/d"); OnMessageCreate(tmpVar); }},
-		{ "MESSAGE_REACTION_ADD", [this, &document]() { MessageReactionPacket tmpVar; tmpVar.LoadFrom(document, "/d"); OnMessageReactionAdd(tmpVar); }},
-		{ "MESSAGE_REACTION_REMOVE", [this, &document]() { MessageReactionPacket tmpVar; tmpVar.LoadFrom(document, "/d"); OnMessageReactionRemove(tmpVar); }},
-		{ "TYPING_START", [this, &document]() { TypingStartPacket tmpVar; tmpVar.LoadFrom(document, "/d"); OnTypingStart(tmpVar); }},
-		{ "GUILD_MEMBER_LIST_UPDATE", [this, &document]() { GuildMemberListUpdatePacket tmpVar; tmpVar.LoadFrom(document, "/d"); OnGuildMemberListUpdate(tmpVar); }},
-		{ "RESUMED", [this]() { OnResumeSuccess(); }},
+		{ "GUILD_CREATE", [this, &document]() {
+			Guild tmpVar;
+			tmpVar.LoadFrom(document, "/d");
+			CallFunctionAsynchronouslyAndForget(std::bind(&Client::OnGuildCreate, this, tmpVar));
+		}},
+		{ "READY", [this, &document]() {
+			ProcessReady(document);
+		}},
+		{ "MESSAGE_CREATE", [this, &document]() {
+			Message tmpVar;
+			tmpVar.LoadFrom(document, "/d");
+			CallFunctionAsynchronouslyAndForget(std::bind(&Client::OnMessageCreate, this, tmpVar));
+		}},
+		{ "MESSAGE_REACTION_ADD", [this, &document]() {
+			MessageReactionPacket tmpVar;
+			tmpVar.LoadFrom(document, "/d");
+			CallFunctionAsynchronouslyAndForget(std::bind(&Client::OnMessageReactionAdd, this, tmpVar));
+		}},
+		{ "MESSAGE_REACTION_REMOVE", [this, &document]() {
+			MessageReactionPacket tmpVar;
+			tmpVar.LoadFrom(document, "/d");
+			CallFunctionAsynchronouslyAndForget(std::bind(&Client::OnMessageReactionRemove, this, tmpVar));
+		}},
+		{ "TYPING_START", [this, &document]() {
+			TypingStartPacket tmpVar;
+			tmpVar.LoadFrom(document, "/d");
+			CallFunctionAsynchronouslyAndForget(std::bind(&Client::OnTypingStart, this, tmpVar));
+		}},
+		{ "GUILD_MEMBER_LIST_UPDATE", [this, &document]() {
+			GuildMemberListUpdatePacket tmpVar;
+			tmpVar.LoadFrom(document, "/d");
+			CallFunctionAsynchronouslyAndForget(std::bind(&Client::OnGuildMemberListUpdate, this, tmpVar));
+		}},
+		{ "RESUMED", [this]() {
+			CallFunctionAsynchronouslyAndForget(std::bind(&Client::OnResumeSuccess, this));
+		}},
 	};
 
 	if (dispatchEventHandlers.find(eventName) != dispatchEventHandlers.end()) {
@@ -166,25 +200,24 @@ void Client::ProcessReady(rapidjson::Document& document) {
 	ReadyPacket packet;
 	packet.LoadFrom(document, "/d");
 	sessionID = packet.sessionID;
-	OnReadyPacket(packet);
+	CallFunctionAsynchronouslyAndForget(std::bind(&Client::OnReadyPacket, this, packet));
 }
 
 void Client::ProcessReconnectPacket(rapidjson::Document& document) {
-	websocket.stop();
-	websocket.start();
+	websocket.close().wait();
+	websocket.connect(DefaultGatewayURL).wait();
 }
 
 void Client::Run() {
-	//If event loop is already running then return
+	//If already running then return
 	if (isRunning) {
 		return;
 	}
 
-	// Start constructing the websocket events:
-	// on_message, on_open, on_close, on_error
-	websocket.on_message = [this](std::shared_ptr<WssClient::Connection> /* connection */, std::shared_ptr<WssClient::InMessage> in_message) {
-		// string() can only be called once because it consumes the stream buffer, so make sure to store the return value!
-		std::string response = in_message->string();
+	websocket.set_message_handler([this](websocket_incoming_message msg)
+	{
+		// handle message from server...
+		std::string response = to_utf8string(msg.extract_string().get());
 
 		rapidjson::Document document;
 		document.Parse(response.c_str());
@@ -197,7 +230,7 @@ void Client::Run() {
 			ProcessDispatch(document);
 		}
 		else if (opcode == GatewayOpcodes::InvalidSession) {
-			OnResumeFail();
+			CallFunctionAsynchronouslyAndForget(std::bind(&Client::OnResumeFail, this));
 		}
 		else if (opcode == GatewayOpcodes::HeartbeatAck) {
 			//ProcessHeartbeatAck();
@@ -208,63 +241,45 @@ void Client::Run() {
 		else {
 			std::cout << "Client: Unknown opcode received: \"" << response << "\"" << std::endl;
 		}
-	};
+	});
 
-	websocket.on_open = [this](std::shared_ptr<WssClient::Connection> connection) {
-		this->connection = connection;
-		OnWSSConnect();
-	};
+	websocket.set_close_handler([this](websocket_close_status close_status, const utility::string_t& reason, const std::error_code& error)
+	{
+		//Stop must be called asynchronously or else it won't be able to destruct the websocket because destructor will wait for this handler to finish.
+		CallFunctionAsynchronouslyAndForget(std::bind(&Client::Stop, this));
+		CallFunctionAsynchronouslyAndForget(std::bind(&Client::OnWSSDisconnect, this, error, to_utf8string(reason)));
+	});
 
-	websocket.on_close = [this](std::shared_ptr<WssClient::Connection> /*connection*/, int status, const std::string& reason) {
-		OnWSSDisconnect(status, reason);
-		InternalSignalStop();
-	};
-
-	websocket.on_error = [this](std::shared_ptr<WssClient::Connection> /*connection*/, const SimpleWeb::error_code& ec) {
-		OnWSSError(ec);
-		InternalSignalStop();
-	};
-
-	//Reset io_service if it is in stopped status
-	if (io_context->stopped()) {
-		//io_context must be resetted in prior to run() or else it will stay in stopped status and it won't do work
-		io_context->reset();
-	}
-
-	//Set io_service of the websocket to the shared io_context and start the websocket
-	//Note: websocket won't be able to make any connection until event loop is started
-	websocket.io_service = this->io_context;
-	websocket.start();
-
-	//This line will make sure run() doesn't return when there are no tasks to do
-	//This way the run() will only return when stop() is called
-	asio::io_context::work work(*io_context);
-
-	//Start the event loop
-	isRunning = true;
-	io_context->run();
-	isRunning = false;
-	eventLoopExit.notify_all();
-}
-
-void Client::InternalSignalStop() {
-	heartbeatTimer->cancel();
-	websocket.stop();
-	io_context->stop();
+	websocket.connect(to_string_t(DefaultGatewayURL)).then([this]()
+	{
+		isRunning = true;
+		CallFunctionAsynchronouslyAndForget(std::bind(&Client::OnWSSConnect, this));
+	}).wait();
 }
 
 void Client::Stop() {
-	//Return if not running or else the eventLoopExit condition_variable will create deadlock
+	//Return if not running
 	if (!isRunning) {
 		return;
 	}
 
-	InternalSignalStop();
+	//Don't forget to change the close handler!
+	websocket.set_close_handler([](websocket_close_status close_status, const utility::string_t& reason, const std::error_code& error)
+	{
+		std::cout << "Client: Connection closed gracefully." << std::endl;
+	});
 
-	std::unique_lock<std::mutex> lock(conditionVariableMutex);
-	eventLoopExit.wait(lock, [this]() { return !(isRunning.load()); });
+	websocket.close().wait();
+	
+	//Same websocket_callback_client instance can't be re-used after disconnection.
+	websocket = WssClient{};
+	
+	heartbeatTimer.cancel();
 
-	OnStop();
+	CallFunctionAsynchronouslyAndForget(std::bind(&Client::OnPostStop, this));
+
+	sequenceNumber = 0;
+	isRunning = false;
 }
 
 Client::Client(const Client& other)
@@ -283,16 +298,17 @@ Client& Client::operator=(const Client& other) {
 	sessionID = other.sessionID;
 	heartbeatInterval = other.heartbeatInterval;
 	sequenceNumber = other.sequenceNumber;
+	httpAPI.userAgent = other.httpAPI.userAgent;
 
 	return *this;
 }
 
 bool Client::IsRunning() {
-	return isRunning.load();
+	return isRunning;
 }
 
 void Client::OpenGuildChannelView(const Snowflake& guild, const Snowflake& channel) {
-	ScheduleNewWSSPacket(GenerateGuildChannelViewPacket(guild, channel));
+	CasabalancaWebSocketSendUtf8StringAsync(websocket, GenerateGuildChannelViewPacket(guild, channel)).wait();
 }
 
 void Client::OpenPrivateChannelView(const Snowflake& channel) {
@@ -311,7 +327,7 @@ void Client::OpenPrivateChannelView(const Snowflake& channel) {
 	rapidjson::Pointer("/op").Set(document, 13);
 	rapidjson::Pointer("/d/channel_id").Set(document, std::to_string(channel.value).c_str());
 
-	ScheduleNewWSSPacket(JsonDocumentToJsonString(document));
+	CasabalancaWebSocketSendUtf8StringAsync(websocket, JsonDocumentToJsonString(document)).wait();
 }
 
 void Client::UpdatePresence(std::string& status) {
@@ -322,30 +338,25 @@ void Client::UpdatePresence(std::string& status) {
 	rapidjson::Pointer("/d/afk").Set(document, false);
 	rapidjson::Pointer("/d/activities").Set(document, rapidjson::Value(rapidjson::kArrayType));
 
-	ScheduleNewWSSPacket(JsonDocumentToJsonString(document));
+	CasabalancaWebSocketSendUtf8StringAsync(websocket, JsonDocumentToJsonString(document)).wait();
 }
 
-void Client::ScheduleNewWSSPacket(std::string out_message_str, const std::function<void(const std::error_code&)> callback, unsigned char fin_rsv_opcode) {
-	//We must explicity add the string and the callback (must not be a reference) to capture list of the lambda here
-	//or else it would have an invalid reference when it is called by event loop run thread
-	//Note: we use std::move on string and callback because we no longer need the local copy of it but on fin_rsv_opcode it doesn't really matter as it has no move ctor
-	asio::post(*websocket.io_service, [this, out_message_str = std::move(out_message_str), callback = std::move(callback), fin_rsv_opcode]{
-		connection->send(out_message_str, callback, fin_rsv_opcode);
-		});
+static Concurrency::task<void> CasabalancaWebSocketSendUtf8StringAsync(Discord::WssClient& wsclient, const std::string& str) {
+	websocket_outgoing_message msg;
+	msg.set_utf8_message(str);
+
+	return wsclient.send(msg);
 }
 
 #pragma region Default OnEvent function implementations
 void Client::OnHelloPacket() {
 	SendIdentify();
 }
-void Client::OnWSSDisconnect(int statusCode, std::string reason) {
-	std::cout << "Client: Closed connection with status code " << statusCode << " and the reason being \"" << reason << "\"" << std::endl;
-}
-void Client::OnWSSError(SimpleWeb::error_code errorCode) {
-	std::cout << "Client: Connection closed. Error: " << errorCode << ", error message: " << errorCode.message() << std::endl;
+void Client::OnWSSDisconnect(std::error_code errorCode, std::string reason) {
+	std::cout << "Client: Closed connection with code " << errorCode << " and the reason being \"" << reason << "\"" << std::endl;
 }
 void Client::OnWSSConnect() {
-	std::cout << "Client: Opened connection to " << connection->remote_endpoint_address() << std::endl;
+	std::cout << "Client: Opened connection to " << to_utf8string(websocket.uri().host()) << std::endl;
 }
 void Client::OnResumeFail() {
 	std::cout << "Client: OnResumeFail default impl." << std::endl;
@@ -377,7 +388,7 @@ void Client::OnMessageReactionRemove(MessageReactionPacket p) {
 void Client::OnReconnectPacket() {
 	std::cout << "Client: OnReconnectPacket default impl." << std::endl;
 }
-void Client::OnStop() {
-	std::cout << "Client: OnStop default impl." << std::endl;
+void Client::OnPostStop() {
+	std::cout << "Client: OnPostStop default impl." << std::endl;
 }
 #pragma endregion

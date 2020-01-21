@@ -61,7 +61,7 @@ public:
 	void OnMessageCreate(Discord::Message m);
 	void OnMessageReactionAdd(Discord::MessageReactionPacket p);
 	void OnMessageReactionRemove(Discord::MessageReactionPacket p);
-	void OnStop();
+	void OnPostStop();
 	void OnResumeSuccess();
 
 	// Reads the session_id and sequence number from session.json and sends a RESUME packet with the read information.

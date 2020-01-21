@@ -14,8 +14,3 @@ build/*
 output/*
 .vscode/*
 .vs/*
-imgui.ini
-external/sdl2-precompiled/*
-
-# CMake MSVC files
-*.dir/*
