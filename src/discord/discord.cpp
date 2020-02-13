@@ -29,10 +29,10 @@ using web::web_sockets::client::websocket_incoming_message;
 using web::web_sockets::client::websocket_outgoing_message;
 using web::web_sockets::client::websocket_close_status;
 
-static Concurrency::task<void> CasabalancaWebSocketSendUtf8StringAsync(Discord::WssClient& wsclient, const std::string& str);
+static pplx::task<void> CasabalancaWebSocketSendUtf8StringAsync(Discord::WssClient& wsclient, const std::string& str);
 
-Client::Client(const std::string& token, AuthTokenType tokenType)
-	: token(token, tokenType), //Make sure token is set before httpAPI is initialized
+Client::Client(const std::string& authToken_arg, AuthTokenType tokenType)
+	: authToken(authToken_arg, tokenType), //Make sure token is set before httpAPI is initialized
 	heartbeatInterval(40000),
 	userAgent(DefaultUserAgentString),
 
@@ -47,13 +47,13 @@ std::string Client::GenerateIdentifyPacket(bool compress) {
 	rapidjson::Document document;
 
 	rapidjson::Pointer("/op").Set(document, GatewayOpcodes::Identify);
-	rapidjson::Pointer("/d/token").Set(document, this->token.value.c_str());
+	rapidjson::Pointer("/d/token").Set(document, authToken.value);
 	rapidjson::Pointer("/d/compress").Set(document, compress);
 
 	rapidjson::Pointer("/d/properties/os").Set(document, "Linux");
 	rapidjson::Pointer("/d/properties/browser").Set(document, "Chrome");
 	rapidjson::Pointer("/d/properties/device").Set(document, "");
-	rapidjson::Pointer("/d/properties/browser_user_agent").Set(document, to_utf8string(userAgent).c_str());
+	rapidjson::Pointer("/d/properties/browser_user_agent").Set(document, to_utf8string(userAgent));
 	rapidjson::Pointer("/d/properties/browser_version").Set(document, "");
 	rapidjson::Pointer("/d/properties/os_version").Set(document, "");
 	rapidjson::Pointer("/d/properties/referrer").Set(document, "");
@@ -73,13 +73,13 @@ std::string Client::GenerateIdentifyPacket(bool compress) {
 	return JsonDocumentToJsonString(document);
 }
 
-std::string Client::GenerateResumePacket(std::string& sessionID, uint32_t sequenceNumber) {
+std::string Client::GenerateResumePacket(std::string& sessionID_arg, uint32_t sequenceNumber_arg) {
 	rapidjson::Document document;
 
 	rapidjson::Pointer("/op").Set(document, GatewayOpcodes::Resume);
-	rapidjson::Pointer("/d/session_id").Set(document, sessionID.c_str());
-	rapidjson::Pointer("/d/token").Set(document, this->token.value.c_str());
-	rapidjson::Pointer("/d/seq").Set(document, sequenceNumber);
+	rapidjson::Pointer("/d/session_id").Set(document, sessionID_arg);
+	rapidjson::Pointer("/d/token").Set(document, authToken.value);
+	rapidjson::Pointer("/d/seq").Set(document, sequenceNumber_arg);
 
 	return JsonDocumentToJsonString(document);
 }
@@ -93,7 +93,7 @@ std::string Client::GenerateGuildChannelViewPacket(const Snowflake& guild, const
 	rapidjson::Document document;
 	rapidjson::Document::AllocatorType& allocator = document.GetAllocator();
 	rapidjson::Pointer("/op").Set(document, 14); // GUILD_SWITCH
-	rapidjson::Pointer("/d/guild_id").Set(document, gid.c_str());
+	rapidjson::Pointer("/d/guild_id").Set(document, gid);
 	rapidjson::Pointer("/d/typing").Set(document, true);
 	rapidjson::Pointer("/d/activities").Set(document, true);
 
@@ -104,7 +104,7 @@ std::string Client::GenerateGuildChannelViewPacket(const Snowflake& guild, const
 	arr.PushBack(inn, allocator);
 
 	rapidjson::Value obj(rapidjson::kObjectType);
-	obj.AddMember(rapidjson::Value(cid.c_str(), allocator), arr, allocator);
+	obj.AddMember(rapidjson::Value(cid, allocator), arr, allocator);
 
 	rapidjson::Pointer("/d/channels").Set(document, obj);
 
@@ -124,9 +124,9 @@ void Client::SendIdentify() {
 	CasabalancaWebSocketSendUtf8StringAsync(websocket, GenerateIdentifyPacket()).wait();
 }
 
-void Client::SendResume(std::string& sessionID, uint32_t sequenceNumber) {
-	this->sessionID = sessionID;
-	CasabalancaWebSocketSendUtf8StringAsync(websocket, GenerateResumePacket(sessionID, sequenceNumber)).wait();
+void Client::SendResume(std::string& sessionID_arg, uint32_t sequenceNumber_arg) {
+	sessionID = sessionID_arg;
+	CasabalancaWebSocketSendUtf8StringAsync(websocket, GenerateResumePacket(sessionID_arg, sequenceNumber_arg)).wait();
 }
 
 void Client::ProcessHello(rapidjson::Document& document) {
@@ -152,7 +152,7 @@ void Client::ProcessDispatch(rapidjson::Document& document) {
 	{
 		{ "GUILD_CREATE", [this, &document]() {
 			Guild tmpVar;
-			tmpVar.LoadFrom(document, "/d");
+			tmpVar.LoadFrom(document["d"]);
 			CallFunctionAsynchronouslyAndForget(std::bind(&Client::OnGuildCreate, this, tmpVar));
 		}},
 		{ "READY", [this, &document]() {
@@ -160,27 +160,27 @@ void Client::ProcessDispatch(rapidjson::Document& document) {
 		}},
 		{ "MESSAGE_CREATE", [this, &document]() {
 			Message tmpVar;
-			tmpVar.LoadFrom(document, "/d");
+			tmpVar.LoadFrom(document["d"]);
 			CallFunctionAsynchronouslyAndForget(std::bind(&Client::OnMessageCreate, this, tmpVar));
 		}},
 		{ "MESSAGE_REACTION_ADD", [this, &document]() {
 			MessageReactionPacket tmpVar;
-			tmpVar.LoadFrom(document, "/d");
+			tmpVar.LoadFrom(document["d"]);
 			CallFunctionAsynchronouslyAndForget(std::bind(&Client::OnMessageReactionAdd, this, tmpVar));
 		}},
 		{ "MESSAGE_REACTION_REMOVE", [this, &document]() {
 			MessageReactionPacket tmpVar;
-			tmpVar.LoadFrom(document, "/d");
+			tmpVar.LoadFrom(document["d"]);
 			CallFunctionAsynchronouslyAndForget(std::bind(&Client::OnMessageReactionRemove, this, tmpVar));
 		}},
 		{ "TYPING_START", [this, &document]() {
 			TypingStartPacket tmpVar;
-			tmpVar.LoadFrom(document, "/d");
+			tmpVar.LoadFrom(document["d"]);
 			CallFunctionAsynchronouslyAndForget(std::bind(&Client::OnTypingStart, this, tmpVar));
 		}},
 		{ "GUILD_MEMBER_LIST_UPDATE", [this, &document]() {
 			GuildMemberListUpdatePacket tmpVar;
-			tmpVar.LoadFrom(document, "/d");
+			tmpVar.LoadFrom(document["d"]);
 			CallFunctionAsynchronouslyAndForget(std::bind(&Client::OnGuildMemberListUpdate, this, tmpVar));
 		}},
 		{ "RESUMED", [this]() {
@@ -198,12 +198,12 @@ void Client::ProcessDispatch(rapidjson::Document& document) {
 
 void Client::ProcessReady(rapidjson::Document& document) {
 	ReadyPacket packet;
-	packet.LoadFrom(document, "/d");
+	packet.LoadFrom(document["d"]);
 	sessionID = packet.sessionID;
 	CallFunctionAsynchronouslyAndForget(std::bind(&Client::OnReadyPacket, this, packet));
 }
 
-void Client::ProcessReconnectPacket(rapidjson::Document& document) {
+void Client::ProcessReconnectPacket(rapidjson::Document& /*document*/) {
 	websocket.close().wait();
 	websocket.connect(DefaultGatewayURL).wait();
 }
@@ -220,7 +220,7 @@ void Client::Run() {
 		std::string response = to_utf8string(msg.extract_string().get());
 
 		rapidjson::Document document;
-		document.Parse(response.c_str());
+		document.Parse(response);
 		GatewayOpcodes opcode = (GatewayOpcodes)document["op"].GetInt();
 
 		if (opcode == GatewayOpcodes::Hello) {
@@ -243,7 +243,7 @@ void Client::Run() {
 		}
 	});
 
-	websocket.set_close_handler([this](websocket_close_status close_status, const utility::string_t& reason, const std::error_code& error)
+	websocket.set_close_handler([this](websocket_close_status /*close_status*/, const utility::string_t& reason, const std::error_code& error)
 	{
 		//Stop must be called asynchronously or else it won't be able to destruct the websocket because destructor will wait for this handler to finish.
 		CallFunctionAsynchronouslyAndForget(std::bind(&Client::Stop, this));
@@ -264,7 +264,7 @@ void Client::Stop() {
 	}
 
 	//Don't forget to change the close handler!
-	websocket.set_close_handler([](websocket_close_status close_status, const utility::string_t& reason, const std::error_code& error)
+	websocket.set_close_handler([](websocket_close_status, const utility::string_t&, const std::error_code&)
 	{
 		std::cout << "Client: Connection closed gracefully." << std::endl;
 	});
@@ -283,7 +283,7 @@ void Client::Stop() {
 }
 
 Client::Client(const Client& other)
-	: Client(other.token.value, other.token.tokenType)
+	: Client(other.authToken.value, other.authToken.tokenType)
 {
 	*this = other;
 }
@@ -294,7 +294,7 @@ Client::~Client() {
 
 Client& Client::operator=(const Client& other) {
 	Stop();
-	token = other.token;
+	authToken = other.authToken;
 	sessionID = other.sessionID;
 	heartbeatInterval = other.heartbeatInterval;
 	sequenceNumber = other.sequenceNumber;
@@ -311,29 +311,20 @@ void Client::OpenGuildChannelView(const Snowflake& guild, const Snowflake& chann
 	CasabalancaWebSocketSendUtf8StringAsync(websocket, GenerateGuildChannelViewPacket(guild, channel)).wait();
 }
 
-void Client::OpenPrivateChannelView(const Snowflake& channel) {
-	// TODO this isn't working - reason is yet to be determined
-	return;
-
-	// Yes, this packet really is that short.
-	/*  {
-			"op": 13,
-			"d": {
-				"channel_id": "593804939407392793"
-			}
-		}
-	*/
+void Client::OpenPrivateChannelView(const Snowflake& /*channel*/) {
+	/*
+	// TODO this isn't working, reason is yet to be determined
 	rapidjson::Document document;
 	rapidjson::Pointer("/op").Set(document, 13);
-	rapidjson::Pointer("/d/channel_id").Set(document, std::to_string(channel.value).c_str());
+	rapidjson::Pointer("/d/channel_id").Set(document, std::to_string(channel.value));
 
-	CasabalancaWebSocketSendUtf8StringAsync(websocket, JsonDocumentToJsonString(document)).wait();
+	CasabalancaWebSocketSendUtf8StringAsync(websocket, JsonDocumentToJsonString(document)).wait();*/
 }
 
 void Client::UpdatePresence(std::string& status) {
 	rapidjson::Document document;
 	rapidjson::Pointer("/op").Set(document, GatewayOpcodes::StatusUpdate);
-	rapidjson::Pointer("/d/status").Set(document, status.c_str());
+	rapidjson::Pointer("/d/status").Set(document, status);
 	rapidjson::Pointer("/d/since").Set(document, 0);
 	rapidjson::Pointer("/d/afk").Set(document, false);
 	rapidjson::Pointer("/d/activities").Set(document, rapidjson::Value(rapidjson::kArrayType));
@@ -341,14 +332,14 @@ void Client::UpdatePresence(std::string& status) {
 	CasabalancaWebSocketSendUtf8StringAsync(websocket, JsonDocumentToJsonString(document)).wait();
 }
 
-static Concurrency::task<void> CasabalancaWebSocketSendUtf8StringAsync(Discord::WssClient& wsclient, const std::string& str) {
+static pplx::task<void> CasabalancaWebSocketSendUtf8StringAsync(Discord::WssClient& wsclient, const std::string& str) {
 	websocket_outgoing_message msg;
 	msg.set_utf8_message(str);
 
 	return wsclient.send(msg);
 }
 
-#pragma region Default OnEvent function implementations
+//Begin Default OnEvent function implementations
 void Client::OnHelloPacket() {
 	SendIdentify();
 }
@@ -391,4 +382,4 @@ void Client::OnReconnectPacket() {
 void Client::OnPostStop() {
 	std::cout << "Client: OnPostStop default impl." << std::endl;
 }
-#pragma endregion
+//End Default OnEvent function implementations

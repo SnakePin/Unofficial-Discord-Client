@@ -34,7 +34,7 @@ void testGuildCreate() {
 	delete[] json;
 
 	Guild g;
-	g.LoadFrom(doc, "/d");
+	g.LoadFrom(doc["d"]);
 
 	std::cout << "Guild name: " << g.name << "\n";
 	std::cout << "Guild region: " << g.region << "\n";
@@ -77,7 +77,7 @@ void testMessageCreate() {
 	delete[] json;
 
 	Message m;
-	m.LoadFrom(doc, "/d");
+	m.LoadFrom(doc["d"]);
 
 	std::cout << "Message: " << m.content << "\n";
 	std::cout << "Author: " << m.author.username << "\n";
@@ -96,7 +96,7 @@ void testTypingStart() {
 	delete[] json;
 
 	TypingStartPacket p;
-	p.LoadFrom(doc, "/d");
+	p.LoadFrom(doc["d"]);
 
 	std::cout << "User: " << p.userID.value << "\n";
 	std::cout << "Channel: " << p.channelID.value << "\n";
@@ -115,7 +115,7 @@ void testReactionAdd() {
 	delete[] json;
 
 	MessageReactionPacket p;
-	p.LoadFrom(doc, "/d");
+	p.LoadFrom(doc["d"]);
 	Emoji &emote = p.emoji;
 
 	std::cout << "User: " << p.userID.value << "\n";
@@ -136,7 +136,7 @@ void testGuildMemberListUpdate() {
 	delete[] json;
 
 	GuildMemberListUpdatePacket packet;
-	packet.LoadFrom(doc, "/d");
+	packet.LoadFrom(doc["d"]);
 	std::cout << "GuildMemberListUpdatePacket\nGuild ID: " << packet.guildID.value << std::endl;
 	std::cout << "We have these groups: ";
 	for(const GuildMemberListGroup &group : packet.groups) std::cout << group.id << "(" << group.count << "), ";

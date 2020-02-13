@@ -2,7 +2,7 @@
 
 #include "discord/snowflake.hpp"
 #include "discord/userFlags.hpp"
-#include "discord/deserializable_serializable_class_type.hpp"
+#include "discord/jsonDeSerializable_class.hpp"
 
 #include <rapidjson/document.h>
 #include <optional>
@@ -25,7 +25,7 @@ namespace Discord {
 		std::optional<UserFlags> flags;
 		std::optional<int32_t> premiumType;
 
-		bool LoadFrom(rapidjson::Document& doc, std::string pointer = "");
+		bool LoadFrom(rapidjson::Value& object);
 	};
 
 }

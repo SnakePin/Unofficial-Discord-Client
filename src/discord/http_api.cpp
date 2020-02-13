@@ -16,13 +16,13 @@ using utility::conversions::to_utf8string;
 //TODO: Handle API errors and return a bool according to succession status, maybe even return error objects.
 
 Client::HTTP_API_CLASS::HTTP_API_CLASS(const Client& clientObj)
-	: HTTP_API_CLASS(clientObj.token)
+	: HTTP_API_CLASS(clientObj.authToken)
 {
 
 }
 
-Client::HTTP_API_CLASS::HTTP_API_CLASS(const AuthToken _token)
-	: token(_token),
+Client::HTTP_API_CLASS::HTTP_API_CLASS(const AuthToken authToken_arg)
+	: authToken(authToken_arg),
 	userAgent(DefaultUserAgentString)
 {
 	
@@ -31,7 +31,7 @@ Client::HTTP_API_CLASS::HTTP_API_CLASS(const AuthToken _token)
 bool Client::HTTP_API_CLASS::CreateMessage(const Discord::Snowflake &channelID, Discord::CreateMessageParam messageToSend)
 {
 	rapidjson::Document JsonDocument;
-	rapidjson::Pointer("/content").Set(JsonDocument, messageToSend.content.c_str());
+	rapidjson::Pointer("/content").Set(JsonDocument, messageToSend.content);
 	rapidjson::Pointer("/tts").Set(JsonDocument, messageToSend.tts);
 	
     web::uri_builder builder(U("channels"));
@@ -39,7 +39,7 @@ bool Client::HTTP_API_CLASS::CreateMessage(const Discord::Snowflake &channelID, 
 	builder.append_path(U("messages"));
 
 	web::http::http_request request(web::http::methods::POST);
-	request.headers().add(U("Authorization"), to_string_t(AuthTokenToAuthHeaderValue(token)));
+	request.headers().add(U("Authorization"), to_string_t(AuthTokenToAuthHeaderValue(authToken)));
 	request.headers().add(U("User-Agent"), to_string_t(userAgent));
 	request.set_body(to_string_t(JsonDocumentToJsonString(JsonDocument)), U("application/json"));
 	request.set_request_uri(builder.to_uri());
@@ -57,7 +57,7 @@ bool Client::HTTP_API_CLASS::DeleteMessage(const Snowflake &channelID, const Sno
 	builder.append_path(to_string_t(std::to_string(messageID.value)));
 
 	web::http::http_request request(web::http::methods::DEL);
-	request.headers().add(U("Authorization"), to_string_t(AuthTokenToAuthHeaderValue(token)));
+	request.headers().add(U("Authorization"), to_string_t(AuthTokenToAuthHeaderValue(authToken)));
 	request.headers().add(U("User-Agent"), to_string_t(userAgent));
 	request.set_request_uri(builder.to_uri());
 
@@ -73,7 +73,7 @@ bool Client::HTTP_API_CLASS::TriggerTypingIndicator(const Discord::Snowflake &ch
 	builder.append_path(U("typing"));
 
 	web::http::http_request request(web::http::methods::POST);
-	request.headers().add(U("Authorization"), to_string_t(AuthTokenToAuthHeaderValue(token)));
+	request.headers().add(U("Authorization"), to_string_t(AuthTokenToAuthHeaderValue(authToken)));
 	request.headers().add(U("User-Agent"), to_string_t(userAgent));
 	request.headers().add(U("Content-Length"), U("0"));
 	request.set_request_uri(builder.to_uri());
@@ -91,7 +91,7 @@ bool Client::HTTP_API_CLASS::GetMessagesInto(const Snowflake &channelID, std::ve
 	builder.append_query(to_string_t(tfm::format("limit=%d", count)));
 
 	web::http::http_request request(web::http::methods::GET);
-	request.headers().add(U("Authorization"), to_string_t(AuthTokenToAuthHeaderValue(token)));
+	request.headers().add(U("Authorization"), to_string_t(AuthTokenToAuthHeaderValue(authToken)));
 	request.headers().add(U("User-Agent"), to_string_t(userAgent));
 	request.set_request_uri(builder.to_uri());
 
@@ -99,13 +99,13 @@ bool Client::HTTP_API_CLASS::GetMessagesInto(const Snowflake &channelID, std::ve
 
 	if(response.status_code() == 200) {
 		rapidjson::Document document;
-		document.Parse(cpprestsdkResponse_to_Utf8StdString(response).c_str());
+		document.Parse(cpprestsdkResponse_to_Utf8StdString(response));
 
 		if(!document.IsArray()) return false;
 
-		for(rapidjson::SizeType i=0; i<document.GetArray().Size(); i++) {
+		for(rapidjson::Value& message : document.GetArray()) {
 			Message tmpVar;
-			tmpVar.LoadFrom(document, tfm::format("/%d", i));
+			tmpVar.LoadFrom(message);
 			messages.push_back(tmpVar);
 		}
 
@@ -121,7 +121,7 @@ bool Client::HTTP_API_CLASS::GetChannel(const Snowflake &channelID, Channel& cha
 	builder.append_path(to_string_t(std::to_string(channelID.value)));
 
 	web::http::http_request request(web::http::methods::GET);
-	request.headers().add(U("Authorization"), to_string_t(AuthTokenToAuthHeaderValue(token)));
+	request.headers().add(U("Authorization"), to_string_t(AuthTokenToAuthHeaderValue(authToken)));
 	request.headers().add(U("User-Agent"), to_string_t(userAgent));
 	request.set_request_uri(builder.to_uri());
 
@@ -129,7 +129,7 @@ bool Client::HTTP_API_CLASS::GetChannel(const Snowflake &channelID, Channel& cha
 
 	if(response.status_code() == 200) {
 		rapidjson::Document document;
-		document.Parse(cpprestsdkResponse_to_Utf8StdString(response).c_str());
+		document.Parse(cpprestsdkResponse_to_Utf8StdString(response));
 		channel.LoadFrom(document);
 
 		return true;
@@ -146,7 +146,7 @@ bool Client::HTTP_API_CLASS::GetChannelMessage(const Snowflake &channelID, const
 	builder.append_path(to_string_t(std::to_string(messageID.value)));
 
 	web::http::http_request request(web::http::methods::GET);
-	request.headers().add(U("Authorization"), to_string_t(AuthTokenToAuthHeaderValue(token)));
+	request.headers().add(U("Authorization"), to_string_t(AuthTokenToAuthHeaderValue(authToken)));
 	request.headers().add(U("User-Agent"), to_string_t(userAgent));
 	request.set_request_uri(builder.to_uri());
 
@@ -154,7 +154,7 @@ bool Client::HTTP_API_CLASS::GetChannelMessage(const Snowflake &channelID, const
 
 	if(response.status_code() == 200) {
 		rapidjson::Document document;
-		document.Parse(cpprestsdkResponse_to_Utf8StdString(response).c_str());
+		document.Parse(cpprestsdkResponse_to_Utf8StdString(response));
 		message.LoadFrom(document);
 
 		return true;
@@ -170,7 +170,7 @@ bool Client::HTTP_API_CLASS::GetPinnedMessages(const Snowflake &channelID, std::
 	builder.append_path(U("pins"));
 
 	web::http::http_request request(web::http::methods::GET);
-	request.headers().add(U("Authorization"), to_string_t(AuthTokenToAuthHeaderValue(token)));
+	request.headers().add(U("Authorization"), to_string_t(AuthTokenToAuthHeaderValue(authToken)));
 	request.headers().add(U("User-Agent"), to_string_t(userAgent));
 	request.set_request_uri(builder.to_uri());
 
@@ -178,13 +178,13 @@ bool Client::HTTP_API_CLASS::GetPinnedMessages(const Snowflake &channelID, std::
 
 	if(response.status_code() == 200) {
 		rapidjson::Document document;
-		document.Parse(cpprestsdkResponse_to_Utf8StdString(response).c_str());
+		document.Parse(cpprestsdkResponse_to_Utf8StdString(response));
 
 		if(!document.IsArray()) return false;
 
-		for(rapidjson::SizeType i=0; i<document.GetArray().Size(); i++) {
+		for(rapidjson::Value& message : document.GetArray()) {
 			Message tmpVar;
-			tmpVar.LoadFrom(document, tfm::format("/%d", i));
+			tmpVar.LoadFrom(message);
 			messages.push_back(tmpVar);
 		}
 
@@ -202,7 +202,7 @@ bool Client::HTTP_API_CLASS::UnpinChannelMessage(const Snowflake &channelID, con
 	builder.append_path(to_string_t(std::to_string(messageID.value)));
 
 	web::http::http_request request(web::http::methods::DEL);
-	request.headers().add(U("Authorization"), to_string_t(AuthTokenToAuthHeaderValue(token)));
+	request.headers().add(U("Authorization"), to_string_t(AuthTokenToAuthHeaderValue(authToken)));
 	request.headers().add(U("User-Agent"), to_string_t(userAgent));
 	request.set_request_uri(builder.to_uri());
 
@@ -217,7 +217,7 @@ bool Client::HTTP_API_CLASS::GetCurrentUser(User &user)
 	builder.append_path(U("@me"));
 
 	web::http::http_request request(web::http::methods::GET);
-	request.headers().add(U("Authorization"), to_string_t(AuthTokenToAuthHeaderValue(token)));
+	request.headers().add(U("Authorization"), to_string_t(AuthTokenToAuthHeaderValue(authToken)));
 	request.headers().add(U("User-Agent"), to_string_t(userAgent));
 	request.set_request_uri(builder.to_uri());
 
@@ -225,7 +225,7 @@ bool Client::HTTP_API_CLASS::GetCurrentUser(User &user)
 
 	if(response.status_code() == 200) {
 		rapidjson::Document document;
-		document.Parse(cpprestsdkResponse_to_Utf8StdString(response).c_str());
+		document.Parse(cpprestsdkResponse_to_Utf8StdString(response));
 		user.LoadFrom(document);
 
 		return true;
@@ -240,7 +240,7 @@ bool Client::HTTP_API_CLASS::GetUserByID(User &user, const Snowflake &userID)
 	builder.append_path(to_string_t(std::to_string(userID.value)));
 
 	web::http::http_request request(web::http::methods::GET);
-	request.headers().add(U("Authorization"), to_string_t(AuthTokenToAuthHeaderValue(token)));
+	request.headers().add(U("Authorization"), to_string_t(AuthTokenToAuthHeaderValue(authToken)));
 	request.headers().add(U("User-Agent"), to_string_t(userAgent));
 	request.set_request_uri(builder.to_uri());
 
@@ -248,7 +248,7 @@ bool Client::HTTP_API_CLASS::GetUserByID(User &user, const Snowflake &userID)
 
 	if(response.status_code() == 200) {
 		rapidjson::Document document;
-		document.Parse(cpprestsdkResponse_to_Utf8StdString(response).c_str());
+		document.Parse(cpprestsdkResponse_to_Utf8StdString(response));
 		user.LoadFrom(document);
 
 		return true;

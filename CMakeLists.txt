@@ -55,9 +55,11 @@ target_link_libraries(${PROJECT_NAME} PRIVATE cpprestsdk::cpprest)
 target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE cpprestsdk:cpprest)
 
 # Add ASIO
-find_package(asio CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE asio::asio)
-target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE asio::asio)
+# find_package(asio CONFIG REQUIRED) - This causes issues on linux
+find_path(LIBASIO_INCLUDE_DIR "asio/basic_io_object.hpp")
+target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${LIBASIO_INCLUDE_DIR})
+#target_link_libraries(${PROJECT_NAME} PRIVATE asio::asio)
+#target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE asio::asio)
 
 # Add SDL2
 find_package(SDL2 CONFIG REQUIRED)
@@ -70,9 +72,9 @@ target_link_libraries(${PROJECT_NAME} PRIVATE OpenGL::GL)
 target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE OpenGL::GL)
 
 # Add RapidJSON (header only lib)
-# This one has QUIET flag because it generates CMake messages
 find_package(RapidJSON CONFIG REQUIRED)
 target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE ${RAPIDJSON_INCLUDE_DIR})
+target_compile_definitions(${PROJECT_NAME} PRIVATE "RAPIDJSON_HAS_STDSTRING")
 
 # Add TCLAP (has no CMake integration) (header only lib)
 find_path(TCLAP_INCLUDE_DIR "tclap/CmdLine.h")

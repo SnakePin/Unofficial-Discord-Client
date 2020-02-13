@@ -5,7 +5,7 @@
 #include "discord/role.hpp"
 #include "discord/channel.hpp"
 #include "discord/member.hpp"
-#include "discord/deserializable_serializable_class_type.hpp"
+#include "discord/jsonDeSerializable_class.hpp"
 
 #include <vector>
 #include <string>
@@ -70,7 +70,7 @@ namespace Discord {
 		std::string description;
 		std::string bannerHash;
 
-		bool LoadFrom(rapidjson::Document& doc, std::string pointer = "");
+		bool LoadFrom(rapidjson::Value& object);
 	};
 
 }

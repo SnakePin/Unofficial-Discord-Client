@@ -23,7 +23,6 @@
 #include <rapidjson/ostreamwrapper.h>
 #include <rapidjson/istreamwrapper.h>
 #include <fstream>
-#include <filesystem>
 
 #include <tinyformat.h>
 
@@ -44,7 +43,7 @@ void MyClient::UpdateSessionJson() {
 	rapidjson::Document document;
 	lastSessionUpdateTime = std::time(nullptr);
 
-	rapidjson::Pointer("/session_id").Set(document, sessionID.c_str());
+	rapidjson::Pointer("/session_id").Set(document, sessionID);
 	rapidjson::Pointer("/seq").Set(document, this->sequenceNumber);
 	rapidjson::Pointer("/session_time").Set(document, lastSessionUpdateTime);
 
@@ -179,12 +178,12 @@ void MyClient::OnMessageReactionRemove(Discord::MessageReactionPacket p) {
 }
 
 void MyClient::LoadAndSendResume() {
-	if (!std::filesystem::exists("session.json")) {
-		std::cout << "session.json doesn't exist!" << std::endl;
+	std::ifstream jsonFile("session.json");
+
+	if(!jsonFile.good()) {
+		std::cout << "session.json can not be read!" << std::endl;
 		return;
 	}
-
-	std::ifstream jsonFile("session.json");
 
 	rapidjson::IStreamWrapper iswrapper(jsonFile);
 	rapidjson::Document document;
@@ -193,11 +192,11 @@ void MyClient::LoadAndSendResume() {
 	std::time_t sessionTime = document["session_time"].GetInt();
 	std::time_t currentTime = std::time(nullptr);
 
-	if (currentTime - sessionTime < 10 * 60) {
-		std::string sessionID = document["session_id"].GetString();
-		int32_t sequence = document["seq"].GetInt();
-		std::cout << "Resuming session with seq: " << sequence << std::endl;
-		SendResume(sessionID, sequence);
+	if ((currentTime - sessionTime) < (10 * 60)) {
+		std::string sessionID_local = document["session_id"].GetString();
+		int32_t sequenceNumber_local = document["seq"].GetInt();
+		std::cout << "Resuming session with seq: " << sequenceNumber_local << std::endl;
+		SendResume(sessionID_local, sequenceNumber_local);
 		//JsonTypeToStructType(document, "guilds", guilds);
 		//JsonTypeToStructType(document, "private_channels", privateChannels);
 	}

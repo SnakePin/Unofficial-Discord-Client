@@ -3,29 +3,104 @@
 #include <string>
 #include <stdint.h>
 #include <optional>
+#include <type_traits>
 #include <vector>
 #include "discord/snowflake.hpp"
-#include "discord/deserializable_serializable_class_type.hpp"
+#include "discord/jsonDeSerializable_class.hpp"
 
-bool JsonTypeToStructType(rapidjson::Document& doc, std::string pointer, std::string& structFieldRef);
-bool JsonTypeToStructType(rapidjson::Document& doc, std::string pointer, uint32_t& structFieldRef);
-bool JsonTypeToStructType(rapidjson::Document& doc, std::string pointer, int32_t& structFieldRef);
-bool JsonTypeToStructType(rapidjson::Document& doc, std::string pointer, int64_t& structFieldRef);
-bool JsonTypeToStructType(rapidjson::Document& doc, std::string pointer, uint64_t& structFieldRef);
-bool JsonTypeToStructType(rapidjson::Document& doc, std::string pointer, uint8_t& structFieldRef);
-bool JsonTypeToStructType(rapidjson::Document& doc, std::string pointer, int8_t& structFieldRef);
-bool JsonTypeToStructType(rapidjson::Document& doc, std::string pointer, uint16_t& structFieldRef);
-bool JsonTypeToStructType(rapidjson::Document& doc, std::string pointer, int16_t& structFieldRef);
-bool JsonTypeToStructType(rapidjson::Document& doc, std::string pointer, bool& structFieldRef);
-bool JsonTypeToStructType(rapidjson::Document& doc, std::string pointer, float& structFieldRef);
-bool JsonTypeToStructType(rapidjson::Document& doc, std::string pointer, double& structFieldRef);
-
-//Warning: This function has no error checking, it will return true even if json field was not found
-//This function will get called if structFieldRef is a reference to a class that implements Discord::JsonDeSerializable.
-bool JsonTypeToStructType(rapidjson::Document& doc, std::string pointer, Discord::JsonDeSerializable& structFieldRef);
-
-bool JsonTypeToStructType(rapidjson::Document& doc, std::string pointer, Discord::Snowflake& structFieldRef);
+//Begin declarations
+bool JsonTypeToStructType(rapidjson::Value& object, Discord::JsonDeSerializable &structFieldRef);
+bool JsonTypeToStructType(rapidjson::Value& object, Discord::Snowflake &structFieldRef);
+bool JsonTypeToStructType(rapidjson::Value& object, std::string &structFieldRef);
 template <typename T>
-bool JsonTypeToStructType(rapidjson::Document& doc, std::string pointer, std::optional<T>& structFieldRef);
+bool JsonTypeToStructType(rapidjson::Value& object, std::optional<T> &structFieldRef);
 template <typename T>
-bool JsonTypeToStructType(rapidjson::Document& doc, std::string pointer, std::vector<T>& structFieldRef);
+bool JsonTypeToStructType(rapidjson::Value& object, std::vector<T> &structFieldRef);
+template <typename T, typename std::enable_if<
+			std::is_same<bool, T>::value || 
+			std::is_same<int, T>::value ||
+			std::is_same<unsigned int, T>::value ||
+			std::is_same<int64_t, T>::value ||
+			std::is_same<uint64_t, T>::value ||
+			std::is_same<double, T>::value ||
+			std::is_same<float, T>::value ||
+			std::is_same<uint64_t, T>::value>::type* = nullptr>
+bool JsonTypeToStructType(rapidjson::Value& object, T &structFieldRef);
+template <typename T, typename std::enable_if<
+			std::is_same<uint16_t, T>::value || 
+			std::is_same<uint8_t, T>::value>::type* = nullptr>
+bool JsonTypeToStructType(rapidjson::Value& object, T &structFieldRef);
+template <typename T, typename std::enable_if<
+			std::is_same<int16_t, T>::value || 
+			std::is_same<int8_t, T>::value>::type* = nullptr>
+bool JsonTypeToStructType(rapidjson::Value& object, T &structFieldRef);
+//End declarations
+
+template <typename T, typename std::enable_if<
+			std::is_same<uint16_t, T>::value || 
+			std::is_same<uint8_t, T>::value>::type*>
+bool JsonTypeToStructType(rapidjson::Value& object, T &structFieldRef)
+{
+	if(object.IsUint()) {
+		structFieldRef = (T)object.GetUint();
+		return true;
+	}
+	return false;
+}
+
+template <typename T, typename std::enable_if<
+			std::is_same<int16_t, T>::value || 
+			std::is_same<int8_t, T>::value>::type*>
+bool JsonTypeToStructType(rapidjson::Value& object, T &structFieldRef)
+{
+	if(object.IsInt()) {
+		structFieldRef = (T)object.GetInt();
+		return true;
+	}
+	return false;
+}
+template <typename T>
+bool JsonTypeToStructType(rapidjson::Value& object, std::optional<T> &structFieldRef)
+{
+	T tempVar;
+	if (JsonTypeToStructType(object, tempVar))
+	{
+		structFieldRef = tempVar;
+		return true;
+	}
+	return false;
+}
+
+template <typename T>
+bool JsonTypeToStructType(rapidjson::Value& object, std::vector<T> &structFieldRef)
+{
+	if (object.IsArray())
+	{
+		for (rapidjson::Value& currentObject : object.GetArray()) {
+			T tempVar;
+			JsonTypeToStructType(currentObject, tempVar);
+			structFieldRef.push_back(tempVar);
+		}
+		return true;
+	}
+	return false;
+}
+
+template <typename T, typename std::enable_if<
+			std::is_same<bool, T>::value || 
+			std::is_same<int, T>::value ||
+			std::is_same<unsigned int, T>::value ||
+			std::is_same<int64_t, T>::value ||
+			std::is_same<uint64_t, T>::value ||
+			std::is_same<double, T>::value ||
+			std::is_same<float, T>::value ||
+			std::is_same<uint64_t, T>::value>::type*>
+bool JsonTypeToStructType(rapidjson::Value& object, T &structFieldRef)
+{
+	if (object.Is<T>())
+	{
+		structFieldRef = object.Get<T>();
+		return true;
+	}
+	return false;
+}

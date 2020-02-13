@@ -28,7 +28,7 @@ namespace Discord {
 
 	class Client {
 	public:
-		AuthToken token;
+		AuthToken authToken;
 		std::string sessionID;
 		int heartbeatInterval;
 		WssClient websocket;
@@ -38,7 +38,7 @@ namespace Discord {
 		//TODO: give user ability to change this value
 		const utility::string_t userAgent;
 
-		Client(const std::string& token, AuthTokenType tokenType);
+		Client(const std::string& authToken_arg, AuthTokenType tokenType);
 		Client(const Client& other);
 		~Client();
 
@@ -49,7 +49,7 @@ namespace Discord {
 		void SendIdentify();
 
 		// Generate and send a RESUME packet
-		void SendResume(std::string& sessionID, uint32_t sequenceNumber);
+		void SendResume(std::string& sessionID_arg, uint32_t sequenceNumber_arg);
 
 		// Start the websocket and event loop.
 		// This will block until the event loop is stopped with Stop().
@@ -83,7 +83,7 @@ namespace Discord {
 		{
 		public:
 			HTTP_API_CLASS(const Client& clientObj);
-			HTTP_API_CLASS(const AuthToken _token);
+			HTTP_API_CLASS(const AuthToken authToken_arg);
 
 			bool TriggerTypingIndicator(const Snowflake& channelID);
 			bool CreateMessage(const Snowflake& channelID, CreateMessageParam messageToSend);
@@ -107,7 +107,7 @@ namespace Discord {
 			// whose body is the JSON object {"status":"idle"} or similar.
 			bool UpdatePresenceStatusSetting(std::string& status);
 
-			const AuthToken token;
+			const AuthToken authToken;
 
 			//User agent string to use in HTTP API connections
 			//TODO: give user ability to change this value
@@ -136,9 +136,9 @@ namespace Discord {
 		// https://discordapp.com/developers/docs/topics/gateway#identify
 		std::string GenerateIdentifyPacket(bool compress = false);
 
-		// Generates a RESUME packet using the specified sessionID and sequenceNumber.
+		// Generates a RESUME packet using the specified session ID and sequence number.
 		// https://discordapp.com/developers/docs/topics/gateway#resume
-		std::string GenerateResumePacket(std::string& sessionID, uint32_t sequenceNumber);
+		std::string GenerateResumePacket(std::string& sessionID_arg, uint32_t sequenceNumber_arg);
 
 		std::string GenerateGuildChannelViewPacket(const Snowflake& guild, const Snowflake& channel);
 

@@ -4,7 +4,7 @@
 #include "discord/emoji.hpp"
 #include "discord/guild.hpp"
 #include "discord/channel.hpp"
-#include "discord/deserializable_serializable_class_type.hpp"
+#include "discord/jsonDeSerializable_class.hpp"
 
 #include <vector>
 #include <optional>
@@ -19,7 +19,7 @@ struct GuildMemberListGroup : JsonDeSerializable
 	std::string id; // NOT a Snowflake
 	int32_t count;
 	
-	bool LoadFrom(rapidjson::Document &doc, std::string pointer = "");
+	bool LoadFrom(rapidjson::Value& object);
 };
 
 struct GuildMemberListUpdateOperation : JsonDeSerializable
@@ -28,7 +28,7 @@ struct GuildMemberListUpdateOperation : JsonDeSerializable
 	std::string op;
 	std::vector<std::variant<GuildMemberListGroup, Member>> items;
 
-	bool LoadFrom(rapidjson::Document &doc, std::string pointer = "");
+	bool LoadFrom(rapidjson::Value& object);
 };
 
 struct GuildMemberListUpdatePacket : JsonDeSerializable
@@ -39,7 +39,7 @@ struct GuildMemberListUpdatePacket : JsonDeSerializable
 	Snowflake guildID;
 	std::vector<GuildMemberListGroup> groups;
 
-	bool LoadFrom(rapidjson::Document &doc, std::string pointer = "");
+	bool LoadFrom(rapidjson::Value& object);
 };
 
 struct ReadyPacket : JsonDeSerializable
@@ -53,7 +53,7 @@ struct ReadyPacket : JsonDeSerializable
 	// Used for sending Discord's "science" requests.
 	std::string analyticsToken; // note for future: This is one of the many things which do not exist for Bot accounts.
 
-	bool LoadFrom(rapidjson::Document &doc, std::string pointer = "");
+	bool LoadFrom(rapidjson::Value& object);
 };
 
 struct TypingStartPacket : JsonDeSerializable
@@ -66,7 +66,7 @@ struct TypingStartPacket : JsonDeSerializable
 
 	uint64_t timestamp;
 
-	bool LoadFrom(rapidjson::Document &doc, std::string pointer = "");
+	bool LoadFrom(rapidjson::Value& object);
 };
 
 // Used for MESSAGE_REACTION_ADD and MESSAGE_REACTION_REMOVE events.
@@ -80,7 +80,7 @@ struct MessageReactionPacket : JsonDeSerializable
 	std::optional<Snowflake> guildID;
 	Emoji emoji;
 
-	bool LoadFrom(rapidjson::Document &doc, std::string pointer = "");
+	bool LoadFrom(rapidjson::Value& object);
 };
 
 } // namespace Discord

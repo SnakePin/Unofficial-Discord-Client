@@ -46,7 +46,7 @@ private:
 };
 
 
-const auto& SystemTimeNow = std::chrono::system_clock::now;
+auto&& SystemTimeNow = std::chrono::system_clock::now;
 
 static void ImGuiDisplayDiscordMessage(const Discord::Message& message);
 static void ImGuiDisplayDiscordMessageBoxAndSendButton(std::shared_ptr<MyClient> client, ChannelMessageCachingSystem& cache, const Discord::Snowflake& channelID, std::string& messageToSend);
@@ -205,8 +205,8 @@ int startImguiClient(std::shared_ptr<MyClient> client) {
 			ImGui::Text("IsRunning(): %d", client->IsRunning());
 			ImGui::Text("heartbeatInterval: %d", client->heartbeatInterval);
 			ImGui::Text("sequenceNumber: %llu", client->sequenceNumber);
-			ImGui::Text("token.tokenType: %s", client->token.tokenType == Discord::AuthTokenType::USER ? "User" : "Bot");
-			ImGui::TextWrapped("token.value: %s", client->token.value.c_str());
+			ImGui::Text("token.tokenType: %s", client->authToken.tokenType == Discord::AuthTokenType::USER ? "User" : "Bot");
+			ImGui::TextWrapped("token.value: %s", client->authToken.value.c_str());
 		}
 		ImGui::End();
 
@@ -282,16 +282,15 @@ int startImguiClient(std::shared_ptr<MyClient> client) {
 					//Current user is not fetched yet so we check if the task is completed or not
 					if (is_future_ready(currentUserFetchFuture) && !currentUserFetchFuture.get()) {
 						//Task is completed and it returned false, start new task and increase fail count
-						currentUserFetchFuture = std::async(std::launch::async, [client, &currentUser, &currentUserFetched]()->bool {
-							currentUserFetched = client->httpAPI.GetCurrentUser(currentUser);
-							return currentUserFetched;
+						currentUserFetchFuture = std::async(std::launch::async, [client, &currentUser]()->bool {
+							return client->httpAPI.GetCurrentUser(currentUser);
 						});
 						currentuserFetchFailCount++;
 					}
 					ImGui::TextColored(RGBAToImVec4(255, 0, 0), "Fetching user info failed, trying again. Try: %d", currentuserFetchFailCount);
 				}
 				else {
-					ImGui::TextColored(RGBAToImVec4(255, 255, 0), "Fetching user info failed 15 times, giving up, restart the client.", currentuserFetchFailCount);
+					ImGui::TextColored(RGBAToImVec4(255, 255, 0), "Fetching user info failed 15 times, giving up, restart the client.");
 				}
 			}
 		}

@@ -2,7 +2,7 @@
 
 #include "discord/snowflake.hpp"
 #include "discord/user.hpp"
-#include "discord/deserializable_serializable_class_type.hpp"
+#include "discord/jsonDeSerializable_class.hpp"
 
 #include <rapidjson/document.h>
 
@@ -23,7 +23,7 @@ namespace Discord {
 		bool deaf;
 		bool mute;
 
-		bool LoadFrom(rapidjson::Document& doc, std::string pointer = "");
+		bool LoadFrom(rapidjson::Value& object);
 	};
 
 }

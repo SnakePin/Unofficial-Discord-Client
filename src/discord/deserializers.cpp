@@ -12,7 +12,7 @@
 #include "discord/packets.hpp"
 #include "discord/snowflake.hpp"
 #include "discord/attachment.hpp"
-#include "discord/deserializable_serializable_class_type.hpp"
+#include "discord/jsonDeSerializable_class.hpp"
 #include "discord/deserializers.hpp"
 #include "discord/InternalUtils.hpp"
 
@@ -23,453 +23,330 @@
 
 	It is pretty to read except for the JsonTypeToStructType functions region.
  */
-bool Discord::Guild::LoadFrom(rapidjson::Document &doc, std::string pointer)
-{
-	bool retVal = false;
 
-	retVal &= JsonTypeToStructType(doc, pointer + "/id", this->id);
-	retVal &= JsonTypeToStructType(doc, pointer + "/name", this->name);
-	retVal &= JsonTypeToStructType(doc, pointer + "/splash_hash", this->splashHash);
-	retVal &= JsonTypeToStructType(doc, pointer + "/icon_hash", this->iconHash);
-	retVal &= JsonTypeToStructType(doc, pointer + "/owner_id", this->ownerID);
-	retVal &= JsonTypeToStructType(doc, pointer + "/permissions", this->permissions);
-	retVal &= JsonTypeToStructType(doc, pointer + "/region", this->region);
-	retVal &= JsonTypeToStructType(doc, pointer + "/afk_channel_id", this->afkChannelID);
-	retVal &= JsonTypeToStructType(doc, pointer + "/afk_timeout", this->afkTimeout);
-	retVal &= JsonTypeToStructType(doc, pointer + "/embedable", this->embedable);
-	retVal &= JsonTypeToStructType(doc, pointer + "/embed_channel_id", this->embedChannelID);
-	retVal &= JsonTypeToStructType(doc, pointer + "/verification_level", this->verificationLevel);
-	retVal &= JsonTypeToStructType(doc, pointer + "/default_message_notifications_level", this->defaultMessageNotificationsLevel);
-	retVal &= JsonTypeToStructType(doc, pointer + "/explicit_content_filter_level", this->explicitContentFilterLevel);
-	retVal &= JsonTypeToStructType(doc, pointer + "/mfa_level", this->mfaLevel);
-	retVal &= JsonTypeToStructType(doc, pointer + "/roles", this->roles);
-	retVal &= JsonTypeToStructType(doc, pointer + "/emoji", this->emoji);
-	retVal &= JsonTypeToStructType(doc, pointer + "/features", this->features);
-	retVal &= JsonTypeToStructType(doc, pointer + "/application_id", this->applicationID);
-	retVal &= JsonTypeToStructType(doc, pointer + "/widget_enabled", this->widgetEnabled);
-	retVal &= JsonTypeToStructType(doc, pointer + "/widget_channel_id", this->widgetChannelID);
-	retVal &= JsonTypeToStructType(doc, pointer + "/system_channel_id", this->systemChannelID);
-	retVal &= JsonTypeToStructType(doc, pointer + "/joined_at", this->joinedAt);
-	retVal &= JsonTypeToStructType(doc, pointer + "/large", this->large);
-	retVal &= JsonTypeToStructType(doc, pointer + "/unavailable", this->unavailable);
-	retVal &= JsonTypeToStructType(doc, pointer + "/member_count", this->memberCount);
-	retVal &= JsonTypeToStructType(doc, pointer + "/members", this->members);
-	retVal &= JsonTypeToStructType(doc, pointer + "/channels", this->channels);
-	retVal &= JsonTypeToStructType(doc, pointer + "/max_presences", this->maxPresences);
-	retVal &= JsonTypeToStructType(doc, pointer + "/max_members", this->maxMembers);
-	retVal &= JsonTypeToStructType(doc, pointer + "/premium_tier", this->premiumTier);
-	retVal &= JsonTypeToStructType(doc, pointer + "/description", this->description);
-	retVal &= JsonTypeToStructType(doc, pointer + "/banner_hash", this->bannerHash);
+//This macro is for making this file easier to read, it is only to be used in this file
+#define JTTST_EZ(jsonObject, memberName) retVal &= JsonTypeToStructType(jsonObject, memberName)
+
+using namespace Discord;
+
+bool Guild::LoadFrom(rapidjson::Value& object)
+{
+	bool retVal = true;
+	
+	JTTST_EZ(object["id"], this->id);
+	JTTST_EZ(object["name"], this->name);
+	JTTST_EZ(object["splash_hash"], this->splashHash);
+	JTTST_EZ(object["icon_hash"], this->iconHash);
+	JTTST_EZ(object["owner_id"], this->ownerID);
+	JTTST_EZ(object["permissions"], this->permissions);
+	JTTST_EZ(object["region"], this->region);
+	JTTST_EZ(object["afk_channel_id"], this->afkChannelID);
+	JTTST_EZ(object["afk_timeout"], this->afkTimeout);
+	JTTST_EZ(object["embedable"], this->embedable);
+	JTTST_EZ(object["embed_channel_id"], this->embedChannelID);
+	JTTST_EZ(object["verification_level"], this->verificationLevel);
+	JTTST_EZ(object["default_message_notifications_level"], this->defaultMessageNotificationsLevel);
+	JTTST_EZ(object["explicit_content_filter_level"], this->explicitContentFilterLevel);
+	JTTST_EZ(object["mfa_level"], this->mfaLevel);
+	JTTST_EZ(object["roles"], this->roles);
+	JTTST_EZ(object["emoji"], this->emoji);
+	JTTST_EZ(object["features"], this->features);
+	JTTST_EZ(object["application_id"], this->applicationID);
+	JTTST_EZ(object["widget_enabled"], this->widgetEnabled);
+	JTTST_EZ(object["widget_channel_id"], this->widgetChannelID);
+	JTTST_EZ(object["system_channel_id"], this->systemChannelID);
+	JTTST_EZ(object["joined_at"], this->joinedAt);
+	JTTST_EZ(object["large"], this->large);
+	JTTST_EZ(object["unavailable"], this->unavailable);
+	JTTST_EZ(object["member_count"], this->memberCount);
+	JTTST_EZ(object["members"], this->members);
+	JTTST_EZ(object["channels"], this->channels);
+	JTTST_EZ(object["max_presences"], this->maxPresences);
+	JTTST_EZ(object["max_members"], this->maxMembers);
+	JTTST_EZ(object["premium_tier"], this->premiumTier);
+	JTTST_EZ(object["description"], this->description);
+	JTTST_EZ(object["banner_hash"], this->bannerHash);
 
 	return retVal;
 }
 
-bool Discord::Emoji::LoadFrom(rapidjson::Document &doc, std::string pointer)
+bool Emoji::LoadFrom(rapidjson::Value& object)
 {
-	bool retVal = false;
+	bool retVal = true;
 
-	retVal &= JsonTypeToStructType(doc, pointer + "/id", this->id);
-	retVal &= JsonTypeToStructType(doc, pointer + "/name", this->name);
-	retVal &= JsonTypeToStructType(doc, pointer + "/require_colons", this->requireColons);
-	retVal &= JsonTypeToStructType(doc, pointer + "/managed", this->managed);
-	retVal &= JsonTypeToStructType(doc, pointer + "/animated", this->animated);
+	JTTST_EZ(object["id"], this->id);
+	JTTST_EZ(object["name"], this->name);
+	JTTST_EZ(object["require_colons"], this->requireColons);
+	JTTST_EZ(object["managed"], this->managed);
+	JTTST_EZ(object["animated"], this->animated);
 
 	return retVal;
 }
 
-bool Discord::Channel::LoadFrom(rapidjson::Document &doc, std::string pointer)
+bool Channel::LoadFrom(rapidjson::Value& object)
 {
-	bool retVal = false;
+	bool retVal = true;
 
-	retVal &= JsonTypeToStructType(doc, pointer + "/id", this->id);
-	retVal &= JsonTypeToStructType(doc, pointer + "/type", this->type);
-	retVal &= JsonTypeToStructType(doc, pointer + "/name", this->name);
-	retVal &= JsonTypeToStructType(doc, pointer + "/topic", this->topic);
-	retVal &= JsonTypeToStructType(doc, pointer + "/nsfw", this->nsfw);
-	retVal &= JsonTypeToStructType(doc, pointer + "/icon_hash", this->iconHash);
-	retVal &= JsonTypeToStructType(doc, pointer + "/guild_id", this->guildID);
-	retVal &= JsonTypeToStructType(doc, pointer + "/owner_id", this->ownerID);
-	retVal &= JsonTypeToStructType(doc, pointer + "/application_id", this->applicationID);
-	retVal &= JsonTypeToStructType(doc, pointer + "/parent_category_id", this->parentCategoryID);
-	retVal &= JsonTypeToStructType(doc, pointer + "/last_message_id", this->lastMessageID);
-	retVal &= JsonTypeToStructType(doc, pointer + "/position", this->position);
-	retVal &= JsonTypeToStructType(doc, pointer + "/permission_overwrites", this->permissionOverwrites);
-	retVal &= JsonTypeToStructType(doc, pointer + "/user_limit", this->userLimit);
-	retVal &= JsonTypeToStructType(doc, pointer + "/rate_limit_per_user", this->rateLimitPerUser);
-	retVal &= JsonTypeToStructType(doc, pointer + "/last_pin_timestamp", this->lastPinTimestamp);
-	retVal &= JsonTypeToStructType(doc, pointer + "/recipients", this->recipients);
+	JTTST_EZ(object["id"], this->id);
+	JTTST_EZ(object["type"], this->type);
+	JTTST_EZ(object["name"], this->name);
+	JTTST_EZ(object["topic"], this->topic);
+	JTTST_EZ(object["nsfw"], this->nsfw);
+	JTTST_EZ(object["icon_hash"], this->iconHash);
+	JTTST_EZ(object["guild_id"], this->guildID);
+	JTTST_EZ(object["owner_id"], this->ownerID);
+	JTTST_EZ(object["application_id"], this->applicationID);
+	JTTST_EZ(object["parent_category_id"], this->parentCategoryID);
+	JTTST_EZ(object["last_message_id"], this->lastMessageID);
+	JTTST_EZ(object["position"], this->position);
+	JTTST_EZ(object["permission_overwrites"], this->permissionOverwrites);
+	JTTST_EZ(object["user_limit"], this->userLimit);
+	JTTST_EZ(object["rate_limit_per_user"], this->rateLimitPerUser);
+	JTTST_EZ(object["last_pin_timestamp"], this->lastPinTimestamp);
+	JTTST_EZ(object["recipients"], this->recipients);
 
 	return retVal;
 }
 
-bool Discord::Member::LoadFrom(rapidjson::Document &doc, std::string pointer)
+bool Member::LoadFrom(rapidjson::Value& object)
 {
-	bool retVal = false;
+	bool retVal = true;
 
-	retVal &= JsonTypeToStructType(doc, pointer + "/nick", this->nickname);
-	retVal &= JsonTypeToStructType(doc, pointer + "/roles", this->roles); // This is an array of std::string (Snowflakes), NOT Discord::Role
-	retVal &= JsonTypeToStructType(doc, pointer + "/joined_at", this->joinedAt);
-	retVal &= JsonTypeToStructType(doc, pointer + "/premium_since", this->premiumSince);
-	retVal &= JsonTypeToStructType(doc, pointer + "/deaf", this->deaf);
-	retVal &= JsonTypeToStructType(doc, pointer + "/mute", this->mute);
-	retVal &= JsonTypeToStructType(doc, pointer + "/user", this->user);
+	JTTST_EZ(object["nick"], this->nickname);
+	JTTST_EZ(object["roles"], this->roles); // This is an array of std::string (Snowflakes), NOT Role
+	JTTST_EZ(object["joined_at"], this->joinedAt);
+	JTTST_EZ(object["premium_since"], this->premiumSince);
+	JTTST_EZ(object["deaf"], this->deaf);
+	JTTST_EZ(object["mute"], this->mute);
+	JTTST_EZ(object["user"], this->user);
 
 	return retVal;
 }
 
-bool Discord::UserFlags::LoadFrom(rapidjson::Document &doc, std::string pointer)
+bool UserFlags::LoadFrom(rapidjson::Value& object)
 {
-	bool retVal = false;
+	bool retVal = true;
 
-	retVal &= JsonTypeToStructType(doc, pointer, this->flags);
+	JTTST_EZ(object, this->flags);
 
 	return retVal;
 }
 
-bool Discord::User::LoadFrom(rapidjson::Document &doc, std::string pointer)
+bool User::LoadFrom(rapidjson::Value& object)
 {
-	bool retVal = false;
+	bool retVal = true;
 
-	retVal &= JsonTypeToStructType(doc, pointer + "/id", this->id);
-	retVal &= JsonTypeToStructType(doc, pointer + "/username", this->username);
-	retVal &= JsonTypeToStructType(doc, pointer + "/discriminator", this->discriminator);
-	retVal &= JsonTypeToStructType(doc, pointer + "/avatar_hash", this->avatarHash);
-	retVal &= JsonTypeToStructType(doc, pointer + "/bot", this->bot);
-	retVal &= JsonTypeToStructType(doc, pointer + "/mfa_enabled", this->mfaEnabled);
-	retVal &= JsonTypeToStructType(doc, pointer + "/locale", this->locale);
-	retVal &= JsonTypeToStructType(doc, pointer + "/email", this->email);
-	retVal &= JsonTypeToStructType(doc, pointer + "/verified", this->verified);
-	retVal &= JsonTypeToStructType(doc, pointer + "/flags", this->flags);
-	retVal &= JsonTypeToStructType(doc, pointer + "/premium_type", this->premiumType);
+	JTTST_EZ(object["id"], this->id);
+	JTTST_EZ(object["username"], this->username);
+	JTTST_EZ(object["discriminator"], this->discriminator);
+	JTTST_EZ(object["avatar_hash"], this->avatarHash);
+	JTTST_EZ(object["bot"], this->bot);
+	JTTST_EZ(object["mfa_enabled"], this->mfaEnabled);
+	JTTST_EZ(object["locale"], this->locale);
+	JTTST_EZ(object["email"], this->email);
+	JTTST_EZ(object["verified"], this->verified);
+	JTTST_EZ(object["flags"], this->flags);
+	JTTST_EZ(object["premium_type"], this->premiumType);
 
 	return retVal;
 }
 
-bool Discord::Role::LoadFrom(rapidjson::Document &doc, std::string pointer)
+bool Role::LoadFrom(rapidjson::Value& object)
 {
-	bool retVal = false;
+	bool retVal = true;
 
-	retVal &= JsonTypeToStructType(doc, pointer + "/id", this->id);
-	retVal &= JsonTypeToStructType(doc, pointer + "/name", this->name);
-	retVal &= JsonTypeToStructType(doc, pointer + "/color", this->color);
-	retVal &= JsonTypeToStructType(doc, pointer + "/hoist", this->hoist);
-	retVal &= JsonTypeToStructType(doc, pointer + "/position", this->position);
-	retVal &= JsonTypeToStructType(doc, pointer + "/permissions", this->permissions);
-	retVal &= JsonTypeToStructType(doc, pointer + "/managed", this->managed);
-	retVal &= JsonTypeToStructType(doc, pointer + "/mentionable", this->mentionable);
+	JTTST_EZ(object["id"], this->id);
+	JTTST_EZ(object["name"], this->name);
+	JTTST_EZ(object["color"], this->color);
+	JTTST_EZ(object["hoist"], this->hoist);
+	JTTST_EZ(object["position"], this->position);
+	JTTST_EZ(object["permissions"], this->permissions);
+	JTTST_EZ(object["managed"], this->managed);
+	JTTST_EZ(object["mentionable"], this->mentionable);
 
 	return retVal;
 }
 
-bool Discord::Message::LoadFrom(rapidjson::Document &doc, std::string pointer)
+bool Message::LoadFrom(rapidjson::Value& object)
 {
-	bool retVal = false;
+	bool retVal = true;
 
-	retVal &= JsonTypeToStructType(doc, pointer + "/id", this->id);
-	retVal &= JsonTypeToStructType(doc, pointer + "/channel_id", this->channelID);
-	retVal &= JsonTypeToStructType(doc, pointer + "/guild_id", this->guildID);
-	retVal &= JsonTypeToStructType(doc, pointer + "/nonce", this->nonce);
-	retVal &= JsonTypeToStructType(doc, pointer + "/type", this->type);
-	retVal &= JsonTypeToStructType(doc, pointer + "/author", this->author);
-	retVal &= JsonTypeToStructType(doc, pointer + "/content", this->content);
-	retVal &= JsonTypeToStructType(doc, pointer + "/timestamp", this->timestamp);
-	retVal &= JsonTypeToStructType(doc, pointer + "/edited_timestamp", this->editedTimestamp);
-	retVal &= JsonTypeToStructType(doc, pointer + "/tts", this->tts);
-	retVal &= JsonTypeToStructType(doc, pointer + "/mention_everyone", this->mentionEveryone);
-	//TODO: retVal &= JsonTypeToStructType(doc, pointer + "/embeds", this->embeds);
-	retVal &= JsonTypeToStructType(doc, pointer + "/mentionedrole_ids", this->mentionedroleIDs);
-	retVal &= JsonTypeToStructType(doc, pointer + "/reactions", this->reactions);
-	retVal &= JsonTypeToStructType(doc, pointer + "/attachments", this->attachments);
-	retVal &= JsonTypeToStructType(doc, pointer + "/pinned", this->pinned);
-	retVal &= JsonTypeToStructType(doc, pointer + "/webhook_id", this->webhookID);
+	JTTST_EZ(object["id"], this->id);
+	JTTST_EZ(object["channel_id"], this->channelID);
+	JTTST_EZ(object["guild_id"], this->guildID);
+	JTTST_EZ(object["nonce"], this->nonce);
+	JTTST_EZ(object["type"], this->type);
+	JTTST_EZ(object["author"], this->author);
+	JTTST_EZ(object["content"], this->content);
+	JTTST_EZ(object["timestamp"], this->timestamp);
+	JTTST_EZ(object["edited_timestamp"], this->editedTimestamp);
+	JTTST_EZ(object["tts"], this->tts);
+	JTTST_EZ(object["mention_everyone"], this->mentionEveryone);
+	//TODO: JTTST_EZ(object["embeds"], this->embeds);
+	JTTST_EZ(object["mentionedrole_ids"], this->mentionedroleIDs);
+	JTTST_EZ(object["reactions"], this->reactions);
+	JTTST_EZ(object["attachments"], this->attachments);
+	JTTST_EZ(object["pinned"], this->pinned);
+	JTTST_EZ(object["webhook_id"], this->webhookID);
 
 	return retVal;
 }
 
-bool Discord::Attachment::LoadFrom(rapidjson::Document &doc, std::string pointer)
+bool Attachment::LoadFrom(rapidjson::Value& object)
 {
-	bool retVal = false;
+	bool retVal = true;
 
-	retVal &= JsonTypeToStructType(doc, pointer + "/id", this->id);
-	retVal &= JsonTypeToStructType(doc, pointer + "/filename", this->filename);
-	retVal &= JsonTypeToStructType(doc, pointer + "/size", this->size);
-	retVal &= JsonTypeToStructType(doc, pointer + "/url", this->url);
-	retVal &= JsonTypeToStructType(doc, pointer + "/proxy_url", this->proxy_url);
-	retVal &= JsonTypeToStructType(doc, pointer + "/width", this->width);
-	retVal &= JsonTypeToStructType(doc, pointer + "/height", this->height);
+	JTTST_EZ(object["id"], this->id);
+	JTTST_EZ(object["filename"], this->filename);
+	JTTST_EZ(object["size"], this->size);
+	JTTST_EZ(object["url"], this->url);
+	JTTST_EZ(object["proxy_url"], this->proxy_url);
+	JTTST_EZ(object["width"], this->width);
+	JTTST_EZ(object["height"], this->height);
 
 	return retVal;
 }
 
-bool Discord::Reaction::LoadFrom(rapidjson::Document &doc, std::string pointer)
+bool Reaction::LoadFrom(rapidjson::Value& object)
 {
-	bool retVal = false;
+	bool retVal = true;
 
-	retVal &= JsonTypeToStructType(doc, pointer + "/count", this->count);
-	retVal &= JsonTypeToStructType(doc, pointer + "/me", this->me);
-	retVal &= JsonTypeToStructType(doc, pointer + "/emoji", this->emoji);
+	JTTST_EZ(object["count"], this->count);
+	JTTST_EZ(object["me"], this->me);
+	JTTST_EZ(object["emoji"], this->emoji);
 
 	return retVal;
 }
 
-bool Discord::ReadyPacket::LoadFrom(rapidjson::Document &doc, std::string pointer)
+bool ReadyPacket::LoadFrom(rapidjson::Value& object)
 {
-	bool retVal = false;
+	bool retVal = true;
 
-	retVal &= JsonTypeToStructType(doc, pointer + "/v", this->version);
-	retVal &= JsonTypeToStructType(doc, pointer + "/user", this->user);
-	retVal &= JsonTypeToStructType(doc, pointer + "/private_channels", this->privateChannels);
-	retVal &= JsonTypeToStructType(doc, pointer + "/guilds", this->guilds);
-	retVal &= JsonTypeToStructType(doc, pointer + "/session_id", this->sessionID);
-	retVal &= JsonTypeToStructType(doc, pointer + "/analytics_token", this->analyticsToken);
+	JTTST_EZ(object["v"], this->version);
+	JTTST_EZ(object["user"], this->user);
+	JTTST_EZ(object["private_channels"], this->privateChannels);
+	JTTST_EZ(object["guilds"], this->guilds);
+	JTTST_EZ(object["session_id"], this->sessionID);
+	JTTST_EZ(object["analytics_token"], this->analyticsToken);
 
 	return retVal;
 }
 
-bool Discord::TypingStartPacket::LoadFrom(rapidjson::Document &doc, std::string pointer)
+bool TypingStartPacket::LoadFrom(rapidjson::Value& object)
 {
-	bool retVal = false;
+	bool retVal = true;
 
-	retVal &= JsonTypeToStructType(doc, pointer + "/user_id", this->userID);
-	retVal &= JsonTypeToStructType(doc, pointer + "/guild_id", this->guildID);
-	retVal &= JsonTypeToStructType(doc, pointer + "/channel_id", this->channelID);
-	retVal &= JsonTypeToStructType(doc, pointer + "/member", this->member);
-	retVal &= JsonTypeToStructType(doc, pointer + "/timestamp", this->timestamp);
+	JTTST_EZ(object["user_id"], this->userID);
+	JTTST_EZ(object["guild_id"], this->guildID);
+	JTTST_EZ(object["channel_id"], this->channelID);
+	JTTST_EZ(object["member"], this->member);
+	JTTST_EZ(object["timestamp"], this->timestamp);
 
 	return retVal;
 }
 
-bool Discord::MessageReactionPacket::LoadFrom(rapidjson::Document &doc, std::string pointer)
+bool MessageReactionPacket::LoadFrom(rapidjson::Value& object)
 {
-	bool retVal = false;
+	bool retVal = true;
 
-	retVal &= JsonTypeToStructType(doc, pointer + "/user_id", this->userID);
-	retVal &= JsonTypeToStructType(doc, pointer + "/guild_id", this->guildID);
-	retVal &= JsonTypeToStructType(doc, pointer + "/channel_id", this->channelID);
-	retVal &= JsonTypeToStructType(doc, pointer + "/message_id", this->messageID);
-	retVal &= JsonTypeToStructType(doc, pointer + "/emoji", this->emoji);
+	JTTST_EZ(object["user_id"], this->userID);
+	JTTST_EZ(object["guild_id"], this->guildID);
+	JTTST_EZ(object["channel_id"], this->channelID);
+	JTTST_EZ(object["message_id"], this->messageID);
+	JTTST_EZ(object["emoji"], this->emoji);
 
 	return retVal;
 }
 
-bool Discord::GuildMemberListUpdatePacket::LoadFrom(rapidjson::Document &doc, std::string pointer)
+bool GuildMemberListUpdatePacket::LoadFrom(rapidjson::Value& object)
 {
-	bool retVal = false;
+	bool retVal = true;
 
-	retVal &= JsonTypeToStructType(doc, pointer + "/id", this->id);
-	retVal &= JsonTypeToStructType(doc, pointer + "/guild_id", this->guildID);
-	retVal &= JsonTypeToStructType(doc, pointer + "/ops", this->operations);
-	retVal &= JsonTypeToStructType(doc, pointer + "/groups", this->groups);
+	JTTST_EZ(object["id"], this->id);
+	JTTST_EZ(object["guild_id"], this->guildID);
+	JTTST_EZ(object["ops"], this->operations);
+	JTTST_EZ(object["groups"], this->groups);
 
 	return retVal;
 }
 
-bool Discord::GuildMemberListUpdateOperation::LoadFrom(rapidjson::Document &doc, std::string pointer)
+bool GuildMemberListUpdateOperation::LoadFrom(rapidjson::Value& object)
 {
-	bool retVal = false;
+	bool retVal = true;
 
-	retVal &= JsonTypeToStructType(doc, pointer + "/op", this->op);
+	JTTST_EZ(object["op"], this->op);
 
-	rapidjson::Value *ptr = nullptr;
-	if ((ptr = rapidjson::Pointer((pointer + "/range").c_str()).Get(doc)) && ptr->IsArray())
+	if(object.HasMember("range") && object["range"].IsArray()) {
+		auto rangeArray = object["range"].GetArray();
 		this->range = std::make_pair<int32_t, int32_t>(
-			rapidjson::Pointer((pointer + "/range/0").c_str()).Get(doc)->GetInt(),
-			rapidjson::Pointer((pointer + "/range/1").c_str()).Get(doc)->GetInt());
+			rangeArray[0].GetInt(), 
+			rangeArray[1].GetInt());
+	}
 
-	if ((ptr = rapidjson::Pointer((pointer + "/items").c_str()).Get(doc)) && ptr->IsArray())
-	{
-		int i = 0;
-		for (rapidjson::Value &item : ptr->GetArray())
+	if(object.HasMember("items") && object["items"].IsArray()) {
+		auto itemsArray = object["items"].GetArray();
+
+		for (rapidjson::Value &item : itemsArray)
 		{
 			if (item.IsObject())
 			{
 				if (item.HasMember("member"))
 				{
 					Member tmpVar;
-					tmpVar.LoadFrom(doc, pointer + "/items/" + std::to_string(i) + "/member");
+					tmpVar.LoadFrom(item["member"]);
 					this->items.push_back(tmpVar);
 				}
 				else if (item.HasMember("group"))
 				{
 					GuildMemberListGroup tmpVar;
-					tmpVar.LoadFrom(doc, pointer + "/items/" + std::to_string(i) + "/group");
+					tmpVar.LoadFrom(item["group"]);
 					this->items.push_back(tmpVar);
 				}
 			}
-			i++;
 		}
 	}
 
 	return retVal;
 }
 
-bool Discord::GuildMemberListGroup::LoadFrom(rapidjson::Document &doc, std::string pointer)
+bool GuildMemberListGroup::LoadFrom(rapidjson::Value& object)
 {
-	bool retVal = false;
+	bool retVal = true;
 
-	retVal &= JsonTypeToStructType(doc, pointer + "/id", this->id);
-	retVal &= JsonTypeToStructType(doc, pointer + "/count", this->count);
+	JTTST_EZ(object["id"], this->id);
+	JTTST_EZ(object["count"], this->count);
 
 	return retVal;
 }
 
-#pragma region JsonTypeToStructType functions
-bool JsonTypeToStructType(rapidjson::Document &doc, std::string pointer, std::string &structFieldRef)
+//JsonTypeToStructType functions
+bool JsonTypeToStructType(rapidjson::Value& object, Discord::JsonDeSerializable &structFieldRef)
 {
-	rapidjson::Value *ptr = rapidjson::Pointer(pointer.c_str()).Get(doc);
-	if (ptr != nullptr && ptr->IsString())
-	{
-		structFieldRef = ptr->GetString();
-		return true;
+	return structFieldRef.LoadFrom(object);
+}
+bool JsonTypeToStructType(rapidjson::Value& object, std::string &structFieldRef)
+{
+	if(!object.IsString()) {
+		return false;
 	}
-	return false;
+
+	structFieldRef = object.Get<std::string>();
+	
+	return true;
 }
-bool JsonTypeToStructType(rapidjson::Document &doc, std::string pointer, uint32_t &structFieldRef)
+bool JsonTypeToStructType(rapidjson::Value& object, Discord::Snowflake &structFieldRef)
 {
-	rapidjson::Value *ptr = rapidjson::Pointer(pointer.c_str()).Get(doc);
-	if (ptr != nullptr && ptr->IsUint())
+	if (object.IsUint64())
 	{
-		structFieldRef = ptr->IsUint();
-		return true;
-	}
-	return false;
-}
-bool JsonTypeToStructType(rapidjson::Document &doc, std::string pointer, int32_t &structFieldRef)
-{
-	rapidjson::Value *ptr = rapidjson::Pointer(pointer.c_str()).Get(doc);
-	if (ptr != nullptr && ptr->IsInt())
-	{
-		structFieldRef = ptr->GetInt();
-		return true;
-	}
-	return false;
-}
-bool JsonTypeToStructType(rapidjson::Document &doc, std::string pointer, int64_t &structFieldRef)
-{
-	rapidjson::Value *ptr = rapidjson::Pointer(pointer.c_str()).Get(doc);
-	if (ptr != nullptr && ptr->IsInt64())
-	{
-		structFieldRef = ptr->GetInt64();
-		return true;
-	}
-	return false;
-}
-bool JsonTypeToStructType(rapidjson::Document &doc, std::string pointer, uint64_t &structFieldRef)
-{
-	rapidjson::Value *ptr = rapidjson::Pointer(pointer.c_str()).Get(doc);
-	if (ptr != nullptr && ptr->IsUint64())
-	{
-		structFieldRef = ptr->GetUint64();
-		return true;
-	}
-	return false;
-}
-bool JsonTypeToStructType(rapidjson::Document &doc, std::string pointer, uint8_t &structFieldRef)
-{
-	uint32_t tempVar;
-	bool retVal = JsonTypeToStructType(doc, pointer, tempVar);
-	structFieldRef = (uint8_t)tempVar;
-	return retVal;
-}
-bool JsonTypeToStructType(rapidjson::Document &doc, std::string pointer, int8_t &structFieldRef)
-{
-	int32_t tempVar;
-	bool retVal = JsonTypeToStructType(doc, pointer, tempVar);
-	structFieldRef = (int8_t)tempVar;
-	return retVal;
-}
-bool JsonTypeToStructType(rapidjson::Document &doc, std::string pointer, uint16_t &structFieldRef)
-{
-	uint32_t tempVar;
-	bool retVal = JsonTypeToStructType(doc, pointer, tempVar);
-	structFieldRef = (uint16_t)tempVar;
-	return retVal;
-}
-bool JsonTypeToStructType(rapidjson::Document &doc, std::string pointer, int16_t &structFieldRef)
-{
-	int32_t tempVar;
-	bool retVal = JsonTypeToStructType(doc, pointer, tempVar);
-	structFieldRef = (int16_t)tempVar;
-	return JsonTypeToStructType(doc, pointer, tempVar);
-}
-bool JsonTypeToStructType(rapidjson::Document &doc, std::string pointer, bool &structFieldRef)
-{
-	rapidjson::Value *ptr = rapidjson::Pointer(pointer.c_str()).Get(doc);
-	if (ptr != nullptr && ptr->IsBool())
-	{
-		structFieldRef = ptr->GetBool();
-		return true;
-	}
-	return false;
-}
-bool JsonTypeToStructType(rapidjson::Document &doc, std::string pointer, float &structFieldRef)
-{
-	rapidjson::Value *ptr = rapidjson::Pointer(pointer.c_str()).Get(doc);
-	if (ptr != nullptr && ptr->IsFloat())
-	{
-		structFieldRef = ptr->GetFloat();
-		return true;
-	}
-	return false;
-}
-bool JsonTypeToStructType(rapidjson::Document &doc, std::string pointer, double &structFieldRef)
-{
-	rapidjson::Value *ptr = rapidjson::Pointer(pointer.c_str()).Get(doc);
-	if (ptr != nullptr && ptr->IsDouble())
-	{
-		structFieldRef = ptr->GetDouble();
-		return true;
-	}
-	return false;
-}
-bool JsonTypeToStructType(rapidjson::Document &doc, std::string pointer, Discord::JsonDeSerializable &structFieldRef)
-{
-	return structFieldRef.LoadFrom(doc, pointer);
-}
-bool JsonTypeToStructType(rapidjson::Document &doc, std::string pointer, Discord::Snowflake &structFieldRef)
-{
-	uint64_t tempVar = 0;
-	if (JsonTypeToStructType(doc, pointer, tempVar))
-	{
-		structFieldRef = Discord::Snowflake(tempVar);
+		structFieldRef = Snowflake(object.GetUint64());
 		return true;
 	}
 
-	std::string tempStr;
-	if (JsonTypeToStructType(doc, pointer, tempStr))
+	if (object.IsString())
 	{
-		structFieldRef = Discord::Snowflake(tempStr);
+		structFieldRef = Snowflake(object.Get<std::string>());
 		return true;
 	}
 
 	return false;
 }
-template <typename T>
-bool JsonTypeToStructType(rapidjson::Document &doc, std::string pointer, std::optional<T> &structFieldRef)
-{
-	T tempVar;
-	if (JsonTypeToStructType(doc, pointer, tempVar))
-	{
-		structFieldRef = tempVar;
-		return true;
-	}
-	return false;
-}
-template <typename T>
-bool JsonTypeToStructType(rapidjson::Document &doc, std::string pointer, std::vector<T> &structFieldRef)
-{
-	rapidjson::Value *ptr = rapidjson::Pointer(pointer.c_str()).Get(doc);
-	if (ptr != nullptr && ptr->IsArray())
-	{
-		rapidjson::SizeType arraySize = ptr->GetArray().Size();
-		for (rapidjson::SizeType i = 0; i < arraySize; i++)
-		{
-			T tempVar;
-			JsonTypeToStructType(doc, pointer + "/" + std::to_string(i++), tempVar);
-			structFieldRef.push_back(tempVar);
-		}
-		return true;
-	}
-	return false;
-}
-#pragma endregion

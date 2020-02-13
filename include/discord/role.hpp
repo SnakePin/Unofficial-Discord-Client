@@ -1,7 +1,7 @@
 #pragma once
 
 #include "discord/snowflake.hpp"
-#include "discord/deserializable_serializable_class_type.hpp"
+#include "discord/jsonDeSerializable_class.hpp"
 
 #include <string>
 #include <rapidjson/document.h>
@@ -23,6 +23,6 @@ namespace Discord {
 		bool managed;
 		bool mentionable;
 
-		bool LoadFrom(rapidjson::Document& doc, std::string pointer = "");
+		bool LoadFrom(rapidjson::Value& object);
 	};
 }

@@ -2,7 +2,7 @@
 
 #include "discord/snowflake.hpp"
 #include "discord/emoji.hpp"
-#include "discord/deserializable_serializable_class_type.hpp"
+#include "discord/jsonDeSerializable_class.hpp"
 
 namespace Discord {
 	
@@ -13,7 +13,7 @@ namespace Discord {
 		bool me;
 		Emoji emoji;
 
-		bool LoadFrom(rapidjson::Document& doc, std::string pointer = "");
+		bool LoadFrom(rapidjson::Value& object);
 	};
 
 }
