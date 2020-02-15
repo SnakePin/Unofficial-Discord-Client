@@ -63,16 +63,16 @@ sdl2, asio, cpprestsdk, tclap, rapidjson should be installed using Vcpkg
 - Install a Visual Studio version that is supported by CMake, you can find supported Visual Studio versions from [CMake Documentation](https://cmake.org/cmake/help/latest/manual/cmake-generators.7.html#visual-studio-generators)
 - Execute following commands:
 - For dynamic linked 64bit build (recommended):
-- `vcpkg install sdl2 asio cpprestsdk[websockets] tclap rapidjson- -triplet x64-windows`
+- `vcpkg install sdl2 asio cpprestsdk[websockets] tclap rapidjson --triplet x64-windows`
 - `cd build`
-- `cmake .. "-DCMAKE_TOOLCHAIN_FILE=PATH_TO_VCPKG_TOOLCHAIN" "-DVCPKG_TARGET_TRIPLET=x64-windows"- A x64`
+- `cmake .. "-DCMAKE_TOOLCHAIN_FILE=PATH_TO_VCPKG_TOOLCHAIN" "-DVCPKG_TARGET_TRIPLET=x64-windows" -A x64`
 - For dynamic linked 32bit build:
-- `vcpkg install sdl2 asio cpprestsdk[websockets] tclap rapidjson- -triplet x86-windows`
+- `vcpkg install sdl2 asio cpprestsdk[websockets] tclap rapidjson --triplet x86-windows`
 - `cd build`
-- `cmake .. "-DCMAKE_TOOLCHAIN_FILE=PATH_TO_VCPKG_TOOLCHAIN" "-DVCPKG_TARGET_TRIPLET=x86-windows"- A Win32`
+- `cmake .. "-DCMAKE_TOOLCHAIN_FILE=PATH_TO_VCPKG_TOOLCHAIN" "-DVCPKG_TARGET_TRIPLET=x86-windows" -A Win32`
 - Note: For static linked builds, you must create your own triplet file to set CRT linkage to dynamic.
-- Release build: `cmake- -build .- -config Release`
-- Debug build: `cmake- -build .- -config Debug`
+- Release build: `cmake --build . --config Release`
+- Debug build: `cmake --build . --config Debug`
 
 Now depending on the configuration, you can find the output files at `output\bin\Debug` or `output\bin\Release`
 
@@ -82,10 +82,10 @@ Now depending on the configuration, you can find the output files at `output\bin
 - [Get Vcpkg](https://github.com/Microsoft/vcpkg#quick-start)
 - [Install CMake](https://cmake.org/)
 - Execute following commands in project root directory:
-- `vcpkg install sdl2 asio cpprestsdk[websockets] tclap rapidjson- -triplet x64-linux`
+- `vcpkg install sdl2 asio cpprestsdk[websockets] tclap rapidjson --triplet x64-linux`
 - `cd build`
 - `cmake .. "-DCMAKE_TOOLCHAIN_FILE=PATH_TO_VCPKG_TOOLCHAIN" "-DVCPKG_TARGET_TRIPLET=x64-linux"`
-- Release build: `cmake- -build .- -config Release`
-- Debug build: `cmake- -build .- -config Debug`
+- Release build: `cmake --build . --config Release`
+- Debug build: `cmake --build . --config Debug`
 
 Now you can find output files at `output/bin`
