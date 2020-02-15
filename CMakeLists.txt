@@ -34,17 +34,15 @@ add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 # Set required C++ version, this needs to be here, after the add_executable call
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 
-# Add the required flags to compiler and linker
-if (WIN32 AND MSVC OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
-  target_compile_options(${PROJECT_NAME} PRIVATE "/W4")
-  target_compile_options(${PROJECT_NAME} PRIVATE "$<$<CONFIG:RELEASE>:/O2>")
-  
+# Enable warnings and set required compiler flags
+if (WIN32)
+  if(MSVC OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+    target_compile_options(${PROJECT_NAME} PRIVATE "/W4")
+  endif()
   # Set Windows SDK version to Windows XP
   target_compile_definitions(${PROJECT_NAME} PRIVATE "_WIN32_WINNT=0x0501")
 else()
   target_compile_options(${PROJECT_NAME} PRIVATE "-Wall" "-Wextra")
-  target_compile_options(${PROJECT_NAME} PRIVATE "$<$<CONFIG:DEBUG>:-g>")
-  target_compile_options(${PROJECT_NAME} PRIVATE "$<$<CONFIG:RELEASE>:-O3>")
 endif()
 
 target_include_directories(${PROJECT_NAME} PUBLIC "${PROJECT_SOURCE_DIR}/include")
