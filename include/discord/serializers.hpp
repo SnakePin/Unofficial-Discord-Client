@@ -59,6 +59,7 @@ bool JsonTypeToStructType(rapidjson::Value& object, T &structFieldRef)
 	}
 	return false;
 }
+
 template <typename T>
 bool JsonTypeToStructType(rapidjson::Value& object, std::optional<T> &structFieldRef)
 {
@@ -76,12 +77,13 @@ bool JsonTypeToStructType(rapidjson::Value& object, std::vector<T> &structFieldR
 {
 	if (object.IsArray())
 	{
+		bool retVal = true;
 		for (rapidjson::Value& currentObject : object.GetArray()) {
 			T tempVar;
-			JsonTypeToStructType(currentObject, tempVar);
+			retVal &= JsonTypeToStructType(currentObject, tempVar);
 			structFieldRef.push_back(tempVar);
 		}
-		return true;
+		return retVal;
 	}
 	return false;
 }

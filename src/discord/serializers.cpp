@@ -13,7 +13,7 @@
 #include "discord/snowflake.hpp"
 #include "discord/attachment.hpp"
 #include "discord/jsonDeSerializable_class.hpp"
-#include "discord/deserializers.hpp"
+#include "discord/serializers.hpp"
 #include "discord/InternalUtils.hpp"
 
 /*

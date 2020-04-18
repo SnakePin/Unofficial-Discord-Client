@@ -8,7 +8,7 @@
 #include "discord/guild.hpp"
 #include "discord/packets.hpp"
 #include "discord/snowflake.hpp"
-#include "discord/deserializers.hpp"
+#include "discord/serializers.hpp"
 
 #include <tclap/CmdLine.h>
 #include <string>
