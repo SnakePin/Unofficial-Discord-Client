@@ -419,7 +419,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	if (!showGUIArg.getValue() && !showConsoleArg.getValue()) {
-		std::cerr << "Error: specify either console or GUI" << std::endl;
+		std::cerr << "Error: Please provide at least either the argument to show the console or the GUI." << std::endl;
 		return 1;
 	}
 

@@ -2,7 +2,7 @@
 
 namespace Discord
 {
-    enum GatewayOpcodes 
+    enum class GatewayOpcodes : int32_t
     {
         /// Server to client - Used to send most events.
         Dispatch = 0,

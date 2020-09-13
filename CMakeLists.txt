@@ -2,6 +2,7 @@
 # To find the cmake version run
 # $ cmake --version
 cmake_minimum_required(VERSION 3.8)
+# Could be higher due to vcpkg. I.e. 3.14 for vcpkg 2019.06
 
 # Set the project name
 project(Unofficial-Discord-Client)
@@ -20,9 +21,16 @@ endif()
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake_modules/")
 
 # This needs to be here, before any add_executable calls and after project
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/output/archive")
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/output/lib")
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/output/bin")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/output/archive")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/output/lib")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/output/bin")
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}")
 
 # Add all files
 file(GLOB_RECURSE SOURCES "src/*.c" "src/*.cpp")
@@ -50,7 +58,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC "${PROJECT_SOURCE_DIR}/include
 # Add cpprestsdk
 find_package(cpprestsdk CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE cpprestsdk::cpprest)
-target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE cpprestsdk:cpprest)
+target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE cpprestsdk::cpprest)
 
 # Add ASIO
 # find_package(asio CONFIG REQUIRED) - This causes issues on linux

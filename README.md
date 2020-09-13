@@ -62,19 +62,19 @@ sdl2, asio, cpprestsdk, tclap, rapidjson should be installed using Vcpkg
 - [Install CMake](https://cmake.org/)
 - Install a Visual Studio version that is supported by CMake, you can find supported Visual Studio versions from [CMake Documentation](https://cmake.org/cmake/help/latest/manual/cmake-generators.7.html#visual-studio-generators)
 - Execute following commands:
-- For dynamic linked 64bit build (recommended):
-- `vcpkg install sdl2 asio cpprestsdk[websockets] tclap rapidjson --triplet x64-windows`
-- `cd build`
-- `cmake .. "-DCMAKE_TOOLCHAIN_FILE=PATH_TO_VCPKG_TOOLCHAIN" "-DVCPKG_TARGET_TRIPLET=x64-windows" -A x64`
-- For dynamic linked 32bit build:
-- `vcpkg install sdl2 asio cpprestsdk[websockets] tclap rapidjson --triplet x86-windows`
-- `cd build`
-- `cmake .. "-DCMAKE_TOOLCHAIN_FILE=PATH_TO_VCPKG_TOOLCHAIN" "-DVCPKG_TARGET_TRIPLET=x86-windows" -A Win32`
-- Note: For static linked builds, you must create your own triplet file to set CRT linkage to dynamic.
+- `vcpkg install sdl2 asio cpprestsdk[websockets] tclap rapidjson --triplet VCPKG_TRIPLET_NAME`
+- `mkdir build && cd build`
+- `cmake .. "-DCMAKE_TOOLCHAIN_FILE=PATH_TO_VCPKG_TOOLCHAIN" "-DVCPKG_TARGET_TRIPLET=VCPKG_TRIPLET_NAME" -A GENERATOR_ARCH`
+- Available generator arch and triplet options (as of 2020.07) are:
+- "x64" (64bit) triplets:
+   * "x64-windows-static-md" (static linking)
+   * "x64-windows"
+- "Win32" (32bit) triplets:
+   * "x86-windows-static-md" (static linking)
+   * "x86-windows"
 - Release build: `cmake --build . --config Release`
 - Debug build: `cmake --build . --config Debug`
 
-Now depending on the configuration, you can find the output files at `output\bin\Debug` or `output\bin\Release`
 
 ### Linux
 
@@ -83,9 +83,11 @@ Now depending on the configuration, you can find the output files at `output\bin
 - [Install CMake](https://cmake.org/)
 - Execute following commands in project root directory:
 - `vcpkg install sdl2 asio cpprestsdk[websockets] tclap rapidjson --triplet x64-linux`
-- `cd build`
+- `mkdir build && cd build`
 - `cmake .. "-DCMAKE_TOOLCHAIN_FILE=PATH_TO_VCPKG_TOOLCHAIN" "-DVCPKG_TARGET_TRIPLET=x64-linux"`
 - Release build: `cmake --build . --config Release`
 - Debug build: `cmake --build . --config Debug`
 
-Now you can find output files at `output/bin`
+NOTE: You can [create your own Vcpkg triplets](https://vcpkg.readthedocs.io/en/latest/examples/overlay-triplets-linux-dynamic/) to customize the compilation and linking process.
+
+After compilation finishes, you can find the output files at `build/output/bin`

@@ -46,7 +46,7 @@ Client::Client(const std::string& authToken_arg, AuthTokenType tokenType)
 std::string Client::GenerateIdentifyPacket(bool compress) {
 	rapidjson::Document document;
 
-	rapidjson::Pointer("/op").Set(document, GatewayOpcodes::Identify);
+	rapidjson::Pointer("/op").Set(document, (int32_t)GatewayOpcodes::Identify);
 	rapidjson::Pointer("/d/token").Set(document, authToken.value);
 	rapidjson::Pointer("/d/compress").Set(document, compress);
 
@@ -76,7 +76,7 @@ std::string Client::GenerateIdentifyPacket(bool compress) {
 std::string Client::GenerateResumePacket(std::string& sessionID_arg, uint32_t sequenceNumber_arg) {
 	rapidjson::Document document;
 
-	rapidjson::Pointer("/op").Set(document, GatewayOpcodes::Resume);
+	rapidjson::Pointer("/op").Set(document, (int32_t)GatewayOpcodes::Resume);
 	rapidjson::Pointer("/d/session_id").Set(document, sessionID_arg);
 	rapidjson::Pointer("/d/token").Set(document, authToken.value);
 	rapidjson::Pointer("/d/seq").Set(document, sequenceNumber_arg);
@@ -323,7 +323,7 @@ void Client::OpenPrivateChannelView(const Snowflake& /*channel*/) {
 
 void Client::UpdatePresence(std::string& status) {
 	rapidjson::Document document;
-	rapidjson::Pointer("/op").Set(document, GatewayOpcodes::StatusUpdate);
+	rapidjson::Pointer("/op").Set(document, (int32_t)GatewayOpcodes::StatusUpdate);
 	rapidjson::Pointer("/d/status").Set(document, status);
 	rapidjson::Pointer("/d/since").Set(document, 0);
 	rapidjson::Pointer("/d/afk").Set(document, false);
