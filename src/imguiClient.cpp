@@ -116,7 +116,7 @@ int startImguiClient(std::shared_ptr<MyClient> client) {
 	std::future<bool> currentUserFetchFuture = std::async(std::launch::async, [client, &currentUser, &currentUserFetched]()->bool {
 		currentUserFetched = client->httpAPI.GetCurrentUser(currentUser);
 		return currentUserFetched;
-	});
+		});
 
 	while (true) {
 		SDL_Event event;
@@ -241,7 +241,7 @@ int startImguiClient(std::shared_ptr<MyClient> client) {
 				}
 
 				displayInfoItem("Is Bot", (currentUser.bot.has_value() && currentUser.bot.value() == true) ? "Yes" : "No");
-				
+
 				if (currentUser.flags.has_value()) {
 					Discord::UserFlags& userFlags = currentUser.flags.value();
 					if (!userFlags.IsNone()) {
@@ -284,7 +284,7 @@ int startImguiClient(std::shared_ptr<MyClient> client) {
 						//Task is completed and it returned false, start new task and increase fail count
 						currentUserFetchFuture = std::async(std::launch::async, [client, &currentUser]()->bool {
 							return client->httpAPI.GetCurrentUser(currentUser);
-						});
+							});
 						currentuserFetchFailCount++;
 					}
 					ImGui::TextColored(RGBAToImVec4(255, 0, 0), "Fetching user info failed, trying again. Try: %d", currentuserFetchFailCount);
@@ -463,12 +463,34 @@ static ImVec4 RGBAToImVec4(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
 
 static void ImGuiDisplayDiscordMessage(const Discord::Message& message) {
 	std::string textToShow;
-	if (message.type == 3) {
+
+	using MessageTypes = Discord::Message::MessageTypes;
+	switch (message.type) {
+	case MessageTypes::CALL:
 		textToShow = message.author.username + "#" + message.author.discriminator + " started a discord call.";
-	}
-	else if (message.type == 0) {
+		break;
+	case MessageTypes::DEFAULT:
 		textToShow = message.author.username + "#" + message.author.discriminator + ": " + message.content;
+		break;
+	case MessageTypes::GUILD_MEMBER_JOIN:
+		textToShow = "A new user has joined! " + message.author.username + "#" + message.author.discriminator;
+		break;
+	case MessageTypes::CHANNEL_PINNED_MESSAGE:
+		if (message.messageReference.has_value()) {
+			const auto& msgRef = message.messageReference.value();
+			std::string msgId = msgRef.messageId.has_value() ? std::to_string(msgRef.messageId.value().value) : "";
+			std::string channelId = msgRef.channelId.has_value() ? std::to_string(msgRef.channelId.value().value) : "";
+			std::string guildId = msgRef.guildId.has_value() ? std::to_string(msgRef.guildId.value().value) : "";
+
+			textToShow = message.author.username + "#" + message.author.discriminator + " has pinned a message."
+				+ " Message ID: " + msgId
+				+ " Channel ID: " + channelId
+				+ " Guild ID: " + guildId;
+		}
 	}
+
+
+
 	ImGuiTextNoFormat(textToShow.c_str());
 	for (const Discord::Attachment& attachment : message.attachments)
 	{

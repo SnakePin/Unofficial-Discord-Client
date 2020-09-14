@@ -21,15 +21,21 @@ namespace Discord {
 
 		Snowflake id;
 		std::string name;
-		std::string splashHash;
-		std::string iconHash;
 
+		std::optional<std::string> iconHash;
+		std::optional<std::string> splashHash;
+		std::optional<std::string> discoverySplash;
+
+
+		std::optional<bool> isCurrentUserOwner;
 		Snowflake ownerID;
-		std::optional<uint32_t> permissions;
+
+		std::optional<uint32_t> permissions_legacy;
+		std::optional<std::string> permissions_new;
 		
 		std::string region;
 
-		Snowflake afkChannelID;
+		std::optional<Snowflake> afkChannelID;
 		int32_t afkTimeout;
 		
 		std::optional<bool> embedable;
@@ -45,12 +51,12 @@ namespace Discord {
 
 		std::vector<std::string> features;
 
-		Snowflake applicationID;
+		std::optional<Snowflake> applicationID;
 		
 		std::optional<bool> widgetEnabled;
 		std::optional<Snowflake> widgetChannelID;
 
-		Snowflake systemChannelID;
+		std::optional<Snowflake> systemChannelID;
 
 		std::optional<std::string> joinedAt;
 
@@ -63,12 +69,21 @@ namespace Discord {
 		std::vector<Member> members;
 		std::vector<Channel> channels;
 
-		int32_t maxPresences;
-		int32_t maxMembers;
-		int32_t premiumTier;
+		// presences[]
 
-		std::string description;
-		std::string bannerHash;
+		std::optional<int32_t> maxPresences;
+		std::optional<int32_t> maxMembers;
+		int32_t premiumTier;
+		std::optional<int32_t> premiumSubscriptionCount;
+
+		std::optional<std::string> description;
+		std::optional<std::string> bannerHash;
+
+		std::string preferredLocale;
+		std::optional<Snowflake> publicUpdatesChannelId;
+		std::optional<int32_t> maxVideoChannelUsers;
+		std::optional<int32_t> approximateMemberCount;
+		std::optional<int32_t> approximatePresenceCount;
 
 		bool LoadFrom(rapidjson::Value& object);
 	};

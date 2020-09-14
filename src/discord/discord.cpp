@@ -29,7 +29,7 @@ using web::web_sockets::client::websocket_incoming_message;
 using web::web_sockets::client::websocket_outgoing_message;
 using web::web_sockets::client::websocket_close_status;
 
-static pplx::task<void> CasabalancaWebSocketSendUtf8StringAsync(Discord::WssClient& wsclient, const std::string& str);
+static pplx::task<void> WebSocketSendUtf8StringAsync(Discord::WssClient& wsclient, const std::string& str);
 
 Client::Client(const std::string& authToken_arg, AuthTokenType tokenType)
 	: authToken(authToken_arg, tokenType), //Make sure token is set before httpAPI is initialized
@@ -112,7 +112,7 @@ std::string Client::GenerateGuildChannelViewPacket(const Snowflake& guild, const
 }
 
 void Client::SendHeartbeatAndResetTimer() {
-	CasabalancaWebSocketSendUtf8StringAsync(websocket, "{\"op\":1,\"d\":" + std::to_string(sequenceNumber) + "}").wait();
+	WebSocketSendUtf8StringAsync(websocket, "{\"op\":1,\"d\":" + std::to_string(sequenceNumber) + "}").wait();
 	std::cout << "Client: Sending heartbeat." << std::endl;
 
 	heartbeatTimer.doLater(heartbeatInterval - 2000, [this]() {
@@ -121,12 +121,12 @@ void Client::SendHeartbeatAndResetTimer() {
 }
 
 void Client::SendIdentify() {
-	CasabalancaWebSocketSendUtf8StringAsync(websocket, GenerateIdentifyPacket()).wait();
+	WebSocketSendUtf8StringAsync(websocket, GenerateIdentifyPacket()).wait();
 }
 
 void Client::SendResume(std::string& sessionID_arg, uint32_t sequenceNumber_arg) {
 	sessionID = sessionID_arg;
-	CasabalancaWebSocketSendUtf8StringAsync(websocket, GenerateResumePacket(sessionID_arg, sequenceNumber_arg)).wait();
+	WebSocketSendUtf8StringAsync(websocket, GenerateResumePacket(sessionID_arg, sequenceNumber_arg)).wait();
 }
 
 void Client::ProcessHello(rapidjson::Document& document) {
@@ -216,11 +216,12 @@ void Client::Run() {
 
 	websocket.set_message_handler([this](websocket_incoming_message msg)
 	{
-		// handle message from server...
+		// TODO: Write an abstract websocket wrapper class and extend on it by making a zlib websocket and a etf websocket class
 		std::string response = to_utf8string(msg.extract_string().get());
 
 		rapidjson::Document document;
 		document.Parse(response);
+
 		GatewayOpcodes opcode = (GatewayOpcodes)document["op"].GetInt();
 
 		if (opcode == GatewayOpcodes::Hello) {
@@ -308,7 +309,7 @@ bool Client::IsRunning() {
 }
 
 void Client::OpenGuildChannelView(const Snowflake& guild, const Snowflake& channel) {
-	CasabalancaWebSocketSendUtf8StringAsync(websocket, GenerateGuildChannelViewPacket(guild, channel)).wait();
+	WebSocketSendUtf8StringAsync(websocket, GenerateGuildChannelViewPacket(guild, channel)).wait();
 }
 
 void Client::OpenPrivateChannelView(const Snowflake& /*channel*/) {
@@ -329,10 +330,10 @@ void Client::UpdatePresence(std::string& status) {
 	rapidjson::Pointer("/d/afk").Set(document, false);
 	rapidjson::Pointer("/d/activities").Set(document, rapidjson::Value(rapidjson::kArrayType));
 
-	CasabalancaWebSocketSendUtf8StringAsync(websocket, JsonDocumentToJsonString(document)).wait();
+	WebSocketSendUtf8StringAsync(websocket, JsonDocumentToJsonString(document)).wait();
 }
 
-static pplx::task<void> CasabalancaWebSocketSendUtf8StringAsync(Discord::WssClient& wsclient, const std::string& str) {
+static pplx::task<void> WebSocketSendUtf8StringAsync(Discord::WssClient& wsclient, const std::string& str) {
 	websocket_outgoing_message msg;
 	msg.set_utf8_message(str);
 
